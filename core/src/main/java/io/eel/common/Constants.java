@@ -2,6 +2,7 @@ package io.eel.common;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.xssf.usermodel.XSSFCell;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -30,15 +31,13 @@ public class Constants {
     );
 
     public static Object getCellValue(Cell cell) {
-        // Check if it is blank.
-        if (CellType.FORMULA.equals(cell.getCellType()) && CellType.NUMERIC.equals(cell.getCachedFormulaResultType()) && cell.getNumericCellValue() == -1) {
-            return "";
-        } else if (CellType.FORMULA.equals(cell.getCellType()) && CellType.STRING.equals(cell.getCachedFormulaResultType()) && cell.getStringCellValue().equals("BLANK")) {
-            return "";
-        } else if (CellType.BLANK.equals(cell.getCellType())) {
+        // Check if the cell value is blank or an empty string
+        String rawValue = ((XSSFCell) cell).getRawValue();
+        if (CellType.BLANK.equals(cell.getCellType()) || rawValue.isEmpty()) {
             return "";
         }
 
+        // Get the relevant cell value transformer and apply it to the cell value.
         var transformer = BUILT_IN_TYPE_TRANSFORMERS.get(cell.getCellStyle().getDataFormatString());
         if (transformer == null) {
             throw new IllegalArgumentException(

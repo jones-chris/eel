@@ -1,9 +1,9 @@
-package io.eel;
+package functional_tests;
 
 import io.eel.model.WorkbookOutput;
 import io.eel.service.WorkbookCalculationEngine;
 
-public class Main {
+public class FunctionalTests {
 
     private static final WorkbookCalculationEngine engine = new WorkbookCalculationEngine();
 

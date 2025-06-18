@@ -24,11 +24,11 @@ public class WorkbookProxy implements AutoCloseable {
     }
 
     public void assertIsSuccessful() {
-        Cell cell = this.workbook.getSheet("metadata").getRow(0).getCell(0);
+        Cell cell = this.workbook.getSheet(Constants.METADATA).getRow(0).getCell(0);
 
         int result = (int) cell.getNumericCellValue();
         if (result != 0) {
-            throw new RuntimeException("Results is " + result);
+            throw new RuntimeException("Non-zero result: " + result);
         }
     }
 

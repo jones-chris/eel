@@ -4,14 +4,29 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.Map;
 import java.util.function.Function;
 
 public class Constants {
+
+    public final static String METADATA = "metadata";
+
+    public final static String INPUT_SHEET_PREFIX = "input_";
+
+    public final static String OUTPUT_SHEET_PREFIX = "output_";
+
+    public static final Map<String, String> BUILT_IN_FORMAT_TO_SQL_TYPE_MAP = Map.of(
+            "General", "String",
+            "0", "Integer",
+            "0.00", "Decimal",
+            "m/d/yyyy;@", "Date",
+            "mm/dd/yyyy", "Date",
+            "boolean", "Boolean"
+    );
 
     private static final Map<String, Function<Cell, Object>> BUILT_IN_TYPE_TRANSFORMERS = Map.of(
             // https://poi.apache.org/apidocs/dev/org/apache/poi/ss/usermodel/BuiltinFormats.html

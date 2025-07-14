@@ -1,7 +1,7 @@
-package io.eel.packager;
+package io.eel.common;
 
 import io.eel.common.Constants;
-import io.eel.exception.WorkbookValidationException;
+import io.eel.common.exception.WorkbookValidationException;
 import org.apache.poi.ss.usermodel.*;
 
 import java.util.*;

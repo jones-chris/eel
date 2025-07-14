@@ -1,7 +1,6 @@
 package functional_tests;
 
 import io.eel.model.WorkbookOutput;
-import io.eel.packager.WorkbookValidator;
 import io.eel.service.WorkbookCalculationEngine;
 
 public class FunctionalTests {

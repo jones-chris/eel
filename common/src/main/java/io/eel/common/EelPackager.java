@@ -1,4 +1,4 @@
-package io.eel.packager;
+package io.eel.common;
 
 import com.google.gson.Gson;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -75,7 +75,7 @@ public class EelPackager {
      * @param author The author of the workbook.
      * @param name The name of the transformation.
      * @param version The version of the transformation.
-     * @return The {@link Path} of the {@link io.eel.packager.WorkbookValidator.Manifest} file.
+     * @return {@link io.eel.common.WorkbookValidator.Manifest}
      */
     public static WorkbookValidator.Manifest createManifest(
         final InputStream excelInputStream,

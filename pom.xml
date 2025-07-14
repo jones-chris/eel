@@ -11,6 +11,8 @@
     <modules>
         <module>core</module>
         <module>deployments</module>
+        <module>manifest-api</module>
+        <module>common</module>
     </modules>
 
     <properties>

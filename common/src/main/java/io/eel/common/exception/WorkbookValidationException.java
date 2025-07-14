@@ -1,4 +1,4 @@
-package io.eel.exception;
+package io.eel.common.exception;
 
 public class WorkbookValidationException extends RuntimeException {
 

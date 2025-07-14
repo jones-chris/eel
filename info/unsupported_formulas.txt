@@ -1,0 +1,173 @@
+Jul 01, 2025 11:23:26 PM io.eel.aws.StreamLambdaHandler main
+INFO: Unsupported Functions:
+
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ABSREF
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: APP.TITLE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ARGUMENT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ASC
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: BETADIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: BETAINV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: BINOMDIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CALL
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CELL
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CHIDIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CHIINV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CHITEST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CONFIDENCE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CRITBINOM
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DATEDIF
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DATESTRING
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DB
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DBCS
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DDB
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ENABLE.TOOL
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: END.IF
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ERROR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: EVALUATE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: EXEC
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: EXPONDIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FDIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FINDB
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FINV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FISHER
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FISHERINV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FTEST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GAMMADIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GAMMAINV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GAMMALN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GET.CELL
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GET.DOCUMENT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GET.WINDOW
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GET.WORKBOOK
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GET.WORKSPACE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GETPIVOTDATA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GOTO
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GROWTH
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: HARMEAN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: HYPGEOMDIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: INFO
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ISPMT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: KURT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LAST.ERROR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LEFTB
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LENB
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LINEST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LOGEST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LOGINV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LOGNORMDIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MIDB
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: N
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: NEGBINOMDIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: NUMBERSTRING
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PERMUT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PHONETIC
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PRESS.TOOL
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PROB
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: QUARTILE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: REGISTER.ID
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: RELREF
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: REPLACEB
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: RETURN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: RIGHTB
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: RSQ
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SAVE.TOOLBAR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SEARCHB
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SKEW
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SLN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: STEP
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: STEYX
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SYD
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TINV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TRIMMEAN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TTEST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TYPE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: USDOLLAR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: VDB
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: WEIBULL
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: WINDOW.TITLE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ZTEST

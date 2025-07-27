@@ -1,12 +1,14 @@
-package io.eel.packager;
+package io.eel.common;
 
-import io.eel.common.Constants;
-import io.eel.exception.WorkbookValidationException;
+import io.eel.common.exception.WorkbookValidationException;
 import org.apache.poi.ss.usermodel.*;
 
 import java.util.*;
+import java.util.logging.Logger;
 
 public class WorkbookValidator {
+
+    private static final Logger log = Logger.getLogger(WorkbookValidator.class.getName());
 
     private final List<Sheet> inputSheets = new ArrayList<>();
 
@@ -69,17 +71,20 @@ public class WorkbookValidator {
         List<SheetMetadata> inputSheetMetadata = this.inputSheets.stream()
                 .map(WorkbookValidator::getSheetMetadata)
                 .toList();
+        log.info("inputSheetMetadata: " + inputSheetMetadata);
 
-        List<SheetMetadata> outputSheetMeta = this.outputSheets.stream()
+        List<SheetMetadata> outputSheetMetadata = this.outputSheets.stream()
                 .map(WorkbookValidator::getSheetMetadata)
                 .toList();
+        log.info("outputSheetMetadata: " + outputSheetMetadata);
 
         return new Manifest(
+                UUID.randomUUID(),
                 this.author,
                 this.name,
                 this.version,
                 inputSheetMetadata,
-                outputSheetMeta
+                outputSheetMetadata
         );
     }
 
@@ -197,6 +202,7 @@ public class WorkbookValidator {
     }
 
     public record Manifest(
+            UUID id,
             String author,
             String name,
             int version,

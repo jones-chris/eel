@@ -3,7 +3,10 @@ package io.eel.model.proxy;
 import io.eel.common.Constants;
 import io.eel.model.WorkbookOutput;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +20,15 @@ public class WorkbookProxy implements AutoCloseable {
 
     public WorkbookProxy(Workbook workbook) {
         this.workbook = workbook;
+    }
+
+    public WorkbookProxy(InputStream inputStream) {
+        try {
+            this.workbook = new XSSFWorkbook(inputStream);
+        } catch (IOException e) {
+            // todo:  Add logging here.
+            throw new RuntimeException(e);
+        }
     }
 
     public Workbook getWorkbook() {

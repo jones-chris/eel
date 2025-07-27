@@ -1,0 +1,372 @@
+INFO: Supported Functions:
+
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ABS
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ACOS
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ACOSH
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ADDRESS
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: AND
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: AREAS
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ASIN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ASINH
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ATAN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ATAN2
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ATANH
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: AVEDEV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: AVERAGE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: AVERAGEA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CEILING
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CHAR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CHOOSE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CLEAN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CODE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: COLUMN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: COLUMNS
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: COMBIN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CONCATENATE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: CORREL
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: COS
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: COSH
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: COUNT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: COUNTA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: COUNTBLANK
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: COUNTIF
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: COVAR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DATE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DATEVALUE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DAVERAGE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DAY
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DAYS360
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DCOUNT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DCOUNTA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DEGREES
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DEVSQ
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DGET
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DMAX
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DMIN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DOLLAR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DPRODUCT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DSTDEV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DSTDEVP
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DSUM
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DVAR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: DVARP
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ERROR.TYPE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: EVEN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: EXACT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: EXP
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FACT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FALSE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FIND
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FIXED
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FLOOR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FORECAST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FREQUENCY
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: FV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: GEOMEAN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: HLOOKUP
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: HOUR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: HYPERLINK
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: IF
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: INDEX
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: INDIRECT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: INT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: INTERCEPT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: IPMT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: IRR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ISBLANK
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ISERR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ISERROR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ISLOGICAL
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ISNA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ISNONTEXT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ISNUMBER
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ISREF
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ISTEXT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LARGE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LEFT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LEN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LOG
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LOG10
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LOOKUP
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: LOWER
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MATCH
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MAX
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MAXA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MDETERM
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MEDIAN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MID
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MIN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MINA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MINUTE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MINVERSE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MIRR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MMULT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MOD
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MODE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: MONTH
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: NA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: NORMDIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: NORMINV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: NORMSDIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: NORMSINV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: NOT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: NOW
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: NPER
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: NPV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ODD
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: OFFSET
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: OR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PEARSON
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PERCENTILE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PERCENTRANK
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PI
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PMT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: POISSON
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: POWER
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PPMT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PRODUCT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PROPER
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: PV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: RADIANS
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: RAND
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: RANK
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: RATE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: REPLACE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: REPT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: RIGHT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ROMAN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ROUND
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ROUNDDOWN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ROUNDUP
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ROW
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: ROWS
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SEARCH
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SECOND
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SIGN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SIN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SINH
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SLOPE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SMALL
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SQRT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: STANDARDIZE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: STDEV
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: STDEVA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: STDEVP
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: STDEVPA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SUBSTITUTE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SUBTOTAL
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SUM
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SUMIF
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SUMPRODUCT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SUMSQ
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SUMX2MY2
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SUMX2PY2
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: SUMXMY2
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: T
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TAN
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TANH
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TDIST
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TEXT
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TIME
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TIMEVALUE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TODAY
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TRANSPOSE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TREND
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TRIM
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TRUE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: TRUNC
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: UPPER
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: VALUE
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: VAR
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: VARA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: VARP
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: VARPA
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: VLOOKUP
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: WEEKDAY
+Jul 01, 2025 11:23:26 PM java.lang.Iterable forEach
+INFO: YEAR

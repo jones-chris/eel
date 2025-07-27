@@ -16,8 +16,22 @@ public class HttpResponse {
         return status;
     }
 
-    public void setStatus(int status) {
+    public HttpResponse setStatus(int status) {
         this.status = status;
+        return this;
+    }
+
+    public Map<String, String> getHeaders() {
+        return this.headers;
+    }
+
+    public String getBody() {
+        return this.body;
+    }
+
+    public HttpResponse setBody(String body) {
+        this.body = body;
+        return this;
     }
 
     @Override

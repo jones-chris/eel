@@ -34,7 +34,7 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
     /**
      * The platform-dependent temp directory path.
      */
-    private static final String tmpPath = System.getProperty("java.io.tmpdir");
+    private static final String TMP_PATH = System.getProperty("java.io.tmpdir");
 
     private static final Gson gson = new GsonBuilder()
             .setPrettyPrinting()
@@ -88,7 +88,7 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
                     .build();
             ResponseBytes<GetObjectResponse> originalJarS3Object = s3Client.getObject(jarRequest, ResponseTransformer.toBytes());
             InputStream originalJarInputStream = originalJarS3Object.asInputStream();
-            File jarTmpFile = new File(tmpPath + "/NEW_EEL.jar");
+            File jarTmpFile = new File(TMP_PATH + "/NEW_EEL.jar");
             Files.copy(originalJarInputStream, jarTmpFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             originalJarInputStream.close();
 
@@ -101,7 +101,7 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
                     .build();
             ResponseBytes<GetObjectResponse> excelS3Object = s3Client.getObject(excelRequest, ResponseTransformer.toBytes());
             InputStream excelInputStream = excelS3Object.asInputStream();
-            File tmpFile = new File(tmpPath + "/hello.xlsx");
+            File tmpFile = new File(TMP_PATH + EEL_XLSX_FILE_NAME);
             Files.copy(excelInputStream, tmpFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             excelInputStream.close();
 
@@ -112,7 +112,7 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
             final String manifestJson = gson.toJson(manifest);
             log.info(manifestJson);
 
-            File tmpManifestFile = new File(tmpPath + "/eel_manifest.json");
+            File tmpManifestFile = new File(TMP_PATH + "/eel_manifest.json");
             Files.write(tmpManifestFile.toPath(), manifestJson.getBytes());
             log.info("Wrote manifest JSON to " + tmpManifestFile.getAbsolutePath());
 
@@ -122,21 +122,21 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
                     .exec(
                         new String[] {
                                 // Add manifest to JAR's resources.
-                                "jar", "uf", jarTmpFilePath, "-C", tmpPath, tmpManifestFile.getName()
+                                "jar", "uf", jarTmpFilePath, "-C", TMP_PATH, tmpManifestFile.getName()
                         }
                     );
-            awaitSubProcess(manifestCopyProcess);
+            await(manifestCopyProcess);
 
-            Process excelCopyProcess = Runtime.getRuntime()
-                    .exec(
+            // Add Excel file to JAR's resources.
+            await(
+                    Runtime.getRuntime().exec(
                             new String[] {
-                                // Add Excel file to JAR's resources.
-                                "jar", "uf", jarTmpFilePath, "-C", tmpPath, tmpFile.getName()
+                                "jar", "uf", jarTmpFilePath, "-C", TMP_PATH, tmpFile.getName()
                             }
-                    );
-            awaitSubProcess(excelCopyProcess);
+                    )
+            );
 
-            // Save JAR to S3 and return S3 path.
+            // Save JAR to S3.
             log.info("Writing file " + jarTmpFilePath + " to S3 bucket");
             PutObjectRequest putRequest = PutObjectRequest.builder()
                     .bucket("eel-test")
@@ -153,20 +153,11 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
         return "success";
     }
 
-    private static String getProcessErrorOutput(Process process) {
-        try (BufferedReader reader = process.errorReader()) {
-            return reader.lines()
-                    .collect(Collectors.joining());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void awaitSubProcess(Process process) throws InterruptedException {
+    private static void await(Process process) throws InterruptedException {
         int maxCounts = 3;
         int counts = 0;
         while (process.isAlive()) {
-            if (counts == maxCounts) {
+            if (counts >= maxCounts) {
                 throw new RuntimeException("Manifest copy process timed out");
             }
 
@@ -180,6 +171,15 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
             throw new RuntimeException(
                     String.format("Manifest Copy Process exited with status code %d.  Here is the error:  %s", exitCode, errorOutput)
             );
+        }
+    }
+
+    private static String getProcessErrorOutput(Process process) {
+        try (BufferedReader reader = process.errorReader()) {
+            return reader.lines()
+                    .collect(Collectors.joining());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

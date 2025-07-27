@@ -8,6 +8,8 @@ public interface ManifestDao {
 
     WorkbookValidator.Manifest getManifest(UUID uuid);
 
-    WorkbookValidator.Manifest createManifest(WorkbookValidator.Manifest manifest);
+    void saveManifest(WorkbookValidator.Manifest manifest);
+
+    boolean deleteManifest(UUID uuid);
 
 }

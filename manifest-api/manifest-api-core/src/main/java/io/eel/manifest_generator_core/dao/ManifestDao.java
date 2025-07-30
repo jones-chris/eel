@@ -1,14 +1,15 @@
 package io.eel.manifest_generator_core.dao;
 
 import io.eel.common.WorkbookValidator;
+import io.eel.common.WorkbookValidator.Manifest;
 
 import java.util.UUID;
 
 public interface ManifestDao {
 
-    WorkbookValidator.Manifest getManifest(UUID uuid);
+    Manifest getManifest(UUID uuid);
 
-    void saveManifest(WorkbookValidator.Manifest manifest);
+    Manifest saveManifest(Manifest manifest);
 
     boolean deleteManifest(UUID uuid);
 

@@ -2,7 +2,7 @@ package io.eel.manifest_api_aws_lambda.dao;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.eel.common.WorkbookValidator;
+import io.eel.common.WorkbookValidator.Manifest;
 import io.eel.manifest_generator_core.dao.ManifestDao;
 import org.apache.commons.lang3.NotImplementedException;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -27,12 +27,12 @@ public class AwsDynamoDbManifestDaoImpl implements ManifestDao {
     }
 
     @Override
-    public WorkbookValidator.Manifest getManifest(UUID uuid) {
+    public Manifest getManifest(UUID uuid) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void saveManifest(WorkbookValidator.Manifest manifest) {
+    public Manifest saveManifest(Manifest manifest) {
         final String manifestJsonString = gson.toJson(manifest);
 
         PutItemRequest putItemRequest = PutItemRequest.builder()
@@ -45,6 +45,8 @@ public class AwsDynamoDbManifestDaoImpl implements ManifestDao {
                 ).build();
 
         this.dynamoDbClient.putItem(putItemRequest);
+
+        return manifest;
     }
 
     @Override

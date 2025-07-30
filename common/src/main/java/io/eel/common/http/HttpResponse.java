@@ -6,18 +6,18 @@ import java.util.Objects;
 
 public class HttpResponse {
 
-    private int status;
+    private int statusCode;
 
     private final Map<String, String> headers = new HashMap<>();
 
     private String body;
 
-    public int getStatus() {
-        return status;
+    public int getStatusCode() {
+        return this.statusCode;
     }
 
-    public HttpResponse setStatus(int status) {
-        this.status = status;
+    public HttpResponse setStatusCode(int statusCode) {
+        this.statusCode = statusCode;
         return this;
     }
 
@@ -38,12 +38,12 @@ public class HttpResponse {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         HttpResponse that = (HttpResponse) o;
-        return status == that.status && Objects.equals(headers, that.headers) && Objects.equals(body, that.body);
+        return statusCode == that.statusCode && Objects.equals(headers, that.headers) && Objects.equals(body, that.body);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(status, headers, body);
+        return Objects.hash(statusCode, headers, body);
     }
 
 }

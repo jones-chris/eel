@@ -1,4 +1,4 @@
-package io.eel.manifest_api_aws_lambda;
+package io.eel.flow_api_aws_lambda;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -7,13 +7,10 @@ import io.eel.common.http.HttpRequest;
 import io.eel.common.http.HttpResponse;
 import io.eel.common.mappers.RequestMapper;
 import io.eel.common.mappers.aws.ApiGatewayProxyRequestMapper;
-import io.eel.manifest_api_aws_lambda.dao.AwsDynamoDbManifestDaoImpl;
-import io.eel.manifest_api_aws_lambda.dao.AwsS3WorkbookDaoImpl;
-import io.eel.manifest_generator_core.ManifestController;
-import io.eel.manifest_generator_core.dao.ManifestDao;
-import io.eel.manifest_generator_core.dao.WorkbookDao;
+import io.eel.flow_api_aws_lambda.dao.AwsDynamoDbFlowDaoImpl;
+import io.eel.flow_api_core.FlowController;
+import io.eel.flow_api_core.dao.FlowDao;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.s3.S3Client;
 
 import java.util.Map;
 import java.util.logging.Logger;
@@ -24,17 +21,14 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, Object>, 
 
     private final static RequestMapper<Map<String, Object>> requestMapper = new ApiGatewayProxyRequestMapper();
 
-    private final static ManifestDao manifestDao;
+    private final static FlowDao flowDao;
 
-    private final static WorkbookDao workbookDao;
-
-    private final static BaseController manifestController;
+    private final static BaseController flowController;
 
     static {
-        manifestDao = new AwsDynamoDbManifestDaoImpl(DynamoDbClient.create());
-        workbookDao = new AwsS3WorkbookDaoImpl(S3Client.builder().build());
+        flowDao = new AwsDynamoDbFlowDaoImpl(DynamoDbClient.create());
 
-        manifestController = new ManifestController(manifestDao, workbookDao);
+        flowController = new FlowController(flowDao);
     }
 
     @Override
@@ -45,7 +39,7 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, Object>, 
         final HttpRequest request = requestMapper.map(event);
         final HttpResponse response = new HttpResponse();
 
-        manifestController.handle(request, response);
+        flowController.handle(request, response);
 
         return response;
     }

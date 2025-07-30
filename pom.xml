@@ -13,6 +13,8 @@
         <module>deployments</module>
         <module>manifest-api</module>
         <module>common</module>
+        <module>flow-api</module>
+        <module>common-aws</module>
     </modules>
 
     <properties>

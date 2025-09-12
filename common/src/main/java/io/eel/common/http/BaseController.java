@@ -47,9 +47,15 @@ public abstract class BaseController {
 
     public final void handle(HttpRequest request, HttpResponse response) {
         try {
-            Optional.ofNullable(this.routeHandlers.get(Pair.of(request.getHttpMethod(), request.getPath())))
-                    .ifPresentOrElse(
-                            handler -> {
+            Optional.ofNullable(
+                    this.routeHandlers.get(
+                            Pair.of(
+                                    request.getHttpMethod(),
+                                    request.getPath()
+                            )
+                    )
+            ).ifPresentOrElse(
+                    (handler) -> {
                                 log.info("Route handler found for HTTP method and path: " + request.getHttpMethod() + " " + request.getPath());
                                 handler.accept(request, response);
                             },
@@ -60,6 +66,8 @@ public abstract class BaseController {
                     );
         } catch (Throwable t) {
             log.severe(t.getMessage());
+
+            // All responses will be a 500 response by default if a route handler throws an exception.
             internalServerError(response);
         }
     }

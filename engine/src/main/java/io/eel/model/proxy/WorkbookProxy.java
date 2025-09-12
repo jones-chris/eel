@@ -1,7 +1,7 @@
 package io.eel.model.proxy;
 
-import io.eel.common.Constants;
 import io.eel.model.WorkbookOutput;
+import io.eel.common.Constants;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 

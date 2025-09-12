@@ -10,6 +10,8 @@ import io.eel.common.mappers.aws.ApiGatewayProxyRequestMapper;
 import io.eel.flow_api_aws_lambda.dao.AwsDynamoDbFlowDaoImpl;
 import io.eel.flow_api_core.FlowController;
 import io.eel.flow_api_core.dao.FlowDao;
+import io.eel.flow_api_core.service.FlowService;
+import io.eel.flow_api_core.service.FlowServiceImpl;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 import java.util.Map;
@@ -23,12 +25,15 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, Object>, 
 
     private final static FlowDao flowDao;
 
+    private final static FlowService flowService;
+
     private final static BaseController flowController;
 
     static {
         flowDao = new AwsDynamoDbFlowDaoImpl(DynamoDbClient.create());
+        flowService = new FlowServiceImpl(flowDao);
 
-        flowController = new FlowController(flowDao);
+        flowController = new FlowController(flowService);
     }
 
     @Override

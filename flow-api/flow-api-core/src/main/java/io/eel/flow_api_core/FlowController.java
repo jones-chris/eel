@@ -131,11 +131,11 @@ public class FlowController extends BaseController {
         ).addRouteHandler(
                 "POST", "/flow/new",
                 (request, response) -> {
-                    final FlowInitDto flowInit = this.flowService.createNewFlow();
+                    final Flow flow = this.flowService.createNewFlow();
 
                     // Return UUID and presigned URL.
                     created(response).setBody(
-                            gson.toJson(flowInit)
+                            gson.toJson(flow)
                     );
 
                 }
@@ -154,6 +154,32 @@ public class FlowController extends BaseController {
                                         clientError(response);
                                     }
                             );
+                }
+        ).addRouteHandler(
+                "GET", "/flow/transformationLandingUrl",
+                (request, response) -> {
+                    if (! request.getQueryParameters().containsKey("id")) {
+                        log.severe("No 'id' query parameter");
+
+                        if (request.getQueryParameters().get("id").isEmpty()) {
+                            log.severe("'id' query parameter value is an empty list");
+                        }
+
+                        clientError(response);
+                        return;
+                    }
+
+                    final UUID flowId = UUID.fromString(request.getQueryParameters().get("id").getFirst());
+                    final String transformationLandingUrl = this.flowService.generateTransformationStagingPresignedUrl(flowId);
+
+                    ok(response).setBody(
+                            gson.toJson(
+                                    Map.of(
+                                            "id", flowId.toString(),
+                                            "url", transformationLandingUrl
+                                    )
+                            )
+                    );
                 }
         );
     }

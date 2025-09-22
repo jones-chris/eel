@@ -17,127 +17,52 @@ import static org.junit.jupiter.api.Assertions.*;
 class StreamLambdaHandlerTest {
 
     private final static String eventJsonString = """
-        {
-                  "body": {},
-                  "resource": "/{proxy+}",
-                  "path": "/flow/new",
-                  "httpMethod": "POST",
-                  "isBase64Encoded": true,
-                  "queryStringParameters": {},
-                  "multiValueQueryStringParameters": {
-                    "foo": [
-                      "bar"
-                    ]
-                  },
-                  "pathParameters": {
-                    "proxy": "/path/to/resource"
-                  },
-                  "stageVariables": {
-                    "baz": "qux"
-                  },
-                  "headers": {
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                    "Accept-Encoding": "gzip, deflate, sdch",
-                    "Accept-Language": "en-US,en;q=0.8",
-                    "Cache-Control": "max-age=0",
-                    "CloudFront-Forwarded-Proto": "https",
-                    "CloudFront-Is-Desktop-Viewer": "true",
-                    "CloudFront-Is-Mobile-Viewer": "false",
-                    "CloudFront-Is-SmartTV-Viewer": "false",
-                    "CloudFront-Is-Tablet-Viewer": "false",
-                    "CloudFront-Viewer-Country": "US",
-                    "Host": "1234567890.execute-api.us-east-1.amazonaws.com",
-                    "Upgrade-Insecure-Requests": "1",
-                    "User-Agent": "Custom User Agent String",
-                    "Via": "1.1 08f323deadbeefa7af34d5feb414ce27.cloudfront.net (CloudFront)",
-                    "X-Amz-Cf-Id": "cDehVQoZnx43VYQb9j2-nvCh-9z396Uhbp027Y2JvkCPNLmGJHqlaA==",
-                    "X-Forwarded-For": "127.0.0.1, 127.0.0.2",
-                    "X-Forwarded-Port": "443",
-                    "X-Forwarded-Proto": "https"
-                  },
-                  "multiValueHeaders": {
-                    "Accept": [
-                      "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-                    ],
-                    "Accept-Encoding": [
-                      "gzip, deflate, sdch"
-                    ],
-                    "Accept-Language": [
-                      "en-US,en;q=0.8"
-                    ],
-                    "Cache-Control": [
-                      "max-age=0"
-                    ],
-                    "CloudFront-Forwarded-Proto": [
-                      "https"
-                    ],
-                    "CloudFront-Is-Desktop-Viewer": [
-                      "true"
-                    ],
-                    "CloudFront-Is-Mobile-Viewer": [
-                      "false"
-                    ],
-                    "CloudFront-Is-SmartTV-Viewer": [
-                      "false"
-                    ],
-                    "CloudFront-Is-Tablet-Viewer": [
-                      "false"
-                    ],
-                    "CloudFront-Viewer-Country": [
-                      "US"
-                    ],
-                    "Host": [
-                      "0123456789.execute-api.us-east-1.amazonaws.com"
-                    ],
-                    "Upgrade-Insecure-Requests": [
-                      "1"
-                    ],
-                    "User-Agent": [
-                      "Custom User Agent String"
-                    ],
-                    "Via": [
-                      "1.1 08f323deadbeefa7af34d5feb414ce27.cloudfront.net (CloudFront)"
-                    ],
-                    "X-Amz-Cf-Id": [
-                      "cDehVQoZnx43VYQb9j2-nvCh-9z396Uhbp027Y2JvkCPNLmGJHqlaA=="
-                    ],
-                    "X-Forwarded-For": [
-                      "127.0.0.1, 127.0.0.2"
-                    ],
-                    "X-Forwarded-Port": [
-                      "443"
-                    ],
-                    "X-Forwarded-Proto": [
-                      "https"
-                    ]
-                  },
-                  "requestContext": {
-                    "accountId": "123456789012",
-                    "resourceId": "123456",
-                    "stage": "prod",
-                    "requestId": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
-                    "requestTime": "09/Apr/2015:12:34:56 +0000",
-                    "requestTimeEpoch": 1428582896000,
-                    "identity": {
-                      "cognitoIdentityPoolId": null,
-                      "accountId": null,
-                      "cognitoIdentityId": null,
-                      "caller": null,
-                      "accessKey": null,
-                      "sourceIp": "127.0.0.1",
-                      "cognitoAuthenticationType": null,
-                      "cognitoAuthenticationProvider": null,
-                      "userArn": null,
-                      "userAgent": "Custom User Agent String",
-                      "user": null
+       {
+                    "version": "2.0",
+                    "routeKey": "$default",
+                    "rawPath": "/flow/new",
+                    "rawQueryString": "",
+                    "headers": {
+                        "sec-fetch-mode": "cors",
+                        "referer": "http://localhost:63342/",
+                        "content-length": "0",
+                        "x-amzn-tls-version": "TLSv1.3",
+                        "sec-fetch-site": "cross-site",
+                        "x-forwarded-proto": "https",
+                        "accept-language": "en-US,en;q=0.5",
+                        "origin": "http://localhost:63342",
+                        "x-forwarded-port": "443",
+                        "x-forwarded-for": "2600:1700:4171:3a90:1652:72c0:17f6:3118",
+                        "priority": "u=4",
+                        "accept": "*/*",
+                        "x-amzn-tls-cipher-suite": "TLS_AES_128_GCM_SHA256",
+                        "x-amzn-trace-id": "Root=1-68d096fe-4228d9f86b021c43192c4f7b",
+                        "host": "5kv4haftclb3uzzltu4fjumsim0svguy.lambda-url.us-east-1.on.aws",
+                        "accept-encoding": "gzip, deflate, br, zstd",
+                        "user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0",
+                        "sec-fetch-dest": "empty"
                     },
-                    "path": "/prod/path/to/resource",
-                    "resourcePath": "/{proxy+}",
-                    "httpMethod": "POST",
-                    "apiId": "1234567890",
-                    "protocol": "HTTP/1.1"
-                  }
-                }       \s
+                    "requestContext": {
+                        "accountId": "anonymous",
+                        "apiId": "5kv4haftclb3uzzltu4fjumsim0svguy",
+                        "domainName": "5kv4haftclb3uzzltu4fjumsim0svguy.lambda-url.us-east-1.on.aws",
+                        "domainPrefix": "5kv4haftclb3uzzltu4fjumsim0svguy",
+                        "http": {
+                            "method": "POST",
+                            "path": "/flow/new",
+                            "protocol": "HTTP/1.1",
+                            "sourceIp": "2600:1700:4171:3a90:1652:72c0:17f6:3118",
+                            "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"
+                        },
+                        "requestId": "faba8bce-3456-4ca7-89b8-b374c069a432",
+                        "routeKey": "$default",
+                        "stage": "$default",
+                        "time": "22/Sep/2025:00:23:26 +0000",
+                        "timeEpoch": 1758500606418
+                    },
+                    "isBase64Encoded": false
+                }
+       \s
    \s""";
 
     private final static Gson gson = new GsonBuilder().setPrettyPrinting().create();

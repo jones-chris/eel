@@ -12,8 +12,6 @@ public class Flow{
 
     private String author;
 
-    private String transformationStagingUrl;
-
     private InputType inputType;
 
     private ScheduledBatchConfiguration scheduledBatchConfiguration;
@@ -28,7 +26,6 @@ public class Flow{
 
     private Flow(
             String author,
-            String transformationStagingUrl,
             InputType inputType,
             ScheduledBatchConfiguration scheduledBatchConfiguration,
             StreamingConfiguration streamingConfiguration,
@@ -36,7 +33,6 @@ public class Flow{
             boolean isFinalized
     ) {
         this.author = author;
-        this.transformationStagingUrl = transformationStagingUrl;
         this.inputType = inputType;
         this.scheduledBatchConfiguration = scheduledBatchConfiguration;
         this.streamingConfiguration = streamingConfiguration;
@@ -78,34 +74,34 @@ public class Flow{
     }
 
     public static Flow create(String author) {
-        return new Flow(author, null, null, null, null, null, false);
+        return new Flow(author, null, null, null, null, false);
     }
 
-    public static Flow create(String author, String transformationStagingUrl) {
-        return new Flow(author, transformationStagingUrl, null, null, null, null, false);
-    }
+//    public static Flow create(String author, String transformationStagingUrl) {
+//        return new Flow(author, transformationStagingUrl, null, null, null, false);
+//    }
 
     public Flow increment() {
         this.version = this.version + 1;
         return this;
     }
 
-    public Flow updateTransformationStagingUrl(FlowInitDto flowInit) {
-        // Only create a new Flow object with a new transformation staging URL if the flow and flowInit IDs and versions are the same.
-        if (! flowInit.id().equals(this.id) || flowInit.version() != this.version) {
-            throw new IllegalArgumentException(
-                String.format(
-                        "FlowInit and Flow objects must have the same IDs and versions.  FlowInit %s v%d, Flow %s v%d",
-                        flowInit.id(), flowInit.version(),
-                        this.id, this.version
-                )
-            );
-        }
-
-        this.transformationStagingUrl = flowInit.transformationStagingUrl();
-
-        return this;
-    }
+//    public Flow updateTransformationStagingUrl(FlowInitDto flowInit) {
+//        // Only create a new Flow object with a new transformation staging URL if the flow and flowInit IDs and versions are the same.
+//        if (! flowInit.id().equals(this.id) || flowInit.version() != this.version) {
+//            throw new IllegalArgumentException(
+//                String.format(
+//                        "FlowInit and Flow objects must have the same IDs and versions.  FlowInit %s v%d, Flow %s v%d",
+//                        flowInit.id(), flowInit.version(),
+//                        this.id, this.version
+//                )
+//            );
+//        }
+//
+//        this.transformationStagingUrl = flowInit.transformationStagingUrl();
+//
+//        return this;
+//    }
 
     public UUID getId() {
         return id;
@@ -117,10 +113,6 @@ public class Flow{
 
     public String getAuthor() {
         return author;
-    }
-
-    public String getTransformationStagingUrl() {
-        return transformationStagingUrl;
     }
 
     public InputType getInputType() {

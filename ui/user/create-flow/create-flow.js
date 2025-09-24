@@ -58,10 +58,10 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
         body: formData
     });
     if (response.status !== 200) {
-        throw Error(`Received status of ${response.status}`)
-
         console.error('Error:', error);
         alert('There was an error uploading your file.  Please contact your administrator.');
+
+        throw Error(`Received status of ${response.status}`)
     }
 
     alert('Workbook successfully uploaded.  Inspecting workbook.')

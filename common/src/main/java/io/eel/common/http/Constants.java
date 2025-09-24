@@ -4,10 +4,6 @@ import java.util.function.Supplier;
 
 public class Constants {
 
-    public static final Supplier<HttpResponse> defaultInternalServerErrorResponseSupplier = () -> new HttpResponse().setStatusCode(500);
-
-    public static final Supplier<HttpResponse> defaultResourceNotFoundResponseSupplier = () -> new HttpResponse().setStatusCode(404);
-
     public static void notFound(HttpResponse httpResponse) {
         httpResponse
                 .setStatusCode(404)

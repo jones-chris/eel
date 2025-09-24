@@ -82,16 +82,6 @@ public class FlowController extends BaseController {
                                     () -> notFound(response)
                             );
                 }
-//        ).addRouteHandler(
-//                POST, "/flow",
-//                (request, response) -> {
-//                    final Flow flow = Flow.create();
-//
-//                    final Flow persistedFlow = this.flowDao.flo(flow);
-//
-//                    created(response)
-//                            .setBody(gson.toJson(persistedFlow));
-//                }
         ).addRouteHandler(
                 // Updates an existing flow.
                 PUT, "/flow/update",

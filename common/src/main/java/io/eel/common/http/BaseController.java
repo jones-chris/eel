@@ -56,14 +56,14 @@ public abstract class BaseController {
                     )
             ).ifPresentOrElse(
                     (handler) -> {
-                                log.info("Route handler found for HTTP method and path: " + request.getHttpMethod() + " " + request.getPath());
-                                handler.accept(request, response);
-                            },
-                            () -> {
-                                log.severe("No route handler found for HTTP method and path: " + request.getHttpMethod() + " " + request.getPath());
-                                notFound(response);
-                            }
-                    );
+                        log.info("Route handler found for HTTP method and path: " + request.getHttpMethod() + " " + request.getPath());
+                        handler.accept(request, response);
+                    },
+                    () -> {
+                        log.severe("No route handler found for HTTP method and path: " + request.getHttpMethod() + " " + request.getPath());
+                        notFound(response);
+                    }
+            );
         } catch (Throwable t) {
             log.severe(t.getMessage());
 

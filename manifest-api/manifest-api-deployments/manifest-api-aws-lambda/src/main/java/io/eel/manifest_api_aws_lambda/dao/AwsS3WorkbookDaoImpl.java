@@ -32,6 +32,7 @@ public class AwsS3WorkbookDaoImpl implements WorkbookDao {
                 .key(key)
                 .build();
 
+        log.info("Getting workbook at bucket " + bucket + " and key " + key);
         ResponseBytes<GetObjectResponse> workbookS3Object = this.s3Client.getObject(request, ResponseTransformer.toBytes());
 
         try (InputStream inputStream = workbookS3Object.asInputStream()) {

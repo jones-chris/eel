@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder;
 import io.eel.common.http.BaseController;
 import io.eel.common.http.HttpRequest;
 import io.eel.common.model.Flow;
-import io.eel.common.model.FlowInitDto;
 import io.eel.flow_api_core.service.FlowService;
 
 import java.util.*;

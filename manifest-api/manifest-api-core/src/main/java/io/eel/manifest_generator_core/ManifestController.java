@@ -1,31 +1,37 @@
 package io.eel.manifest_generator_core;
 
-import io.eel.common.WorkbookValidator;
 import io.eel.common.WorkbookValidator.Manifest;
 import io.eel.common.http.BaseController;
 import io.eel.common.model.WorkbookMetadata;
 import io.eel.manifest_generator_core.dao.ManifestDao;
 import io.eel.manifest_generator_core.dao.WorkbookDao;
-import io.eel.model.proxy.WorkbookProxy;
+import io.eel.manifest_generator_core.service.ManifestService;
 
 import java.util.Optional;
 import java.util.UUID;
 
+import static io.eel.common.http.Constants.notFound;
+
 public class ManifestController extends BaseController {
 
+    // todo:  clean up this unused field.
     private ManifestDao manifestDao;
 
+    private ManifestService manifestService;
+
+    // todo:  clean up this unused field.
     private WorkbookDao workbookDao;
 
     private ManifestController() {
         super();
     }
 
-    public ManifestController(ManifestDao manifestDao, WorkbookDao workbookDao) {
+    public ManifestController(ManifestDao manifestDao, WorkbookDao workbookDao, ManifestService manifestService) {
         super();
 
         this.manifestDao = manifestDao;
         this.workbookDao = workbookDao;
+        this.manifestService = manifestService;
 
         this.addRouteHandler(
                 GET, "/manifest",
@@ -38,10 +44,11 @@ public class ManifestController extends BaseController {
                         return;
                     }
 
-                    Manifest manifest = this.manifestDao.getManifest(manifestUuid.get());
-
-                    response.setStatusCode(200)
-                            .setBody(gson.toJson(manifest));
+                    this.manifestService.getManifest(manifestUuid.get())
+                        .ifPresentOrElse(
+                                manifest -> response.setStatusCode(200).setBody(gson.toJson(manifest)),
+                                () -> notFound(response)
+                        );
                 }
         ).addRouteHandler(
                 POST, "/manifest",
@@ -57,37 +64,14 @@ public class ManifestController extends BaseController {
                     final String bucket = request.getBody().get("bucket").getAsString();
                     final String key = request.getBody().get("key").getAsString();
 
-                    // Get workbook from bucket.
-                    log.info("Getting workbook at bucket " + bucket + " and key " + key);
-                    try (
-                            final WorkbookProxy workbookProxy = this.workbookDao.getWorkbook(bucket, key)
-                                    .orElseThrow(() -> new RuntimeException("Error encountered when retrieving workbook"));
-                    ) {
+                    // Get workbook metadata like author, name, and version from request body.
+                    final WorkbookMetadata workbookMetadata = gson.fromJson(request.getBody(), WorkbookMetadata.class);
 
-                        // Get workbook metadata like author, name, and version from request body.
-                        final WorkbookMetadata workbookMetadata = gson.fromJson(request.getBody(), WorkbookMetadata.class);
+                    Manifest manifest = this.manifestService.createManifest(bucket, key, workbookMetadata);
 
-                        // Call validator to create the manifest.
-                        Manifest manifest = new WorkbookValidator(
-                                workbookProxy.getWorkbook(),
-                                workbookMetadata.author(), // todo:  make this constructor take a WorkbookMetadata parameter instead of unpacking the object into separate parameters.
-                                workbookMetadata.name(),
-                                workbookMetadata.version()
-                        ).assertIsValid()
-                                .createManifest();
-                        log.info("Created manifest: " + gson.toJson(manifest));
-
-                        // Persist the manifest.
-                        manifest = this.manifestDao.saveManifest(manifest);
-
-                        // Craft the HTTP response.
-                        response.setStatusCode(201)
-                                .setBody(gson.toJson(manifest));
-                    } catch (Throwable t) {
-                        log.severe(t.getMessage());
-
-                        response.setStatusCode(500);
-                    }
+                    // Craft the HTTP response.
+                    response.setStatusCode(201)
+                            .setBody(gson.toJson(manifest));
                 }
         );
     }

@@ -23,7 +23,7 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
 
     private String partitionKey;
 
-    private DynamoDbClient dynamoDbClient;
+    protected DynamoDbClient dynamoDbClient;
 
     private static final Gson gson = new GsonBuilder()
             .setPrettyPrinting()

@@ -46,7 +46,7 @@ public class S3PutObjectHandler implements RequestHandler<S3Event, String> {
 
                         log.info("Getting workbook at bucket {} and key {}", bucket, key);
 
-                        // todo: get the workbook metadata somehow.
+                        // todo: get the workbook metadata somehow.  Get it from the flow??
                         final WorkbookMetadata workbookMetadata = new WorkbookMetadata("me", "myEelTransformation", 0);
 
                         manifestService.createManifest(bucket, key, workbookMetadata);

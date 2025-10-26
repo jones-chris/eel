@@ -82,6 +82,10 @@ public class Flow{
         return this;
     }
 
+    public String getCanonicalId() {
+        return Utils.getCanonicalId(this.id, this.version);
+    }
+
     public UUID getId() {
         return id;
     }
@@ -132,6 +136,14 @@ public class Flow{
 
     public void setFinalized(boolean finalized) {
         isFinalized = finalized;
+    }
+
+    public static class Utils {
+
+        public static String getCanonicalId(UUID id, int version) {
+            return String.format("%s#%d", id.toString(), version);
+        }
+
     }
 }
 

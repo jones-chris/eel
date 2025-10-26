@@ -3,6 +3,7 @@ package io.eel.manifest_generator_core.service;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.eel.common.WorkbookValidator;
+import io.eel.common.model.Flow;
 import io.eel.common.model.WorkbookMetadata;
 import io.eel.manifest_generator_core.dao.ManifestDao;
 import io.eel.manifest_generator_core.dao.WorkbookDao;
@@ -45,7 +46,8 @@ public class ManifestServiceImpl implements ManifestService {
                     workbookProxy.getWorkbook(),
                     workbookMetadata.author(), // todo:  make this constructor take a WorkbookMetadata parameter instead of unpacking the object into separate parameters.
                     workbookMetadata.name(),
-                    workbookMetadata.version()
+                    workbookMetadata.version(),
+                    UUID.fromString(key)
             ).assertIsValid()
             .createManifest();
 
@@ -62,9 +64,10 @@ public class ManifestServiceImpl implements ManifestService {
     }
 
     @Override
-    public Optional<WorkbookValidator.Manifest> getManifest(UUID id) {
+    public Optional<WorkbookValidator.Manifest> getManifest(UUID id, int version) {
         try {
-            return Optional.ofNullable(this.manifestDao.getManifest(id));
+            final String manifestCanonicalId = Flow.Utils.getCanonicalId(id, version);
+            return this.manifestDao.getManifest(manifestCanonicalId);
         } catch (Throwable t) {
             log.severe(t.getMessage()); // todo:  log stack trace here too.
             return Optional.empty();

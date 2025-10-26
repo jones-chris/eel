@@ -11,6 +11,6 @@ public interface ManifestService {
 
     WorkbookValidator.Manifest createManifest(String bucket, String key, WorkbookMetadata workbookMetadata) throws ManifestGenerationException;
 
-    Optional<WorkbookValidator.Manifest> getManifest(UUID id);
+    Optional<WorkbookValidator.Manifest> getManifest(UUID id, int version);
 
 }

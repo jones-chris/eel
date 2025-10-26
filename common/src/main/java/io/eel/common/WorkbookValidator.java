@@ -1,6 +1,7 @@
 package io.eel.common;
 
 import io.eel.common.exception.WorkbookValidationException;
+import io.eel.common.model.Flow;
 import org.apache.poi.ss.usermodel.*;
 
 import java.util.*;
@@ -22,11 +23,14 @@ public class WorkbookValidator {
 
     private final int version;
 
-    public WorkbookValidator(Workbook workbook, String author, String name, int version) {
+    private final UUID id;
+
+    public WorkbookValidator(Workbook workbook, String author, String name, int version, UUID id) {
         this.workbook = workbook;
         this.author = (author == null) ? System.getProperty("user.name") : author;
         this.name = name;
         this.version = version;
+        this.id = id;
     }
 
     public WorkbookValidator assertIsValid() {
@@ -46,7 +50,7 @@ public class WorkbookValidator {
                 assertOutputSheetIsValid(sheet);
             }
             else {
-                // transformer/calculation sheet validation.
+                // todo:  transformer/calculation sheet validation.
             }
         }
 
@@ -79,10 +83,11 @@ public class WorkbookValidator {
         log.info("outputSheetMetadata: " + outputSheetMetadata);
 
         return new Manifest(
-                UUID.randomUUID(),
+                this.id,
                 this.author,
                 this.name,
                 this.version,
+                Flow.Utils.getCanonicalId(this.id, this.version),
                 inputSheetMetadata,
                 outputSheetMetadata
         );
@@ -202,10 +207,11 @@ public class WorkbookValidator {
     }
 
     public record Manifest(
-            UUID id,
+            UUID flowId,
             String author,
             String name,
-            int version,
+            int flowVersion,
+            String flowCanonicalId,
             List<SheetMetadata> inputSheetsMetadata,
             List<SheetMetadata> outputSheetsMetadata
     ) {}

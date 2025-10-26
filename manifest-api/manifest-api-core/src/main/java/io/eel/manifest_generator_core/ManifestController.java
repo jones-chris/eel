@@ -3,34 +3,24 @@ package io.eel.manifest_generator_core;
 import io.eel.common.WorkbookValidator.Manifest;
 import io.eel.common.http.BaseController;
 import io.eel.common.model.WorkbookMetadata;
-import io.eel.manifest_generator_core.dao.ManifestDao;
-import io.eel.manifest_generator_core.dao.WorkbookDao;
 import io.eel.manifest_generator_core.service.ManifestService;
 
 import java.util.Optional;
 import java.util.UUID;
 
-import static io.eel.common.http.Constants.notFound;
+import static io.eel.common.http.Constants.*;
 
 public class ManifestController extends BaseController {
 
-    // todo:  clean up this unused field.
-    private ManifestDao manifestDao;
-
     private ManifestService manifestService;
-
-    // todo:  clean up this unused field.
-    private WorkbookDao workbookDao;
 
     private ManifestController() {
         super();
     }
 
-    public ManifestController(ManifestDao manifestDao, WorkbookDao workbookDao, ManifestService manifestService) {
+    public ManifestController(ManifestService manifestService) {
         super();
 
-        this.manifestDao = manifestDao;
-        this.workbookDao = workbookDao;
         this.manifestService = manifestService;
 
         this.addRouteHandler(
@@ -39,14 +29,17 @@ public class ManifestController extends BaseController {
                     Optional<UUID> manifestUuid = Optional.ofNullable(request.getQueryParameters().get("uuid").getFirst())
                             .map(UUID::fromString);
 
-                    if (manifestUuid.isEmpty()) {
-                        response.setStatusCode(400);
+                    Optional<Integer> manifestVersion = Optional.ofNullable(request.getQueryParameters().get("version").getFirst())
+                            .map(Integer::parseInt);
+
+                    if (manifestUuid.isEmpty() || manifestVersion.isEmpty()) {
+                        clientError(response);
                         return;
                     }
 
-                    this.manifestService.getManifest(manifestUuid.get())
+                    this.manifestService.getManifest(manifestUuid.get(), manifestVersion.get())
                         .ifPresentOrElse(
-                                manifest -> response.setStatusCode(200).setBody(gson.toJson(manifest)),
+                                manifest -> ok(response).setBody(gson.toJson(manifest)),
                                 () -> notFound(response)
                         );
                 }
@@ -56,7 +49,7 @@ public class ManifestController extends BaseController {
                     if (request.getBody().isEmpty()) {
                         log.severe("Request body is empty");
 
-                        response.setStatusCode(400);
+                        notFound(response);
                         return;
                     }
 
@@ -70,8 +63,7 @@ public class ManifestController extends BaseController {
                     Manifest manifest = this.manifestService.createManifest(bucket, key, workbookMetadata);
 
                     // Craft the HTTP response.
-                    response.setStatusCode(201)
-                            .setBody(gson.toJson(manifest));
+                    created(response).setBody(gson.toJson(manifest));
                 }
         );
     }

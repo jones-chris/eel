@@ -10,6 +10,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Optional;
+import java.util.UUID;
 
 public class EelPackager {
 
@@ -41,8 +43,13 @@ public class EelPackager {
         // Get version.
         final int version = Integer.parseInt(args[3]);
 
+        // Get id.
+        final UUID id = Optional.ofNullable(args[4])
+                .map(UUID::fromString)
+                .orElse(UUID.randomUUID());
+
         // Generate the manifest, serialize it to JSON, and write it to a file.
-        WorkbookValidator.Manifest manifest = createManifest(excelFileName, author, name, version);
+        WorkbookValidator.Manifest manifest = createManifest(excelFileName, author, name, version, id);
 
         String manifestJson = gson.toJson(manifest);
 
@@ -62,10 +69,11 @@ public class EelPackager {
             final String excelFileName,
             final String author,
             final String name,
-            final Integer version
+            final Integer version,
+            final UUID id
     ) throws IOException {
         Workbook workbook = WorkbookFactory.create(new File(excelFileName));
-        return createManifest(workbook, author, name, version);
+        return createManifest(workbook, author, name, version, id);
     }
 
     /**
@@ -81,19 +89,21 @@ public class EelPackager {
         final InputStream excelInputStream,
         final String author,
         final String name,
-        final Integer version
+        final Integer version,
+        final UUID id
     ) throws IOException {
         Workbook workbook = WorkbookFactory.create(excelInputStream);
-        return createManifest(workbook, author, name, version);
+        return createManifest(workbook, author, name, version, id);
     }
 
     private static WorkbookValidator.Manifest createManifest(
         final Workbook workbook,
         final String author,
         final String name,
-        final Integer version
+        final Integer version,
+        final UUID id
     ) {
-        return new WorkbookValidator(workbook, author, name, version)
+        return new WorkbookValidator(workbook, author, name, version, id)
                 .assertIsValid()
                 .createManifest();
     }

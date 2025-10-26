@@ -11,7 +11,7 @@ public interface FlowDao {
 
     Set<UUID> getFlowsByUser(String userName);
 
-    Optional<Flow> getFlowById(UUID id);
+    Optional<Flow> getFlowByCanonicalId(String canonicalId);
 
     Flow updateFlow(Flow flow);
 
@@ -19,6 +19,6 @@ public interface FlowDao {
 
     String generateTransformationStagingPresignedUrl(UUID flowId);
 
-    void saveFileToS3(Path path);
+//    void saveFileToS3(Path path);
 
 }

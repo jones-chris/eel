@@ -1,6 +1,6 @@
 let flowId = null;
 let flowVersion = null;
-let apiDomain =;
+let apiDomain = '';
 let manifestApiDomain = '';
 
 async function getPresignedUrl() {

@@ -1,6 +1,6 @@
 let flowId = null;
 let flowVersion = null;
-let apiDomain = '';
+let apiDomain =;
 let manifestApiDomain = '';
 
 async function getPresignedUrl() {
@@ -75,6 +75,9 @@ window.onload = function() {
 // Upload the transformation xlsx file.
 document.getElementById('fileUploadForm').addEventListener('submit', async function(event) {
     console.log("Inside file upload submit event listener")
+
+    toggleLoading();
+
     event.preventDefault(); // Prevent the default form submission
 
     const formData = new FormData(this); // Create a FormData object from the form
@@ -126,4 +129,18 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
     if (manifest !== null) {
         console.log('Visualizing manifest...');
     }
+
+    toggleLoading();
 });
+
+function toggleLoading() {
+    const uploadSpinnerElement = document.getElementById('uploadSpinner');
+    uploadSpinnerElement.hidden = ! uploadSpinnerElement.hidden;
+
+    const uploadButtonElement = document.getElementById('uploadButtonText');
+    if (uploadSpinnerElement.hidden) {
+        uploadButtonElement.innerText = 'Upload';
+    } else {
+        uploadButtonElement.innerText = 'Inspecting...';
+    }
+}

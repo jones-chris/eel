@@ -24,7 +24,10 @@
                 <label for="fileInput" class="form-label">Upload File</label>
                 <input type="file" class="form-control" id="fileInput" name="file" required>
             </div>
-            <button type="submit" class="btn btn-primary">Upload</button>
+            <button id="uploadButton" type="submit" class="btn btn-primary">
+                <span id="uploadSpinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" hidden></span>
+                <span id="uploadButtonText">Upload</span>
+            </button>
         </form>
     </div>
 </body>

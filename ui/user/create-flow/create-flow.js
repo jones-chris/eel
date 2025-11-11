@@ -2,6 +2,7 @@ let flowId = null;
 let flowVersion = null;
 let apiDomain = '';
 let manifestApiDomain = '';
+let inputSources = [];
 
 async function getPresignedUrl() {
     let response = await fetch(`${apiDomain}/flow/transformationLandingUrl?id=${flowId}`, {
@@ -144,3 +145,17 @@ function toggleLoading() {
         uploadButtonElement.innerText = 'Inspecting...';
     }
 }
+
+fetch('./manifest-test.json')
+    .then(response => response.json())
+    .then(json => {
+        let inputSourceRootElement = document.getElementById('inputSources');
+        for (let inputSheetId in Object.keys(json['inputSheetsMetadata'])) {
+            let inputSheetMetadata = json['inputSheetsMetadata'][inputSheetId];
+
+            let inputSource = new InputSource(inputSheetMetadata);
+            inputSources.push(inputSource);
+
+            inputSourceRootElement.appendChild(inputSource);
+        }
+    });

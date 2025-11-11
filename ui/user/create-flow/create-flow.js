@@ -2,7 +2,12 @@ let flowId = null;
 let flowVersion = null;
 let apiDomain = '';
 let manifestApiDomain = '';
-let inputSources = [];
+const state = {
+    inputSources: [],
+    sqlTransformations: [],
+    outputDestinations: []
+}
+let destinationsService = new DestinationService(apiDomain);
 
 async function getPresignedUrl() {
     let response = await fetch(`${apiDomain}/flow/transformationLandingUrl?id=${flowId}`, {
@@ -149,13 +154,31 @@ function toggleLoading() {
 fetch('./manifest-test.json')
     .then(response => response.json())
     .then(json => {
+        // Render input sources.
         let inputSourceRootElement = document.getElementById('inputSources');
         for (let inputSheetId in Object.keys(json['inputSheetsMetadata'])) {
             let inputSheetMetadata = json['inputSheetsMetadata'][inputSheetId];
 
             let inputSource = new InputSource(inputSheetMetadata);
-            inputSources.push(inputSource);
+            state.inputSources.push(inputSource);
 
             inputSourceRootElement.appendChild(inputSource);
+        }
+
+        // Render SQL transformations.
+        let sqlTransformationRootElement = document.getElementById('sqlTransformations');
+        let sqlTransformationScriptElement = new SqlTransformation();
+        state.sqlTransformations.push(sqlTransformationScriptElement);
+        sqlTransformationRootElement.appendChild(sqlTransformationScriptElement);
+
+        // Render output destinations.
+        let outputDestinationsRootElement = document.getElementById('outputDestinations');
+        for (let outputSheetId in Object.keys(json['outputSheetsMetadata'])) {
+            let outputSheetMetadata = json['outputSheetsMetadata'][outputSheetId];
+            
+            let outputDestination = new OutputDestination(outputSheetMetadata, destinationsService);
+            state.outputDestinations.push(outputDestination);
+
+            outputDestinationsRootElement.appendChild(outputDestination);
         }
     });

@@ -1,5 +1,3 @@
-
-
 class InputSource extends HTMLElement {
 
     name;
@@ -54,7 +52,7 @@ class InputSource extends HTMLElement {
     constructor(inputSheetMetadata) {
         super();
 
-        this.name= inputSheetMetadata?.name;
+        this.name = inputSheetMetadata?.name;
         this.columnNames = inputSheetMetadata?.columnNames;
         this.columnDataTypes = inputSheetMetadata?.columnDataTypes;
     }
@@ -63,12 +61,10 @@ class InputSource extends HTMLElement {
         const template = document.createElement('template');
         template.innerHTML = this.render();
 
-        // Attach a Shadow DOM root
         this.attachShadow({ mode: 'open' });
-        // Clone the template content and append it to the shadow root
         this.shadowRoot.appendChild(template.content.cloneNode(true));
 
-        // Add state update functions as event listeners.
+        // Attach state handlers.
         // 1. DataSource
         const selectElement = this.shadowRoot.getElementById(`dataSource-${this.name}`);
         selectElement.addEventListener('change', this.handleDataSourceChange.bind(this));

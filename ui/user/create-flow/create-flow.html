@@ -13,6 +13,9 @@
 
     <script src="../../utils/utils.js"></script>
     <script src="../../shared/input-source.js"></script>
+    <script src="../../shared/sql-transformation.js"></script>
+    <script src="../../shared/output-destination.js"></script>
+    <script src="./DestinationService.js"></script>
     <title>Hello, world!</title>
 </head>
 <body>
@@ -36,7 +39,7 @@
                     <form id="fileUploadForm" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label for="fileInput" class="form-label">Upload File</label>
-                            <input type="file" class="form-control" id="fileInput" name="file" required>
+                            <input type="file" class="form-control" id="fileInput" name="file" required style="width: auto;" >
                         </div>
                         <button id="uploadButton" type="submit" class="btn btn-primary">
                             <span id="uploadSpinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" hidden></span>
@@ -47,61 +50,10 @@
             </td>
 
             <!-- SQL post processor scripts -->
-            <td id="sqlPostProcessorScripts">
-                <div class="card" style="width: 18rem;">
-                    <img src="..." class="card-img-top" alt="...">
-                    <div class="card-body">
-                        <h5 class="card-title">Card title</h5>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card’s content.</p>
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">An item</li>
-                        <li class="list-group-item">A second item</li>
-                        <li class="list-group-item">A third item</li>
-                    </ul>
-                    <div class="card-body">
-                        <a href="#" class="card-link">Card link</a>
-                        <a href="#" class="card-link">Another link</a>
-                    </div>
-                </div>
-            </td>
+            <td id="sqlTransformations"></td>
 
             <!-- Output destinations -->
-            <td id="outputDestinations">
-                <div class="card" style="width: 18rem;">
-                    <img src="..." class="card-img-top" alt="...">
-                    <div class="card-body">
-                        <h5 class="card-title">Card title</h5>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card’s content.</p>
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">An item</li>
-                        <li class="list-group-item">A second item</li>
-                        <li class="list-group-item">A third item</li>
-                    </ul>
-                    <div class="card-body">
-                        <a href="#" class="card-link">Card link</a>
-                        <a href="#" class="card-link">Another link</a>
-                    </div>
-                </div>
-
-                <div class="card" style="width: 18rem;">
-                    <img src="..." class="card-img-top" alt="...">
-                    <div class="card-body">
-                        <h5 class="card-title">Card title</h5>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card’s content.</p>
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">An item</li>
-                        <li class="list-group-item">A second item</li>
-                        <li class="list-group-item">A third item</li>
-                    </ul>
-                    <div class="card-body">
-                        <a href="#" class="card-link">Card link</a>
-                        <a href="#" class="card-link">Another link</a>
-                    </div>
-                </div>
-            </td>
+            <td id="outputDestinations"></td>
         </tr>
     </table>
 </body>

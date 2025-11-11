@@ -1,0 +1,52 @@
+{
+    "dataSources": {
+        "email-finance": {
+            "metadata": {
+                "type": "email",
+                "parameters": {
+                    "Subject": {
+                        "type": "String",
+                        "isRequired": true,
+                        "help": "The email subject",
+                        "validations": {
+                            "minLength": 0,
+                            "maxLength": 100
+                        }
+                    },
+                    "Body": {
+                        "type": "String",
+                        "isRequired": false,
+                        "help": "The email body",
+                        "validations": {
+                            "minLength": 0,
+                            "maxLength": 5000
+                        }
+                    }
+                }
+            }
+        },
+        "write-to-finance-db": {
+            "metadata": {
+                "type": "db-write",
+                "parameters": {
+                    "id": {
+                        "type": "Integer",
+                        "isRequired": true
+                    },
+                    "full_name": {
+                        "type": "String",
+                        "isRequired": true
+                    },
+                    "birth_date": {
+                        "type": "Date",
+                        "isRequired": true
+                    },
+                    "address": {
+                        "type": "String",
+                        "isRequired": false
+                    }
+                }
+            }
+        }
+    }
+}

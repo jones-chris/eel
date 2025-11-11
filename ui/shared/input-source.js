@@ -75,9 +75,7 @@ class InputSource extends HTMLElement {
 
         // 2. SQL
         const sqlTextarea = this.shadowRoot.getElementById(`sql-${this.name}`);
-        if (sqlTextarea) {
-            sqlTextarea.addEventListener('input', this.handleSqlChange.bind(this));
-        }
+        sqlTextarea.addEventListener('input', this.handleSqlChange.bind(this));
     }
 
     handleDataSourceChange(event) {

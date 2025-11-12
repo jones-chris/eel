@@ -9,7 +9,7 @@ class DestinationService {
         
         if (response.status === 200) {
             let destinations = await response.json();
-            return Object.keys(destinations.dataSources);
+            return destinations.dataSources;
         }
 
         const message = `getDataSources response status code is ${response.status};`

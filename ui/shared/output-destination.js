@@ -10,9 +10,11 @@ class OutputDestination extends HTMLElement {
 
     destinationDataSourceName = null;
 
-    destinationDataSource = {};
+    destinationDataSource;
 
     #destinationService;
+
+    parameterElement;
 
     render() {
         const template = document.createElement('template');
@@ -41,12 +43,12 @@ class OutputDestination extends HTMLElement {
                 <select id="destinationDataSource-${this.name}" class="form-select">
                     <option value="">Choose...</option>
                     ${
-                        this.#availableDestinationDataSourceNames.map(destination => {
+                        Object.keys(this.#availableDestinationDataSourceNames).map(destination => {
                             return `<option 
                                         value="${destination}"
                                         ${(this.destinationDataSourceName === destination) ? "selected" : ""}
                                     >
-                                        ${destination}
+                                        ${this.#availableDestinationDataSourceNames[destination].displayText}
                                     </option>`
                         }).join('')
                     }
@@ -90,26 +92,18 @@ class OutputDestination extends HTMLElement {
         const newDestinationDataSourceName = event.target.value;
         this.destinationDataSourceName = newDestinationDataSourceName;
 
-        if (this.destinationDataSourceName === "") {
-            this.handleDestinationDataSourceChange({});
-            return;
-        }
-
-        let destinationDataSource = await this.#destinationService.getDataSourceByName(newDestinationDataSourceName);
-        this.handleDestinationDataSourceChange(destinationDataSource);
-    }
-
-    handleDestinationDataSourceChange(newDestinationDataSource) {
-        this.destinationDataSource = newDestinationDataSource;
-
         this.render();
     }
 
     #renderDestinationParameters() {
-        if (this.destinationDataSource.metadata) {
-            return '<p>Hello World!</p>'
+        if (this.destinationDataSourceName) {
+            if (this.destinationDataSourceName === 'email') {
+                let destination = new EmailDestination(this);
+                console.log(destination.outerHTML);
+                return destination.outerHTML;
+            }
         } else {
-            return '<p>Go away world!</p>'
+            return ''
         }
     }
 

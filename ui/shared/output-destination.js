@@ -17,6 +17,11 @@ class OutputDestination extends HTMLElement {
     parameterElement;
 
     render() {
+        const parameterElementInstance = this.#renderDestinationParameters();
+        const parameterPlaceholderHTML = parameterElementInstance ?
+                                         parameterElementInstance.html() :
+                                         '';
+
         const template = document.createElement('template');
         template.innerHTML = `
         <div id="${this.name}" class="card" style="width: 18rem;">
@@ -55,7 +60,7 @@ class OutputDestination extends HTMLElement {
                 </select>
             </div>
 
-            ${this.#renderDestinationParameters()}
+            ${parameterPlaceholderHTML}
         </div> `;
 
         if (! this.shadowRoot) {
@@ -63,6 +68,11 @@ class OutputDestination extends HTMLElement {
             this.shadowRoot.appendChild(template.content.cloneNode(true));
         } else {
             this.shadowRoot.getElementById(this.name).innerHTML = template.innerHTML;
+        }
+
+        if (parameterElementInstance) {
+            this.shadowRoot.getElementById(this.name).appendChild(parameterElementInstance);
+            parameterElementInstance.registerHandlers(this.shadowRoot);
         }
 
         // Register handlers.
@@ -99,11 +109,12 @@ class OutputDestination extends HTMLElement {
         if (this.destinationDataSourceName) {
             if (this.destinationDataSourceName === 'email') {
                 let destination = new EmailDestination(this);
-                console.log(destination.outerHTML);
-                return destination.outerHTML;
+                this.parameterElement = destination;
+
+                return destination;
             }
         } else {
-            return ''
+            return null;
         }
     }
 

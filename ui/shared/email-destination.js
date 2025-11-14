@@ -1,40 +1,68 @@
 class EmailDestination extends HTMLElement {
  
-    name;
+    #name;
 
-    recipients = [];
+    #parameters = {
+        subject: null,
+        recipients: [],
+        body: null,
+    };
 
-    subject;
+    html() {
+        return `
+           <div>
+               <label for="subject_${this.name}">Subject</label>
+               <div>
+                   <input id="subject_${this.name}"></input>
+               </div>
 
-    body;
+               <label for="recipients_${this.name}">Recipients</label>
+               <div>
+                   <input id="recipients_${this.name}" placeholder="finance@mycompany.com; hr@mycompany.com"></input>
+               </div>
 
-    #outputDestination;
-
-    render() {
-        const template = document.createElement('template');
-        template.innerHTML = `
-            <p id="email_${this.name}">Email Distribution Custom HTML Element</p>
-        `;
-        
-
-        // this.#outputDestination.parameterElement = this;  
-        if (! this.shadowRoot) {
-            this.attachShadow({ mode: 'open' });
-            this.shadowRoot.appendChild(template.content.cloneNode(true));
-        } else {
-            this.shadowRoot.getElementById(this.name).innerHTML = template.innerHTML;
-        }
+               <label for="body_${this.name}">Body</label>
+               <div>
+                   <textarea id="body_${this.name}"></textarea>
+               </div>
+           <div>
+       `;
     }
 
     constructor(outputDestination) {
         super();
 
-        this.#outputDestination = outputDestination;
-        this.name = `email_${outputDestination?.name}`;
+        this.#name = `email_${outputDestination?.name}`;
     }
 
-    connectedCallback() {
-        this.render();
+    registerHandlers(shadowRoot) {
+        const subjectElement = shadowRoot.getElementById(`subject_${this.name}`);
+        subjectElement.addEventListener('input', this.handleSubjectChange.bind(this));
+
+        const recipientsElement = shadowRoot.getElementById(`recipients_${this.name}`);
+        recipientsElement.addEventListener('input', this.handleRecipientsChange.bind(this));
+
+        const bodyElement = shadowRoot.getElementById(`body_${this.name}`);
+        bodyElement.addEventListener('input', this.handleBodyChange.bind(this));
+    }
+
+    getParameters() {
+        return this.#parameters;
+    }
+
+    handleSubjectChange(event) {
+        const newSubject = event.target.value;
+        this.#parameters.subject = newSubject;
+    }
+
+    handleRecipientsChange(event) {
+        const newRecipients = event.target.value;
+        this.#parameters.recipients = newRecipients;
+    }
+
+    handleBodyChange(event) {
+        const newBody = event.target.value;
+        this.#parameters.body = newBody;
     }
 
 }

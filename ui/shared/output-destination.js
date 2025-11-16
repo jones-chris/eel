@@ -112,6 +112,16 @@ class OutputDestination extends HTMLElement {
                 this.parameterElement = destination;
 
                 return destination;
+            } else if (this.destinationDataSourceName === 'sms') {
+                let destination = new SmsDestination(this);
+                this.parameterElement = destination;
+
+                return destination;
+            } else if (this.destinationDataSourceName === 'file-storage') {
+                let destination = new FileStorageDestination(this);
+                this.parameterElement = destination;
+
+                return destination;
             }
         } else {
             return null;

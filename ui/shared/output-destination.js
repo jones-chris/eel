@@ -122,6 +122,26 @@ class OutputDestination extends HTMLElement {
                 this.parameterElement = destination;
 
                 return destination;
+            } else if (this.destinationDataSourceName === 'db-write') {
+                let destination = new DatabaseWriteDestination(this);
+                this.parameterElement = destination;
+
+                return destination;
+            } else if (this.destinationDataSourceName === 'queue-write') {
+                let destination = new QueueWriteDestination(this);
+                this.parameterElement = destination;
+
+                return destination;
+            } else if (this.destinationDataSourceName === 'trigger-flow') {
+                let destination = new TriggerFlowDestination(this);
+                this.parameterElement = destination;
+
+                return destination;
+            } else {
+                const message = `Did not recognize destination data source name of ${this.destinationDataSourceName}`;
+                console.error(message);
+
+                throw new Error(message);
             }
         } else {
             return null;

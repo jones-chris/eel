@@ -106,9 +106,6 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
 
     alert('Workbook successfully uploaded.  Inspecting workbook.')
 
-    const data = response.json();
-    console.log(`Success: ${JSON.stringify(data)}`);
-
     // Attempts to get the manifest with backoff.
     let manifest = null;
     const maxAttempts = 5;
@@ -134,6 +131,8 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
 
     if (manifest !== null) {
         console.log('Visualizing manifest...');
+
+        renderManifest(manifest);
     }
 
     toggleLoading();
@@ -151,34 +150,65 @@ function toggleLoading() {
     }
 }
 
-fetch('./manifest-test.json')
-    .then(response => response.json())
-    .then(json => {
-        // Render input sources.
-        let inputSourceRootElement = document.getElementById('inputSources');
-        for (let inputSheetId in Object.keys(json['inputSheetsMetadata'])) {
-            let inputSheetMetadata = json['inputSheetsMetadata'][inputSheetId];
+function renderManifest(manifest) {
+    // Render input sources.
+    let inputSourceRootElement = document.getElementById('inputSources');
+    for (let inputSheetId in Object.keys(manifest['inputSheetsMetadata'])) {
+        let inputSheetMetadata = manifest['inputSheetsMetadata'][inputSheetId];
 
-            let inputSource = new InputSource(inputSheetMetadata);
-            state.inputSources.push(inputSource);
+        let inputSource = new InputSource(inputSheetMetadata);
+        state.inputSources.push(inputSource);
 
-            inputSourceRootElement.appendChild(inputSource);
-        }
+        inputSourceRootElement.appendChild(inputSource);
+    }
 
-        // Render SQL transformations.
-        let sqlTransformationRootElement = document.getElementById('sqlTransformations');
-        let sqlTransformationScriptElement = new SqlTransformation();
-        state.sqlTransformations.push(sqlTransformationScriptElement);
-        sqlTransformationRootElement.appendChild(sqlTransformationScriptElement);
+    // Render SQL transformations.
+    let sqlTransformationRootElement = document.getElementById('sqlTransformations');
+    let sqlTransformationScriptElement = new SqlTransformation();
+    state.sqlTransformations.push(sqlTransformationScriptElement);
+    sqlTransformationRootElement.appendChild(sqlTransformationScriptElement);
 
-        // Render output destinations.
-        let outputDestinationsRootElement = document.getElementById('outputDestinations');
-        for (let outputSheetId in Object.keys(json['outputSheetsMetadata'])) {
-            let outputSheetMetadata = json['outputSheetsMetadata'][outputSheetId];
-            
-            let outputDestination = new OutputDestination(outputSheetMetadata, destinationsService);
-            state.outputDestinations.push(outputDestination);
+    // Render output destinations.
+    let outputDestinationsRootElement = document.getElementById('outputDestinations');
+    for (let outputSheetId in Object.keys(manifest['outputSheetsMetadata'])) {
+        let outputSheetMetadata = manifest['outputSheetsMetadata'][outputSheetId];
 
-            outputDestinationsRootElement.appendChild(outputDestination);
-        }
-    });
+        let outputDestination = new OutputDestination(outputSheetMetadata, destinationsService);
+        state.outputDestinations.push(outputDestination);
+
+        outputDestinationsRootElement.appendChild(outputDestination);
+    }
+}
+
+// Local testing code below.
+//fetch('./manifest-test.json')
+//    .then(response => response.json())
+//    .then(json => {
+//        // Render input sources.
+//        let inputSourceRootElement = document.getElementById('inputSources');
+//        for (let inputSheetId in Object.keys(json['inputSheetsMetadata'])) {
+//            let inputSheetMetadata = json['inputSheetsMetadata'][inputSheetId];
+//
+//            let inputSource = new InputSource(inputSheetMetadata);
+//            state.inputSources.push(inputSource);
+//
+//            inputSourceRootElement.appendChild(inputSource);
+//        }
+//
+//        // Render SQL transformations.
+//        let sqlTransformationRootElement = document.getElementById('sqlTransformations');
+//        let sqlTransformationScriptElement = new SqlTransformation();
+//        state.sqlTransformations.push(sqlTransformationScriptElement);
+//        sqlTransformationRootElement.appendChild(sqlTransformationScriptElement);
+//
+//        // Render output destinations.
+//        let outputDestinationsRootElement = document.getElementById('outputDestinations');
+//        for (let outputSheetId in Object.keys(json['outputSheetsMetadata'])) {
+//            let outputSheetMetadata = json['outputSheetsMetadata'][outputSheetId];
+//
+//            let outputDestination = new OutputDestination(outputSheetMetadata, destinationsService);
+//            state.outputDestinations.push(outputDestination);
+//
+//            outputDestinationsRootElement.appendChild(outputDestination);
+//        }
+//    });

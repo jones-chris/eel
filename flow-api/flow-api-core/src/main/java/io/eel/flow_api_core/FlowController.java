@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder;
 import io.eel.common.http.BaseController;
 import io.eel.common.http.HttpRequest;
 import io.eel.common.model.Flow;
-import io.eel.common.model.FlowInitDto;
 import io.eel.flow_api_core.service.FlowService;
 
 import java.util.*;
@@ -76,7 +75,21 @@ public class FlowController extends BaseController {
                         return;
                     }
 
-                    this.flowService.getFlowById(id)
+                    final Integer version = request.getQueryParameters().get("version")
+                            .stream()
+                            .map(Integer::parseInt)
+                            .toList()
+                            .getFirst();
+
+                    if (version == null) {
+                        log.severe("Empty or non-existent version query parameter");
+
+                        clientError(response);
+                        return;
+                    }
+
+                    final String canonicalId = Flow.Utils.getCanonicalId(id, version);
+                    this.flowService.getFlowByCanonicalId(canonicalId)
                             .ifPresentOrElse(
                                     flow -> ok(response).setBody(gson.toJson(flow)),
                                     () -> notFound(response)
@@ -104,10 +117,23 @@ public class FlowController extends BaseController {
                         return;
                     }
 
+                    if (! request.getQueryParameters().containsKey("version")) {
+                        log.severe("No 'version' query parameter");
+
+                        if (request.getQueryParameters().get("version").isEmpty()) {
+                            log.severe("'version' query parameter is an empty list");
+                        }
+
+                        clientError(response);
+                        return;
+                    }
+
                     final UUID id = UUID.fromString(request.getQueryParameters().get("id").getFirst());
+                    final int version = Integer.parseInt(request.getQueryParameters().get("version").getFirst());
+                    final String canonicalId = Flow.Utils.getCanonicalId(id, version);
                     Flow newFlow = gson.fromJson(request.getBody(), Flow.class);
 
-                    this.flowService.getFlowById(id)
+                    this.flowService.getFlowByCanonicalId(canonicalId)
                             .ifPresentOrElse(
                                     (originalFlow) -> {
                                         // Performs a complete overwrite of the existing flow.

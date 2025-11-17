@@ -1,0 +1,28 @@
+{
+    "dataSources": {
+        "email": {
+            "displayText": "Email",
+            "help": "Send as an email attachment"
+        },
+        "sms": {
+            "displayText": "SMS",
+            "help": "Text the result to someone"
+        },
+        "file-storage": {
+            "displayText": "File Storage",
+            "help": "Write to file storage"
+        },
+        "db-write": {
+            "displayText": "Database Write",
+            "help": "Write to a SQL database for storage"
+        },
+        "queue-write": {
+            "displayText": "Queue Write",
+            "help": "Write to a queue for another system to process"
+        },
+        "trigger-flow": {
+            "displayText": "Trigger Flow",
+            "help": "Trigger another EEL flow for further processing"
+        }
+    }
+}

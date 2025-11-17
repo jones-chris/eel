@@ -22,7 +22,6 @@ public class FlowServiceImpl implements FlowService {
 
     @Override
     public Flow createNewFlow() {
-
         return this.flowDao.createNewFlow("chris.jones"); // todo:  change the author parameter
     }
 
@@ -34,8 +33,8 @@ public class FlowServiceImpl implements FlowService {
     }
 
     @Override
-    public Optional<Flow> getFlowById(UUID id) {
-        return this.flowDao.getFlowById(id);
+    public Optional<Flow> getFlowByCanonicalId(String canonicalId) {
+        return this.flowDao.getFlowByCanonicalId(canonicalId);
     }
 
     @Override

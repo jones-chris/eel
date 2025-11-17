@@ -12,7 +12,7 @@ public interface FlowService {
 
     Flow updateFlow(Flow flow);
 
-    Optional<Flow> getFlowById(UUID id);
+    Optional<Flow> getFlowByCanonicalId(String canonicalId);
 
     Set<UUID> getFlowsByUser(String userName);
 

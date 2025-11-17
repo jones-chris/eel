@@ -30,7 +30,7 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, Object>, 
     private final static BaseController flowController;
 
     static {
-        flowDao = new AwsDynamoDbFlowDaoImpl(DynamoDbClient.create());
+        flowDao = new AwsDynamoDbFlowDaoImpl(DynamoDbClient.create(), System.getenv("S3_STAGING_BUCKET_NAME"));
         flowService = new FlowServiceImpl(flowDao);
 
         flowController = new FlowController(flowService);

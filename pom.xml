@@ -15,6 +15,7 @@
         <module>flow-api</module>
         <module>common-aws</module>
         <module>engine</module>
+        <module>eel-runner-infra-provisioner</module>
     </modules>
 
     <properties>

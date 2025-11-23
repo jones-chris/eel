@@ -26,6 +26,10 @@ public class WorkbookCalculationEngine {
         return this;
     }
 
+    public WorkbookCalculationEngine withZipFileInputs(String zipFilePath) {
+
+    }
+
     public WorkbookOutput runWorkbook() {
         try (
             InputStream inputStream = this.getClass().getResourceAsStream(EXCEL_TL_XLSX_RESOURCE_FILE_PATH);

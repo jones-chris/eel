@@ -74,8 +74,8 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
     public void buildCronSchedule(String canonicalId, String cronExpression) {
         Target target = Target.builder()
                 .arn(this.resources.getRuntimePlatformId())
-                .roleArn(roleArn)
-                .input(input)
+//                .roleArn(roleArn)
+//                .input(input)
                 .build();
 
         CreateScheduleRequest request = CreateScheduleRequest.builder()
@@ -160,7 +160,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                                     .s3Bucket(EEL_TRANSFORMATIONS_BUCKET_NAME) // todo:  add bucket where transformation jar is.
                                     .s3Key(canonicalId) // todo:  add key where transformation jar is.
                                     .build()
-                    ).handler() // todo: add handler
+                    ).handler("io.eel.engine_deployments_aws_lambda.handleRequest")
                     .tags(this.tags)
                     .build();
 

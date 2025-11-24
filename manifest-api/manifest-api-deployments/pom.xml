@@ -11,6 +11,7 @@
 
     <artifactId>manifest-api-deployments</artifactId>
     <packaging>pom</packaging>
+
     <modules>
         <module>manifest-api-aws-lambda</module>
     </modules>

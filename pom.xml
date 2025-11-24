@@ -16,6 +16,8 @@
         <module>common-aws</module>
         <module>engine</module>
         <module>eel-runner-infra-provisioner</module>
+<!--        <module>engine/engine-core</module>-->
+<!--        <module>engine/engine-deployments</module>-->
     </modules>
 
     <properties>

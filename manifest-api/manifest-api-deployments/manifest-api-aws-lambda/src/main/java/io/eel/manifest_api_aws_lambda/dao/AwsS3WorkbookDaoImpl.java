@@ -1,6 +1,5 @@
 package io.eel.manifest_api_aws_lambda.dao;
 
-import io.eel.manifest_generator_core.ManifestController;
 import io.eel.manifest_generator_core.dao.WorkbookDao;
 import io.eel.model.proxy.WorkbookProxy;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -12,6 +11,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.logging.Logger;
+import java.util.zip.ZipInputStream;
 
 public class AwsS3WorkbookDaoImpl implements WorkbookDao {
 

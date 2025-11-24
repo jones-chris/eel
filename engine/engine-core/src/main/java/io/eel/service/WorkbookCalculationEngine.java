@@ -7,9 +7,12 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class WorkbookCalculationEngine {
 
@@ -26,8 +29,12 @@ public class WorkbookCalculationEngine {
         return this;
     }
 
-    public WorkbookCalculationEngine withZipFileInputs(String zipFilePath) {
+    public WorkbookCalculationEngine withZipFileInputs(ZipInputStream zipInputStream) throws IOException {
+        final Map<String, Object[][]> inputData = ZipCsvProcessor.unzipAndParseCsvs(zipInputStream);
 
+        inputData.forEach(this::withInput);
+
+        return this;
     }
 
     public WorkbookOutput runWorkbook() {

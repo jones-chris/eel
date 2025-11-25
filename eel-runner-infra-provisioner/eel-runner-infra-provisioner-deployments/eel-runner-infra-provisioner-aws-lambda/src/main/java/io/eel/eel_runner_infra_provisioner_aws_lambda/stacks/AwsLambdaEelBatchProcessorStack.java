@@ -1,10 +1,7 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
-import io.eel.eel_runner_infra_provisioner_aws_lambda.StreamLambdaHandler;
 import io.eel.eel_runner_infra_provisioner_core.stacks.EelBatchProcessorStack;
 import io.eel.eel_runner_infra_provisioner_core.stacks.EelBatchProcessorStackResources;
-import software.amazon.awssdk.core.SdkBytes;
-import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.lambda.model.*;
 import software.amazon.awssdk.services.lambda.model.Runtime;
@@ -13,15 +10,10 @@ import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.scheduler.SchedulerAsyncClient;
 import software.amazon.awssdk.services.scheduler.model.ConflictException;
 import software.amazon.awssdk.services.scheduler.model.CreateScheduleRequest;
-import software.amazon.awssdk.services.scheduler.model.FlexibleTimeWindow;
 import software.amazon.awssdk.services.scheduler.model.Target;
 import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
-import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
+import software.amazon.awssdk.services.sqs.model.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,11 +54,11 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
     @Override
     public void deploy(String canonicalId, String cronExpression) {
-        this.buildDeadLetterQueue(canonicalId);
+//        this.buildDeadLetterQueue(canonicalId);
         this.buildEelRuntimePlatform(canonicalId);
-        this.buildLandingBucket(canonicalId);
-        this.buildLandingBucketTrigger(canonicalId);
-        this.buildCronSchedule(canonicalId, cronExpression);
+//        this.buildLandingBucket(canonicalId);
+//        this.buildLandingBucketTrigger(canonicalId);
+//        this.buildCronSchedule(canonicalId, cronExpression);
     }
 
     // https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/javav2/example_code/scheduler/src/main/java/com/example/eventbrideschedule/scenario/EventbridgeSchedulerActions.java#L104
@@ -147,8 +139,12 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
     @Override
     public void buildEelRuntimePlatform(String canonicalId) {
+        // todo:  Add eel packager call here.
+
         try {
             final CreateFunctionRequest request = CreateFunctionRequest.builder()
+                    .functionName(canonicalId)
+                    .role("arn:aws:iam::some_region:role/Custom_Lambda") // todo:  update this.
                     .runtime(Runtime.JAVA21)
                     .architectures(Architecture.X86_64)
                     .deadLetterConfig(
@@ -157,10 +153,10 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                                     .build()
                     ).code(
                             FunctionCode.builder()
-                                    .s3Bucket(EEL_TRANSFORMATIONS_BUCKET_NAME) // todo:  add bucket where transformation jar is.
-                                    .s3Key(canonicalId) // todo:  add key where transformation jar is.
+                                    .s3Bucket(EEL_TRANSFORMATIONS_BUCKET_NAME)
+                                    .s3Key(canonicalId)
                                     .build()
-                    ).handler("io.eel.engine_deployments_aws_lambda.handleRequest")
+                    ).handler("io.eel.engine_deployments_aws_lambda.S3PutObjectHandler")
                     .tags(this.tags)
                     .build();
 
@@ -183,7 +179,14 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
             CreateQueueResponse response = this.sqsClient.createQueue(request);
 
-            this.resources.setDeadLetterQueueId(response.queueUrl());
+            GetQueueAttributesRequest getQueueAttributesRequest = GetQueueAttributesRequest.builder()
+                    .queueUrl(response.queueUrl())
+                    .attributeNames(QueueAttributeName.QUEUE_ARN)
+                    .build();
+
+            GetQueueAttributesResponse getQueueAttributesResponse = this.sqsClient.getQueueAttributes(getQueueAttributesRequest);
+
+            this.resources.setDeadLetterQueueId(getQueueAttributesResponse.attributes().get(QueueAttributeName.QUEUE_ARN));
         } catch (Throwable t) {
             log.severe("Encountered error when trying to create SQS dead letter queue " + canonicalId + ", error message: " + t.getMessage());
             throw t;

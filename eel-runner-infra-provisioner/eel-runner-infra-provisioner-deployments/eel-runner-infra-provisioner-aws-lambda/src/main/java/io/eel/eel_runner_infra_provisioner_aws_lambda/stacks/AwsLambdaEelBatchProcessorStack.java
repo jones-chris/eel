@@ -1,7 +1,11 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
+import io.eel.common.EelPackager;
 import io.eel.eel_runner_infra_provisioner_core.stacks.EelBatchProcessorStack;
 import io.eel.eel_runner_infra_provisioner_core.stacks.EelBatchProcessorStackResources;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.lambda.model.*;
 import software.amazon.awssdk.services.lambda.model.Runtime;
@@ -14,6 +18,9 @@ import software.amazon.awssdk.services.scheduler.model.Target;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,7 +61,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
     @Override
     public void deploy(String canonicalId, String cronExpression) {
-//        this.buildDeadLetterQueue(canonicalId);
+        this.buildDeadLetterQueue(canonicalId);
         this.buildEelRuntimePlatform(canonicalId);
 //        this.buildLandingBucket(canonicalId);
 //        this.buildLandingBucketTrigger(canonicalId);
@@ -139,12 +146,20 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
     @Override
     public void buildEelRuntimePlatform(String canonicalId) {
-        // todo:  Add eel packager call here.
+        final String originalEelJarBucket = System.getenv("ORIGINAL_EEL_ARTIFACTS_BUCKET_NAME");
+        final String originalEelJarKey = System.getenv("ORIGINAL_EEL_ARTIFACTS_BUCKET_KEY");
+
+        InputStream originalJarInputStream = this.getS3ObjectAsInputStream(originalEelJarBucket, originalEelJarKey);
+        InputStream excelInputStream = this.getS3ObjectAsInputStream(EEL_TRANSFORMATIONS_BUCKET_NAME, canonicalId);
+
+        final File eelJar = EelPackager.build(originalJarInputStream, excelInputStream);
+
+        // todo:  build role.
 
         try {
             final CreateFunctionRequest request = CreateFunctionRequest.builder()
                     .functionName(canonicalId)
-                    .role("arn:aws:iam::some_region:role/Custom_Lambda") // todo:  update this.
+                    .role("arn:aws:iam::some_account:role/Custom_Lambda") // todo:  update this.
                     .runtime(Runtime.JAVA21)
                     .architectures(Architecture.X86_64)
                     .deadLetterConfig(
@@ -153,9 +168,8 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                                     .build()
                     ).code(
                             FunctionCode.builder()
-                                    .s3Bucket(EEL_TRANSFORMATIONS_BUCKET_NAME)
-                                    .s3Key(canonicalId)
-                                    .build()
+                                .zipFile(SdkBytes.fromInputStream(new FileInputStream(eelJar)))
+                                .build()
                     ).handler("io.eel.engine_deployments_aws_lambda.S3PutObjectHandler")
                     .tags(this.tags)
                     .build();
@@ -165,7 +179,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
             this.resources.setRuntimePlatformId(response.functionArn());
         } catch (Throwable t) {
             log.severe("Encountered error when trying to create bucket " + canonicalId + ", error message: " + t.getMessage());
-            throw t;
+            throw new RuntimeException(t);
         }
     }
 
@@ -191,6 +205,17 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
             log.severe("Encountered error when trying to create SQS dead letter queue " + canonicalId + ", error message: " + t.getMessage());
             throw t;
         }
+    }
+
+    private InputStream getS3ObjectAsInputStream(String bucket, String key) {
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+
+        ResponseBytes<GetObjectResponse> s3Object = this.s3Client.getObject(request, ResponseTransformer.toBytes());
+
+        return s3Object.asInputStream();
     }
 
 }

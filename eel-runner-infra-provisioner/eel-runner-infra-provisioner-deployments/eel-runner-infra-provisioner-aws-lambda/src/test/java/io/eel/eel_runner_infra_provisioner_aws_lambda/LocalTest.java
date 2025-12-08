@@ -1,12 +1,11 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda;
 
 import io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.AwsLambdaEelBatchProcessorStack;
+import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.scheduler.SchedulerAsyncClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
-
-import java.util.UUID;
 
 public class LocalTest {
 
@@ -18,18 +17,22 @@ public class LocalTest {
                 final LambdaClient lambdaClient = LambdaClient.create();
                 final S3Client s3Client = S3Client.create();
                 final SqsClient sqsClient = SqsClient.create();
-        ) {
+                final IamClient iamClient = IamClient.builder().build();
+                ) {
             processorStack = new AwsLambdaEelBatchProcessorStack(
                     schedulerAsyncClient,
                     lambdaClient,
                     s3Client,
-                    sqsClient
+                    sqsClient,
+                    iamClient
             );
 
             // todo:  remember to replace "#".
-            final String canonicalId = "8817065c-0e13-43ca-978f-544e899365e1v0";
+            final String flowId = "8817065c-0e13-43ca-978f-544e899365e1";
+            final int version = 0;
+            final String canonicalId = flowId + "v" + version;
             final String cronExpression = "cron(0 12 * * ? *)";
-            processorStack.deploy(canonicalId, cronExpression);
+            processorStack.deploy(canonicalId, cronExpression, flowId);
         } catch (Throwable t) {
             t.printStackTrace();
 

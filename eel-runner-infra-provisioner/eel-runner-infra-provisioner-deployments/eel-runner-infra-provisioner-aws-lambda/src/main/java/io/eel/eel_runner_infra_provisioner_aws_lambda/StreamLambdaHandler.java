@@ -24,11 +24,6 @@ public class StreamLambdaHandler implements RequestHandler<SQSEvent, Boolean> {
         log.info("Inside handleRequest");
         log.info("Event: " + event);
 
-//        final HttpRequest request = requestMapper.map(event);
-//        final HttpResponse response = new HttpResponse();
-
-//        flowController.handle(request, response);
-
         return true;
     }
 

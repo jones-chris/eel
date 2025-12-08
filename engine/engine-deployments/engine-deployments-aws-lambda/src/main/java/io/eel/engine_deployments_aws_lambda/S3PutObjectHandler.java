@@ -39,7 +39,7 @@ public class S3PutObjectHandler implements RequestHandler<S3Event, String> {
             S3EventNotification.S3EventNotificationRecord record = s3event.getRecords().getFirst();
 
             String bucket = record.getS3().getBucket().getName();
-            String key = record.getS3().getObject().getUrlDecodedKey();
+            String key = record.getS3().getObject().getKey();
 
             workbookInputsDao.getWorkbookInputs(bucket, key)
                     .ifPresentOrElse(

@@ -108,6 +108,10 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>scheduler</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>iam</artifactId>
+        </dependency>
 <!--        <dependency>-->
 <!--            <groupId>io.eel</groupId>-->
 <!--            <artifactId>manifest-api-core</artifactId>-->

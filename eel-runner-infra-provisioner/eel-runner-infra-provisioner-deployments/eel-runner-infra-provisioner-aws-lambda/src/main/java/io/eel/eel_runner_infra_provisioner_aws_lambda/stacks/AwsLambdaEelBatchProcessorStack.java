@@ -1,6 +1,5 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
-import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.eel.common.EelPackager;
@@ -45,6 +44,8 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
     // The ARN of the AWS managed policy that grants Lambda read/delete access to SQS
     private static final String SQS_EXECUTION_POLICY_ARN = "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole";
 
+    private static final String EEL_TRANSFORMATIONS_BUCKET_NAME = System.getenv("EEL_TRANSFORMATIONS_BUCKET_NAME");
+
     private final static Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     private SchedulerAsyncClient schedulerAsyncClient;
@@ -59,15 +60,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
     private final Map<String, String> tags = new HashMap<>();
 
-    private String lambdaRole;
-
-    private String eventSourceMappingArn;
-
     private final EelBatchProcessorStackResources resources = new EelBatchProcessorStackResources();
-
-    private static final String EEL_TRANSFORMATIONS_BUCKET_NAME = System.getenv("EEL_TRANSFORMATIONS_BUCKET_NAME");
-
-    private String inputQueueArn;
 
     private AwsLambdaEelBatchProcessorStack() {}
 
@@ -90,11 +83,11 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
     @Override
     public void deploy(String canonicalId, String cronExpression, String flowId) {
-//        this.buildDeadLetterQueue(flowId);
         this.buildLandingBucket(flowId);
         this.buildInputQueue(flowId);
+        this.buildDeadLetterQueue(flowId);
         this.buildEelRuntimePlatform(flowId, canonicalId);
-//        this.buildLandingBucketTrigger(flowId);
+        this.buildLandingBucketTrigger(flowId);
         this.buildInputQueueLambdaEventSourceMapping();
 //        this.buildCronSchedule(flowId, cronExpression);
     }
@@ -111,7 +104,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
         Target target = Target.builder()
                 .arn(this.resources.getRuntimePlatformId())
-                .roleArn(this.lambdaRole)
+                .roleArn(this.resources.getLambdaRoleArn())
                 .input(input)
                 .build();
 
@@ -169,15 +162,15 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                     .bucket(this.resources.getLandingBucketId())
                     .notificationConfiguration(
                             NotificationConfiguration.builder()
-                                    .lambdaFunctionConfigurations(
-                                            LambdaFunctionConfiguration.builder()
-                                                    .lambdaFunctionArn(this.resources.getRuntimePlatformId())
+                                    .queueConfigurations(
+                                            QueueConfiguration.builder()
                                                     .events(Event.S3_OBJECT_CREATED_PUT)
+                                                    .queueArn(this.resources.getInputQueueArn())
                                                     .build()
                                     ).build()
                     ).build();
 
-            this.s3Client.putBucketNotificationConfiguration(triggerRequest);
+            PutBucketNotificationConfigurationResponse response = this.s3Client.putBucketNotificationConfiguration(triggerRequest);
         } catch (Throwable t) {
             log.severe("Encountered error when trying to create a S3 PUT object bucket trigger for " + flowId + ", error message: " + t.getMessage());
             throw t;
@@ -231,7 +224,6 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
             throw new RuntimeException(t);
         }
 
-        Policy rolePolicy;
         try {
             CreatePolicyRequest createPolicyRequest = CreatePolicyRequest.builder()
                     .policyName(flowId)
@@ -253,7 +245,8 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                                         {
                                             "Effect": "Allow",
                                             "Action": [
-                                                "sqs:*"
+                                                "sqs:*",
+                                                "sqs:SendMessage"
                                             ],
                                             "Resource": [
                                                 "%s",
@@ -266,7 +259,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                                         this.resources.getLandingBucketId(),
                                         this.resources.getLandingBucketId(),
                                         this.resources.getDeadLetterQueueId(),
-                                        this.inputQueueArn
+                                        this.resources.getInputQueueArn()
                                     )
                     ).tags(lambdaRoleTags)
                     .build();
@@ -278,9 +271,8 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                     .policyArn(createPolicyResponse.policy().arn())
                     .build();
 
-            AttachRolePolicyResponse attachRolePolicyResponse = this.iamClient.attachRolePolicy(attachRolePolicyRequest);
-            rolePolicy = createPolicyResponse.policy();
-            // todo:  add policy arn to resources.
+            this.iamClient.attachRolePolicy(attachRolePolicyRequest);
+            this.resources.setLambdaRolePolicyArn(createPolicyResponse.policy().arn());
         } catch (Throwable t) {
             log.severe("Encountered error when creating the lambda role policy " + flowId + ", error message: " + t.getMessage());
             throw new RuntimeException(t);
@@ -306,7 +298,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
             CreateFunctionResponse response = this.lambdaClient.createFunction(request);
 
-            this.lambdaRole = response.role();
+            this.resources.setLambdaRoleArn(response.role());
             this.resources.setRuntimePlatformId(response.functionArn());
 
             log.info("Attaching SQS execution policy to role: " + lambdaRole);
@@ -361,17 +353,57 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                     .build();
 
             CreateQueueResponse response = this.sqsClient.createQueue(request);
+            final String queueUrl = response.queueUrl();
 
             GetQueueAttributesRequest getQueueAttributesRequest = GetQueueAttributesRequest.builder()
-                    .queueUrl(response.queueUrl())
+                    .queueUrl(queueUrl)
                     .attributeNames(QueueAttributeName.QUEUE_ARN)
                     .build();
 
             GetQueueAttributesResponse getQueueAttributesResponse = this.sqsClient.getQueueAttributes(getQueueAttributesRequest);
 
-            this.inputQueueArn = getQueueAttributesResponse.attributes().get(QueueAttributeName.QUEUE_ARN);
+            String inputQueueArn = getQueueAttributesResponse.attributes().get(QueueAttributeName.QUEUE_ARN);
+            this.resources.setInputQueueArn(inputQueueArn);
 
-//            this.resources.setDeadLetterQueueId(getQueueAttributesResponse.attributes().get(QueueAttributeName.QUEUE_ARN));
+            // 1. Construct the policy JSON string.  The policy grants S3 permission to send messages to the queue.
+            String policyJson = String.format("""
+                {
+                  "Version": "2012-10-17",
+                  "Id": "SQS-Policy-For-S3-Notification",
+                  "Statement": [
+                    {
+                      "Sid": "AllowS3ToSendMessage",
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": "s3.amazonaws.com"
+                      },
+                      "Action": "sqs:SendMessage",
+                      "Resource": "%s",
+                      "Condition": {
+                        "ArnEquals": {
+                          "aws:SourceArn": "arn:aws:s3:::%s"
+                        }
+                      }
+                    }
+                  ]
+                }
+                """,
+                    this.resources.getInputQueueArn(),
+                    this.resources.getLandingBucketId()
+            );
+
+            SetQueueAttributesRequest setAttributesRequest = SetQueueAttributesRequest.builder()
+                    .queueUrl(queueUrl) // SQS requires the Queue URL
+                    .attributesWithStrings(
+                            // Use the POLICY attribute name to pass the JSON string
+                            Map.of(QueueAttributeName.POLICY.toString(), policyJson)
+                    )
+                    .build();
+
+            // 3. Execute the request
+            sqsClient.setQueueAttributes(setAttributesRequest);
+
+            log.info("Successfully set SQS policy for S3 notifications on queue: " + queueUrl);
         } catch (Throwable t) {
             log.severe("Encountered error when trying to create SQS dead letter queue " + flowId + ", error message: " + t.getMessage());
             throw t;
@@ -382,7 +414,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
         try {
             log.info("Creating Event Source Mapping between SQS and Lambda...");
             CreateEventSourceMappingRequest mappingRequest = CreateEventSourceMappingRequest.builder()
-                    .eventSourceArn(this.inputQueueArn) // The ARN of the SQS queue
+                    .eventSourceArn(this.resources.getInputQueueArn()) // The ARN of the SQS queue
                     .functionName(this.resources.getRuntimePlatformId()) // The ARN/Name of the Lambda function
                     .batchSize(1) // Number of messages to process in a single batch
                     .enabled(true)
@@ -390,7 +422,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
             CreateEventSourceMappingResponse mappingResponse = this.lambdaClient.createEventSourceMapping(mappingRequest);
 
-            this.eventSourceMappingArn = mappingResponse.eventSourceMappingArn();
+            this.resources.setEventSourceMappingArn(mappingResponse.eventSourceMappingArn());
             log.info("Event Source Mapping created successfully. UUID: " + mappingResponse.eventSourceMappingArn());
         } catch (Exception e) {
             log.severe("Failed to create Event Source Mapping. The Lambda role may still lack permissions: " + e.getMessage());

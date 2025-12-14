@@ -1,34 +1,11 @@
 package io.eel.common.model;
 
 // Admin sets this up.
+// todo:  this may not be needed.
 public class SqlDatabaseDataSource extends DataSource {
 
-    private final String jdbcUrl;
-
-    private final String username;
-
-    private final String password;
-
-    public SqlDatabaseDataSource(String jdbcUrl, String username, String password) {
-        this.jdbcUrl = jdbcUrl;
-        this.username = username;
-        this.password = password;
+    public SqlDatabaseDataSource() {
+        super();
     }
 
-    public String getJdbcUrl() {
-        return jdbcUrl;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
 }
-
-record Query(
-        String sql,
-        SqlDatabaseDataSource sqlDatabaseDataSource
-) { }

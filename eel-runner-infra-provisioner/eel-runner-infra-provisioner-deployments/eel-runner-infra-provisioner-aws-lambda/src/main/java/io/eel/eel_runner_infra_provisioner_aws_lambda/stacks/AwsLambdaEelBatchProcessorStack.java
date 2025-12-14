@@ -345,6 +345,94 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
         }
     }
 
+//    public void buildQueryStepFunction(String flowId) {
+//        try {
+//            {
+//                "Comment": "An example of using Athena to execute queries in sequence and parallel, with error handling and notifications.",
+//                    "StartAt": "Map",
+//                    "QueryLanguage": "JSONata",
+//                    "States": {
+//                "Map": {
+//                    "Type": "Parallel",
+//                            "Branches": [
+//                    {
+//                        "StartAt": "Start Athena query 1",
+//                            "States": {
+//                        "Start Athena query 1": {
+//                            "Type": "Task",
+//                                    "Resource": "arn:aws:states:::athena:startQueryExecution.sync",
+//                                    "Arguments": {
+//                                "QueryString": "<ATHENA_QUERY_STRING>",
+//                                        "WorkGroup": "<ATHENA_WORKGROUP>"
+//                            },
+//                            "End": true
+//                        }
+//                    }
+//                    },
+//                    {
+//                        "StartAt": "Start Athena query 2",
+//                            "States": {
+//                        "Start Athena query 2": {
+//                            "Type": "Task",
+//                                    "Resource": "arn:aws:states:::athena:startQueryExecution.sync",
+//                                    "Arguments": {
+//                                "QueryString": "<ATHENA_QUERY_STRING>",
+//                                        "WorkGroup": "<ATHENA_WORKGROUP>"
+//                            },
+//                            "End": true
+//                        }
+//                    }
+//                    }
+//      ],
+//                    "Catch": [
+//                    {
+//                        "ErrorEquals": [
+//                        "States.ALL"
+//          ],
+//                        "Next": "DynamoDB UpdateItem"
+//                    }
+//      ],
+//                    "Next": "SQS SendMessage",
+//                            "Output": {
+//                        "Query1Result": "{% $states.result[0].ResultSet.Rows %}",
+//                                "Query2Result": "{% $states.result[1].ResultSet.Rows %}"
+//                    }
+//                },
+//                "DynamoDB UpdateItem": {
+//                    "Type": "Task",
+//                            "Resource": "arn:aws:states:::dynamodb:updateItem",
+//                            "Arguments": {
+//                        "TableName": "MyDynamoDBTable",
+//                                "Key": {
+//                            "Column": {
+//                                "S": "MyEntry"
+//                            }
+//                        },
+//                        "UpdateExpression": "SET MyKey = :myValueRef",
+//                                "ExpressionAttributeValues": {
+//                            ":myValueRef": {
+//                                "S": "MyValue"
+//                            }
+//                        }
+//                    },
+//                    "End": true
+//                },
+//                "SQS SendMessage": {
+//                    "Type": "Task",
+//                            "Resource": "arn:aws:states:::sqs:sendMessage",
+//                            "Arguments": {
+//                        "QueueUrl": "https://sqs.us-east-1.amazonaws.com/526661363425/eel-input-8817065c-0e13-43ca-978f-544e899365e1",
+//                                "MessageBody": "{% $states.input %}"
+//                    },
+//                    "End": true
+//                }
+//            }
+//            }
+//        } catch (Throwable t) {
+//
+//        }
+//    }
+
     private void buildInputQueue(String flowId) {
         try {
             final CreateQueueRequest request = CreateQueueRequest.builder()

@@ -1,8 +1,7 @@
-package io.eel.flow_api_core.dao;
+package io.eel.common.dao;
 
 import io.eel.common.model.Flow;
 
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;

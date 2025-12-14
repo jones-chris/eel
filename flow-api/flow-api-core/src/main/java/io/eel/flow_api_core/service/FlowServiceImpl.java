@@ -1,7 +1,7 @@
 package io.eel.flow_api_core.service;
 
 import io.eel.common.model.Flow;
-import io.eel.flow_api_core.dao.FlowDao;
+import io.eel.common.dao.FlowDao;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

@@ -2,8 +2,9 @@ package io.eel.database_query_runner;
 
 import java.sql.ResultSet;
 
+@FunctionalInterface
 public interface QueryResultHandler {
 
-    void handle(ResultSet resultSet);
+    Object[][] handle(ResultSet resultSet);
 
 }

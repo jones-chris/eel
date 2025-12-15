@@ -11,6 +11,11 @@
 
     <artifactId>database-query-runner</artifactId>
     <packaging>pom</packaging>
+    <modules>
+        <module>database-query-runner-core</module>
+        <module>database-query-runner-deployments</module>
+        <module>database-query-runner-deployments/database-query-runner-deployments-aws-lambda</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

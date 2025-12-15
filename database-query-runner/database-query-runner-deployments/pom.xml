@@ -12,9 +12,9 @@
 
     <artifactId>database-query-runner-deployments</artifactId>
     <packaging>pom</packaging>
-    <modules>
-        <module>database-query-runner-deployments-aws-lambda</module>
-    </modules>
+<!--    <modules>-->
+<!--        <module>database-query-runner-deployments-aws-lambda</module>-->
+<!--    </modules>-->
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

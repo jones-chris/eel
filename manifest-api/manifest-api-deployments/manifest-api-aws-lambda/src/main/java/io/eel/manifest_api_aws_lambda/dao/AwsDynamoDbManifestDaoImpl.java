@@ -37,7 +37,7 @@ public class AwsDynamoDbManifestDaoImpl extends BaseAwsDynamoDbDao<Manifest, Str
 
     @Override
     public Manifest saveManifest(Manifest manifest) {
-        final String manifestJsonString = gson.toJson(manifest);
+//        final String manifestJsonString = gson.toJson(manifest);
 
         super.save(
                 manifest,

@@ -20,6 +20,8 @@ public class EelBatchProcessorStackResources {
 
     private String inputQueueArn;
 
+    private String stepFunctionStateMachineArn;
+
     public EelBatchProcessorStackResources() {}
 
     public EelBatchProcessorStackResources(
@@ -30,7 +32,8 @@ public class EelBatchProcessorStackResources {
             String lambdaRoleArn,
             String lambdaRolePolicyArn,
             String eventSourceMappingArn,
-            String inputQueueArn
+            String inputQueueArn,
+            String stepFunctionStateMachineArn
     ) {
         this.cronScheduleId = cronScheduleId;
         this.landingBucketId = landingBucketId;
@@ -40,6 +43,7 @@ public class EelBatchProcessorStackResources {
         this.lambdaRolePolicyArn = lambdaRolePolicyArn;
         this.eventSourceMappingArn = eventSourceMappingArn;
         this.inputQueueArn = inputQueueArn;
+        this.stepFunctionStateMachineArn = stepFunctionStateMachineArn;
     }
 
     public String getDeadLetterQueueId() {
@@ -106,16 +110,24 @@ public class EelBatchProcessorStackResources {
         this.lambdaRolePolicyArn = lambdaRolePolicyArn;
     }
 
+    public String getStepFunctionStateMachineArn() {
+        return stepFunctionStateMachineArn;
+    }
+
+    public void setStepFunctionStateMachineArn(String stepFunctionStateMachineArn) {
+        this.stepFunctionStateMachineArn = stepFunctionStateMachineArn;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         EelBatchProcessorStackResources that = (EelBatchProcessorStackResources) o;
-        return Objects.equals(cronScheduleId, that.cronScheduleId) && Objects.equals(landingBucketId, that.landingBucketId) && Objects.equals(runtimePlatformId, that.runtimePlatformId) && Objects.equals(deadLetterQueueId, that.deadLetterQueueId) && Objects.equals(lambdaRoleArn, that.lambdaRoleArn) && Objects.equals(lambdaRolePolicyArn, that.lambdaRolePolicyArn) && Objects.equals(eventSourceMappingArn, that.eventSourceMappingArn) && Objects.equals(inputQueueArn, that.inputQueueArn);
+        return Objects.equals(cronScheduleId, that.cronScheduleId) && Objects.equals(landingBucketId, that.landingBucketId) && Objects.equals(runtimePlatformId, that.runtimePlatformId) && Objects.equals(deadLetterQueueId, that.deadLetterQueueId) && Objects.equals(lambdaRoleArn, that.lambdaRoleArn) && Objects.equals(lambdaRolePolicyArn, that.lambdaRolePolicyArn) && Objects.equals(eventSourceMappingArn, that.eventSourceMappingArn) && Objects.equals(inputQueueArn, that.inputQueueArn) && Objects.equals(stepFunctionStateMachineArn, that.stepFunctionStateMachineArn);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(cronScheduleId, landingBucketId, runtimePlatformId, deadLetterQueueId, lambdaRoleArn, lambdaRolePolicyArn, eventSourceMappingArn, inputQueueArn);
+        return Objects.hash(cronScheduleId, landingBucketId, runtimePlatformId, deadLetterQueueId, lambdaRoleArn, lambdaRolePolicyArn, eventSourceMappingArn, inputQueueArn, stepFunctionStateMachineArn);
     }
 
     @Override
@@ -129,7 +141,7 @@ public class EelBatchProcessorStackResources {
                 ", lambdaRolePolicyArn='" + lambdaRolePolicyArn + '\'' +
                 ", eventSourceMappingArn='" + eventSourceMappingArn + '\'' +
                 ", inputQueueArn='" + inputQueueArn + '\'' +
+                ", stepFunctionStateMachineArn='" + stepFunctionStateMachineArn + '\'' +
                 '}';
     }
-
 }

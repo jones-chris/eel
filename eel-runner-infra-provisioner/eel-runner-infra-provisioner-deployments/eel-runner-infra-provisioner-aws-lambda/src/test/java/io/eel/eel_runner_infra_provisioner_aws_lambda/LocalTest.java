@@ -5,6 +5,7 @@ import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.scheduler.SchedulerAsyncClient;
+import software.amazon.awssdk.services.sfn.SfnClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
 public class LocalTest {
@@ -18,13 +19,15 @@ public class LocalTest {
                 final S3Client s3Client = S3Client.create();
                 final SqsClient sqsClient = SqsClient.create();
                 final IamClient iamClient = IamClient.builder().build();
+                final SfnClient sfnClient = SfnClient.create();
                 ) {
             processorStack = new AwsLambdaEelBatchProcessorStack(
                     schedulerAsyncClient,
                     lambdaClient,
                     s3Client,
                     sqsClient,
-                    iamClient
+                    iamClient,
+                    sfnClient
             );
 
             // todo:  remember to replace "#".

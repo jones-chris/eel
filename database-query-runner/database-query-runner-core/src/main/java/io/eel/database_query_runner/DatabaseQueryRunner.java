@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.function.Function;
 import java.util.logging.Logger;
 
 
@@ -74,7 +75,7 @@ public class DatabaseQueryRunner {
      * This method handles establishing the connection, executing the query,
      * and closing all resources (Connection, Statement, ResultSet).
      */
-    public void execute(QueryResultHandler queryResultHandler) {
+    public byte[] execute(Function<ResultSet, byte[]> resultSetMapper) {
         // 1. Load the JDBC Driver
         loadDriver();
 
@@ -87,7 +88,7 @@ public class DatabaseQueryRunner {
             log.info("Executing SQL: " + this.sqlQuery);
 
             try (ResultSet resultSet = statement.executeQuery(this.sqlQuery)) {
-                queryResultHandler.handle(resultSet);
+                return resultSetMapper.apply(resultSet);
             }
         } catch (Throwable t) {
             log.severe("Database error occurred while executing SQL: " + t.getMessage());

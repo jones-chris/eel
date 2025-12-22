@@ -1,5 +1,11 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
+import com.amazonaws.services.stepfunctions.AWSStepFunctionsClient;
+import com.amazonaws.services.stepfunctions.builder.StateMachine;
+import com.amazonaws.services.stepfunctions.builder.states.Branch;
+import com.amazonaws.services.stepfunctions.builder.states.ParallelState;
+import com.amazonaws.services.stepfunctions.builder.states.State;
+import com.amazonaws.services.stepfunctions.builder.states.TaskState;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.eel.common.EelPackager;
@@ -23,6 +29,10 @@ import software.amazon.awssdk.services.scheduler.SchedulerAsyncClient;
 import software.amazon.awssdk.services.scheduler.model.ConflictException;
 import software.amazon.awssdk.services.scheduler.model.CreateScheduleRequest;
 import software.amazon.awssdk.services.scheduler.model.Target;
+import software.amazon.awssdk.services.sfn.SfnClient;
+import software.amazon.awssdk.services.sfn.model.CreateStateMachineRequest;
+import software.amazon.awssdk.services.sfn.model.CreateStateMachineResponse;
+import software.amazon.awssdk.services.sfn.model.StateMachineType;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
@@ -36,6 +46,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.logging.Logger;
+
+import static com.amazonaws.services.stepfunctions.builder.StepFunctionBuilder.*;
+import static java.util.Map.*;
 
 public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
@@ -58,6 +71,8 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
     private IamClient iamClient;
 
+    private SfnClient stepFunctionsClient;
+
     private final Map<String, String> tags = new HashMap<>();
 
     private final EelBatchProcessorStackResources resources = new EelBatchProcessorStackResources();
@@ -69,26 +84,32 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
             LambdaClient lambdaClient,
             S3Client s3Client,
             SqsClient sqsClient,
-            IamClient iamClient
+            IamClient iamClient,
+            SfnClient stepFunctionsClient
     ) {
         this.schedulerAsyncClient = schedulerAsyncClient;
         this.lambdaClient = lambdaClient;
         this.s3Client = s3Client;
         this.sqsClient = sqsClient;
         this.iamClient = iamClient;
+        this.stepFunctionsClient = stepFunctionsClient;
 
-        this.resources.setRuntimePlatformId("arn:aws:lambda:us-east-1:some_account:function:8817065c-0e13-43ca-978f-544e899365e1v0");
-        this.resources.setDeadLetterQueueId("arn:aws:sqs:us-east-1:some_account:dlq-8817065c-0e13-43ca-978f-544e899365e1v0");
+//        this.resources.setRuntimePlatformId("arn:aws:lambda:us-east-1:some_account:function:8817065c-0e13-43ca-978f-544e899365e1v0");
+//        this.resources.setDeadLetterQueueId("arn:aws:sqs:us-east-1:some_account:dlq-8817065c-0e13-43ca-978f-544e899365e1v0");
+        this.resources.setLandingBucketId("eel-input-8817065c-0e13-43ca-978f-544e899365e1");
+        this.resources.setInputQueueArn("arn:aws:sqs:us-east-1:526661363425:eel-input-8817065c-0e13-43ca-978f-544e899365e1");
     }
 
     @Override
     public void deploy(String canonicalId, String cronExpression, String flowId) {
-        this.buildLandingBucket(flowId);
-        this.buildInputQueue(flowId);
-        this.buildDeadLetterQueue(flowId);
-        this.buildEelRuntimePlatform(flowId, canonicalId);
-        this.buildLandingBucketTrigger(flowId);
-        this.buildInputQueueLambdaEventSourceMapping();
+//        this.buildLandingBucket(flowId);
+//        this.buildInputQueue(flowId);
+
+//        this.buildDeadLetterQueue(flowId);
+//        this.buildEelRuntimePlatform(flowId, canonicalId);
+//        this.buildLandingBucketTrigger(flowId);
+//        this.buildInputQueueLambdaEventSourceMapping();
+        this.buildQueryStepFunction(flowId);
 //        this.buildCronSchedule(flowId, cronExpression);
     }
 
@@ -210,7 +231,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
             );
         });
         CreateRoleRequest lambdaCreateRoleRequest = CreateRoleRequest.builder()
-                .roleName(flowId)
+                .roleName("eel-engine-" + flowId)
                 .tags(lambdaRoleTags)
                 .assumeRolePolicyDocument(ASSUME_ROLE_POLICY_DOCUMENT_FOR_LAMBDA)
                 .build();
@@ -345,93 +366,114 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
         }
     }
 
-//    public void buildQueryStepFunction(String flowId) {
-//        try {
-//            {
-//                "Comment": "An example of using Athena to execute queries in sequence and parallel, with error handling and notifications.",
-//                    "StartAt": "Map",
-//                    "QueryLanguage": "JSONata",
-//                    "States": {
-//                "Map": {
-//                    "Type": "Parallel",
-//                            "Branches": [
-//                    {
-//                        "StartAt": "Start Athena query 1",
-//                            "States": {
-//                        "Start Athena query 1": {
-//                            "Type": "Task",
-//                                    "Resource": "arn:aws:states:::athena:startQueryExecution.sync",
-//                                    "Arguments": {
-//                                "QueryString": "<ATHENA_QUERY_STRING>",
-//                                        "WorkGroup": "<ATHENA_WORKGROUP>"
-//                            },
-//                            "End": true
-//                        }
-//                    }
-//                    },
-//                    {
-//                        "StartAt": "Start Athena query 2",
-//                            "States": {
-//                        "Start Athena query 2": {
-//                            "Type": "Task",
-//                                    "Resource": "arn:aws:states:::athena:startQueryExecution.sync",
-//                                    "Arguments": {
-//                                "QueryString": "<ATHENA_QUERY_STRING>",
-//                                        "WorkGroup": "<ATHENA_WORKGROUP>"
-//                            },
-//                            "End": true
-//                        }
-//                    }
-//                    }
-//      ],
-//                    "Catch": [
-//                    {
-//                        "ErrorEquals": [
-//                        "States.ALL"
-//          ],
-//                        "Next": "DynamoDB UpdateItem"
-//                    }
-//      ],
-//                    "Next": "SQS SendMessage",
-//                            "Output": {
-//                        "Query1Result": "{% $states.result[0].ResultSet.Rows %}",
-//                                "Query2Result": "{% $states.result[1].ResultSet.Rows %}"
-//                    }
-//                },
-//                "DynamoDB UpdateItem": {
-//                    "Type": "Task",
-//                            "Resource": "arn:aws:states:::dynamodb:updateItem",
-//                            "Arguments": {
-//                        "TableName": "MyDynamoDBTable",
-//                                "Key": {
-//                            "Column": {
-//                                "S": "MyEntry"
-//                            }
-//                        },
-//                        "UpdateExpression": "SET MyKey = :myValueRef",
-//                                "ExpressionAttributeValues": {
-//                            ":myValueRef": {
-//                                "S": "MyValue"
-//                            }
-//                        }
-//                    },
-//                    "End": true
-//                },
-//                "SQS SendMessage": {
-//                    "Type": "Task",
-//                            "Resource": "arn:aws:states:::sqs:sendMessage",
-//                            "Arguments": {
-//                        "QueueUrl": "https://sqs.us-east-1.amazonaws.com/526661363425/eel-input-8817065c-0e13-43ca-978f-544e899365e1",
-//                                "MessageBody": "{% $states.input %}"
-//                    },
-//                    "End": true
-//                }
-//            }
-//            }
-//        } catch (Throwable t) {
-//
-//        }
-//    }
+    public void buildQueryStepFunction(String flowId) {
+        try {
+            String lambdaArn = System.getenv("EEL_QUERY_RUNNER_ID");
+
+            // 1. Define the Lambda Task (Used in both branches)
+            // Note: The Lambda should be designed to return the S3 Bucket/Key it created.
+            State.Builder runLambdaTask = TaskState.builder()
+                    .resource(lambdaArn)
+                    .transition(end());
+
+            // 2. Create the Parallel State with two identical branches
+            State.Builder parallelProcessing = ParallelState.builder()
+                    .comment("Run two CSV generations in parallel")
+                    // todo:  dynamically create a branch for each input data source.
+                    .branch(Branch.builder().startAt("GenerateCSV_1").state("GenerateCSV_1", runLambdaTask))
+                    .branch(Branch.builder().startAt("GenerateCSV_2").state("GenerateCSV_2", runLambdaTask))
+                    .transition(next("NotifySQS"));
+
+            // 3. Define the SQS Task
+            // We use Parameters to format the message using the output from the parallel branches
+            State.Builder sendToSqs = TaskState.builder()
+                    .resource("arn:aws:states:::sqs:sendMessage")
+                    .parameters(Map.of(
+                            "QueueUrl", this.resources.getInputQueueArn(),
+                            "MessageBody", of(
+                                    "files", "$", // This captures the array of results from the Parallel state
+                                    "status", "COMPLETE"
+                            )
+                    ))
+                    .transition(end());
+
+            // 4. Assemble the State Machine
+            StateMachine stateMachine = StateMachine.builder()
+                    .startAt("ParallelProcessing")
+                    .state("ParallelProcessing", parallelProcessing)
+                    .state("NotifySQS", sendToSqs)
+                    .build();
+
+            // 5. Create the IAM policy
+            // todo: parameterize this eel-flow table
+            String eelFlowsDynamoDbTableArn = System.getenv("EEL_FLOWS_TABLE_ARN");
+
+            // 1. Define the Trust Policy using Java Text Blocks
+            String trustPolicy = """
+                {
+                  "Version": "2012-10-17",
+                  "Statement": [{
+                    "Effect": "Allow",
+                    "Principal": { "Service": "lambda.amazonaws.com" },
+                    "Action": "sts:AssumeRole"
+                  }]
+                }
+                """;
+
+            // 2. Create the Role
+            Role role = this.iamClient.createRole(
+                    CreateRoleRequest.builder()
+                            .roleName("eel-sfn-" + flowId)
+                            .assumeRolePolicyDocument(trustPolicy)
+                            .build()
+            ).role();
+
+            // 3. Define the Permissions Policy using Text Blocks and formatted variables
+            String permissionsPolicy = """
+                {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": "s3:PutObject",
+                      "Resource": "arn:aws:s3:::%s/*"
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": "dynamodb:GetItem",
+                      "Resource": "%s"
+                    }
+                  ]
+                }
+                """.formatted(
+                        this.resources.getLandingBucketId(),
+                        eelFlowsDynamoDbTableArn
+                );
+
+            // 4. Attach the policy as an Inline Policy
+            this.iamClient.putRolePolicy(PutRolePolicyRequest.builder()
+                    .roleName(role.roleName())
+                    .policyName(role.roleName())
+                    .policyDocument(permissionsPolicy)
+                    .build());
+
+            CreateStateMachineRequest machineRequest = CreateStateMachineRequest.builder()
+                    .definition(stateMachine.toPrettyJson())
+                    .name(flowId)
+                    .roleArn(role.arn())
+                    .type(StateMachineType.STANDARD)
+                    .build();
+
+            CreateStateMachineResponse response = this.stepFunctionsClient.createStateMachine(machineRequest);
+
+            final String stateMachineArn = response.stateMachineArn();
+            log.info("Successfully created SFN state machine: " + stateMachineArn);
+            this.resources.setStepFunctionStateMachineArn(stateMachineArn);
+        } catch (Throwable t) {
+            log.severe("Encountered error when trying to create Step Function State Machine " + flowId + ", error message: " + t.getMessage());
+            throw t;
+        }
+    }
 
     private void buildInputQueue(String flowId) {
         try {
@@ -484,7 +526,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                     .queueUrl(queueUrl) // SQS requires the Queue URL
                     .attributesWithStrings(
                             // Use the POLICY attribute name to pass the JSON string
-                            Map.of(QueueAttributeName.POLICY.toString(), policyJson)
+                            of(QueueAttributeName.POLICY.toString(), policyJson)
                     )
                     .build();
 

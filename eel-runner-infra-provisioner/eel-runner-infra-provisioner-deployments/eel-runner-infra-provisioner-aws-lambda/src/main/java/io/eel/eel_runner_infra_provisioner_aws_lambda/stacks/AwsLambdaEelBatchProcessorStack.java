@@ -1,6 +1,5 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
-import com.amazonaws.services.stepfunctions.AWSStepFunctionsClient;
 import com.amazonaws.services.stepfunctions.builder.StateMachine;
 import com.amazonaws.services.stepfunctions.builder.states.Branch;
 import com.amazonaws.services.stepfunctions.builder.states.ParallelState;
@@ -9,9 +8,6 @@ import com.amazonaws.services.stepfunctions.builder.states.TaskState;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.eel.common.EelPackager;
-import io.eel.common.model.ScheduledBatchDto;
-import io.eel.common.model.ScheduledBatchType;
-import io.eel.common.model.StorageLocation;
 import io.eel.eel_runner_infra_provisioner_core.stacks.EelBatchProcessorStack;
 import io.eel.eel_runner_infra_provisioner_core.stacks.EelBatchProcessorStackResources;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -22,13 +18,13 @@ import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.iam.model.Tag;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.lambda.model.*;
+import software.amazon.awssdk.services.lambda.model.DeadLetterConfig;
 import software.amazon.awssdk.services.lambda.model.Runtime;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.scheduler.SchedulerAsyncClient;
-import software.amazon.awssdk.services.scheduler.model.ConflictException;
-import software.amazon.awssdk.services.scheduler.model.CreateScheduleRequest;
-import software.amazon.awssdk.services.scheduler.model.Target;
+import software.amazon.awssdk.services.scheduler.SchedulerClient;
+import software.amazon.awssdk.services.scheduler.model.*;
 import software.amazon.awssdk.services.sfn.SfnClient;
 import software.amazon.awssdk.services.sfn.model.CreateStateMachineRequest;
 import software.amazon.awssdk.services.sfn.model.CreateStateMachineResponse;
@@ -39,6 +35,7 @@ import software.amazon.awssdk.services.sqs.model.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,7 +58,9 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
     private final static Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-    private SchedulerAsyncClient schedulerAsyncClient;
+    private String inputQueueUrl;
+
+    private SchedulerClient schedulerClient;
 
     private LambdaClient lambdaClient;
 
@@ -80,14 +79,14 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
     private AwsLambdaEelBatchProcessorStack() {}
 
     public AwsLambdaEelBatchProcessorStack(
-            SchedulerAsyncClient schedulerAsyncClient,
+            SchedulerClient schedulerClient,
             LambdaClient lambdaClient,
             S3Client s3Client,
             SqsClient sqsClient,
             IamClient iamClient,
             SfnClient stepFunctionsClient
     ) {
-        this.schedulerAsyncClient = schedulerAsyncClient;
+        this.schedulerClient = schedulerClient;
         this.lambdaClient = lambdaClient;
         this.s3Client = s3Client;
         this.sqsClient = sqsClient;
@@ -95,67 +94,109 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
         this.stepFunctionsClient = stepFunctionsClient;
 
 //        this.resources.setRuntimePlatformId("arn:aws:lambda:us-east-1:some_account:function:8817065c-0e13-43ca-978f-544e899365e1v0");
-//        this.resources.setDeadLetterQueueId("arn:aws:sqs:us-east-1:some_account:dlq-8817065c-0e13-43ca-978f-544e899365e1v0");
+        this.resources.setLambdaRolePolicyArn("arn:aws:iam::526661363425:policy/eel-engine-8817065c-0e13-43ca-978f-544e899365e1");
+        this.resources.setDeadLetterQueueId("arn:aws:sqs:us-east-1:526661363425:dlq-8817065c-0e13-43ca-978f-544e899365e1");
         this.resources.setLandingBucketId("eel-input-8817065c-0e13-43ca-978f-544e899365e1");
         this.resources.setInputQueueArn("arn:aws:sqs:us-east-1:526661363425:eel-input-8817065c-0e13-43ca-978f-544e899365e1");
+        this.resources.setRuntimePlatformId("arn:aws:lambda:us-east-1:526661363425:function:8817065c-0e13-43ca-978f-544e899365e1");
+        this.resources.setStepFunctionStateMachineArn("arn:aws:states:us-east-1:526661363425:stateMachine:8817065c-0e13-43ca-978f-544e899365e1");
+        this.resources.setLambdaRoleArn("arn:aws:iam::526661363425:role/eel-engine-8817065c-0e13-43ca-978f-544e899365e1");
+//        this.resources.setLambdaRolePolicyArn("");
+//        this.resources.setEventSourceMappingArn("arn:aws:lambda:us-east-1:526661363425:event-source-mapping:c5d8d25b-57a2-49e6-a7b8-5312f033c5fe");
     }
 
     @Override
     public void deploy(String canonicalId, String cronExpression, String flowId) {
 //        this.buildLandingBucket(flowId);
 //        this.buildInputQueue(flowId);
-
 //        this.buildDeadLetterQueue(flowId);
 //        this.buildEelRuntimePlatform(flowId, canonicalId);
+//
+        // todo: may be able to remove this.
 //        this.buildLandingBucketTrigger(flowId);
+
 //        this.buildInputQueueLambdaEventSourceMapping();
-        this.buildQueryStepFunction(flowId);
-//        this.buildCronSchedule(flowId, cronExpression);
+//        this.buildQueryStepFunction(flowId);
+        this.buildCronSchedule(flowId, cronExpression, flowId);
     }
 
     // https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/javav2/example_code/scheduler/src/main/java/com/example/eventbrideschedule/scenario/EventbridgeSchedulerActions.java#L104
     @Override
-    public void buildCronSchedule(String canonicalId, String cronExpression) {
-        final String input = gson.toJson(
-                new ScheduledBatchDto(
-                        ScheduledBatchType.ZIP_OF_CSV_FILES,
-                        new StorageLocation("eel-input-8817065c-0e13-43ca-978f-544e899365e1", "eel_data.zip")
-                )
-        );
-
-        Target target = Target.builder()
-                .arn(this.resources.getRuntimePlatformId())
-                .roleArn(this.resources.getLambdaRoleArn())
-                .input(input)
-                .build();
-
-        CreateScheduleRequest request = CreateScheduleRequest.builder()
-                .name(canonicalId)
-                .scheduleExpression(cronExpression)
-                .target(target)
-                .startDate(Instant.now())
-                .build();
-
-        this.schedulerAsyncClient.createSchedule(request)
-                .thenApply(response -> {
-                    String schedulerArn = response.scheduleArn();
-                    this.resources.setCronScheduleId(schedulerArn);
-
-                    log.info("Successfully created schedule {} " + canonicalId + ", The ARN is " + schedulerArn);
-
-                    return true;
-                })
-                .whenComplete((result, ex) -> {
-                    if (ex != null) {
-                        if (ex instanceof ConflictException) {
-                            log.severe("A conflict exception occurred while creating the schedule: " + ex.getMessage());
-
-                            throw new CompletionException("A conflict exception occurred while creating the schedule: " + ex.getMessage(), ex);
-                        } else {
-                            throw new CompletionException("Error creating schedule: " + ex.getMessage(), ex);
-                        }
+    public void buildCronSchedule(String canonicalId, String cronExpression, String flowId) {
+        try {
+            // Create the Scheduler role and policy so that Scheduler can assume the role and invoke the SFN.
+            String trustPolicy = """
+                {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": "scheduler.amazonaws.com"
+                      },
+                      "Action": "sts:AssumeRole"
                     }
-                });
+                  ]
+                }
+                """;
+
+            Role role = this.iamClient.createRole(
+                    CreateRoleRequest.builder()
+                            .roleName("eel-scheduler-" + flowId)
+                            .assumeRolePolicyDocument(trustPolicy)
+                            .build()
+            ).role();
+
+            Thread.sleep(Duration.ofSeconds(10));
+
+            String permissionsPolicy = """
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": "states:StartExecution",
+                            "Resource": "%s"
+                        }
+                    ]
+                }
+                """.formatted(this.resources.getStepFunctionStateMachineArn());
+
+            this.iamClient.putRolePolicy(PutRolePolicyRequest.builder()
+                    .roleName(role.roleName())
+                    .policyName(role.roleName())
+                    .policyDocument(permissionsPolicy)
+                    .build());
+
+            Thread.sleep(Duration.ofSeconds(10));
+
+            // Create the Scheduler instance.
+            final String input = gson.toJson(
+                    Map.of("canonicalId", canonicalId)
+            );
+
+            Target target = Target.builder()
+                    .arn(this.resources.getStepFunctionStateMachineArn())
+                    .roleArn(role.arn())
+                    .input(input)
+                    .build();
+
+            CreateScheduleRequest request = CreateScheduleRequest.builder()
+                    .name(flowId)
+                    .scheduleExpression(cronExpression)
+                    .target(target)
+                    .startDate(Instant.now())
+                    .flexibleTimeWindow(FlexibleTimeWindow.builder().mode(FlexibleTimeWindowMode.OFF).build())
+                    .build();
+
+            CreateScheduleResponse response = this.schedulerClient.createSchedule(request);
+            String schedulerArn = response.scheduleArn();
+            this.resources.setCronScheduleId(schedulerArn);
+            log.info("Successfully created schedule {} " + flowId + ", The ARN is " + schedulerArn);
+        } catch (Throwable t) {
+            t.printStackTrace();
+            throw new RuntimeException("Error creating schedule: " + t.getMessage());
+        }
     }
 
     @Override
@@ -176,27 +217,28 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
         }
     }
 
-    @Override
-    public void buildLandingBucketTrigger(String flowId) {
-        try {
-            PutBucketNotificationConfigurationRequest triggerRequest = PutBucketNotificationConfigurationRequest.builder()
-                    .bucket(this.resources.getLandingBucketId())
-                    .notificationConfiguration(
-                            NotificationConfiguration.builder()
-                                    .queueConfigurations(
-                                            QueueConfiguration.builder()
-                                                    .events(Event.S3_OBJECT_CREATED_PUT)
-                                                    .queueArn(this.resources.getInputQueueArn())
-                                                    .build()
-                                    ).build()
-                    ).build();
-
-            PutBucketNotificationConfigurationResponse response = this.s3Client.putBucketNotificationConfiguration(triggerRequest);
-        } catch (Throwable t) {
-            log.severe("Encountered error when trying to create a S3 PUT object bucket trigger for " + flowId + ", error message: " + t.getMessage());
-            throw t;
-        }
-    }
+    // todo:  may not need this.
+//    @Override
+//    public void buildLandingBucketTrigger(String flowId) {
+//        try {
+//            PutBucketNotificationConfigurationRequest triggerRequest = PutBucketNotificationConfigurationRequest.builder()
+//                    .bucket(this.resources.getLandingBucketId())
+//                    .notificationConfiguration(
+//                            NotificationConfiguration.builder()
+//                                    .queueConfigurations(
+//                                            QueueConfiguration.builder()
+//                                                    .events(Event.S3_OBJECT_CREATED_PUT)
+//                                                    .queueArn(this.resources.getInputQueueArn())
+//                                                    .build()
+//                                    ).build()
+//                    ).build();
+//
+//            PutBucketNotificationConfigurationResponse response = this.s3Client.putBucketNotificationConfiguration(triggerRequest);
+//        } catch (Throwable t) {
+//            log.severe("Encountered error when trying to create a S3 PUT object bucket trigger for " + flowId + ", error message: " + t.getMessage());
+//            throw t;
+//        }
+//    }
 
     @Override
     public void buildEelRuntimePlatform(String flowId, String canonicalId) {
@@ -247,7 +289,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
         try {
             CreatePolicyRequest createPolicyRequest = CreatePolicyRequest.builder()
-                    .policyName(flowId)
+                    .policyName("eel-engine-" + flowId)
                     .policyDocument(
                             """
                                     {
@@ -294,6 +336,9 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
             this.iamClient.attachRolePolicy(attachRolePolicyRequest);
             this.resources.setLambdaRolePolicyArn(createPolicyResponse.policy().arn());
+
+            // Let the current thread sleep so that IAM role and policy are fully registered with IAM before creating the Lambda function.
+            Thread.sleep(Duration.ofSeconds(10));
         } catch (Throwable t) {
             log.severe("Encountered error when creating the lambda role policy " + flowId + ", error message: " + t.getMessage());
             throw new RuntimeException(t);
@@ -388,14 +433,12 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
             // We use Parameters to format the message using the output from the parallel branches
             State.Builder sendToSqs = TaskState.builder()
                     .resource("arn:aws:states:::sqs:sendMessage")
-                    .parameters(Map.of(
-                            "QueueUrl", this.resources.getInputQueueArn(),
-                            "MessageBody", of(
-                                    "files", "$", // This captures the array of results from the Parallel state
-                                    "status", "COMPLETE"
+                    .parameters(
+                            Map.of(
+                                    "QueueUrl", this.inputQueueUrl,
+                                    "MessageBody.$", "$"
                             )
-                    ))
-                    .transition(end());
+                    ).transition(end());
 
             // 4. Assemble the State Machine
             StateMachine stateMachine = StateMachine.builder()
@@ -405,16 +448,14 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                     .build();
 
             // 5. Create the IAM policy
-            // todo: parameterize this eel-flow table
             String eelFlowsDynamoDbTableArn = System.getenv("EEL_FLOWS_TABLE_ARN");
 
-            // 1. Define the Trust Policy using Java Text Blocks
             String trustPolicy = """
                 {
                   "Version": "2012-10-17",
                   "Statement": [{
                     "Effect": "Allow",
-                    "Principal": { "Service": "lambda.amazonaws.com" },
+                    "Principal": { "Service": "states.amazonaws.com" },
                     "Action": "sts:AssumeRole"
                   }]
                 }
@@ -442,12 +483,24 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                       "Effect": "Allow",
                       "Action": "dynamodb:GetItem",
                       "Resource": "%s"
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": "lambda:InvokeFunction",
+                      "Resource": "%s"
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": "sqs:SendMessage",
+                      "Resource": "%s"
                     }
                   ]
                 }
                 """.formatted(
                         this.resources.getLandingBucketId(),
-                        eelFlowsDynamoDbTableArn
+                        eelFlowsDynamoDbTableArn,
+                        this.resources.getRuntimePlatformId(),
+                        this.resources.getInputQueueArn()
                 );
 
             // 4. Attach the policy as an Inline Policy
@@ -484,6 +537,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 
             CreateQueueResponse response = this.sqsClient.createQueue(request);
             final String queueUrl = response.queueUrl();
+            this.inputQueueUrl = queueUrl;
 
             GetQueueAttributesRequest getQueueAttributesRequest = GetQueueAttributesRequest.builder()
                     .queueUrl(queueUrl)

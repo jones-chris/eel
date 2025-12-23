@@ -4,11 +4,11 @@ public interface EelBatchProcessorStack {
 
     void deploy(String canonicalId, String cronExpression, String flowId);
 
-    void buildCronSchedule(String canonicalId, String cronExpression);
+    void buildCronSchedule(String canonicalId, String cronExpression, String flowId);
 
     void buildLandingBucket(String canonicalId);
 
-    void buildLandingBucketTrigger(String canonicalId);
+//    void buildLandingBucketTrigger(String canonicalId);
 
     void buildEelRuntimePlatform(String flowId, String canonicalId);
 

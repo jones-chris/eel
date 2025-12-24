@@ -16,10 +16,12 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 
+import java.sql.ResultSet;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-public class StreamLambdaHandler implements RequestHandler<ScheduledEvent, Boolean> {
+public class StreamLambdaHandler implements RequestHandler<Map<String, String>, StorageLocation> {
 
     private final static Logger log = Logger.getLogger(StreamLambdaHandler.class.getName());
 
@@ -38,30 +40,31 @@ public class StreamLambdaHandler implements RequestHandler<ScheduledEvent, Boole
     }
 
     @Override
-    public Boolean handleRequest(ScheduledEvent event, Context context) {
+    public StorageLocation handleRequest(Map<String, String> event, Context context) {
         log.info("Event: " + event);
         log.info("Context: " + context);
 
         try {
             // Get data source configuration
-            log.info("" + event.getDetail());
-            final UUID id = UUID.fromString(event.getDetail().get("flowId").toString());
-            final Integer version = (Integer) event.getDetail().get("version");
+            final UUID id = UUID.fromString(event.get("flowId"));
+            final int version = Integer.parseInt(event.get("version"));
             final String canonicalId = Flow.Utils.getCanonicalId(id, version);
 
-            final String inputSheet = event.getDetail().get("inputSheet").toString();
+            final String inputSheet = event.get("inputSheet");
 
             // This should be the flow id.
-            final String destinationBucket = event.getDetail().get("destinationBucket").toString();
+            final String destinationBucket = event.get("ExecutionId");
             // This should be the execution id.
-            final String destinationKey = event.getId();
+            // todo: fix this later.
+//            final String destinationKey = event.getId();
+            final String destinationKey = UUID.randomUUID().toString();
+            final StorageLocation storageLocation = new StorageLocation(destinationBucket, destinationKey);
 
-            log.info("Getting flow with canonical id of " + canonicalId + " and input sheet of " + inputSheet + ".  Will write result to bucket " + destinationBucket + " and key " + destinationKey);
+            log.info("Getting flow with canonical id of " + canonicalId + " and input sheet of " + inputSheet + ".  Will write result to bucket " + storageLocation.bucket() + " and key " + storageLocation.key());
 
             Flow flow = flowDao.getFlowByCanonicalId(canonicalId)
                     .orElseThrow(() -> new RuntimeException("Could not find flow with canonical id of " + canonicalId));
 
-            log.info("Successfully retrieved flow: " + flow);
             // Get the flow's configured query for the given input sheet.
             Query query = flow.getScheduledBatchConfiguration().sheetQueries().get(inputSheet);
 
@@ -80,14 +83,12 @@ public class StreamLambdaHandler implements RequestHandler<ScheduledEvent, Boole
             ).execute(QueryResultUtils::convertResultSetToCsvBytes);
 
             // Write the CSV byte[] to S3.
-            queryResultCsvDao.save(csvBytes, destinationBucket, destinationKey);
-
-            return true;
+            return queryResultCsvDao.save(csvBytes, storageLocation);
         } catch (Throwable t) {
             log.severe("Encountered error: " + t.getMessage());
             t.printStackTrace();
 
-            return false;
+            throw t;
         }
     }
 

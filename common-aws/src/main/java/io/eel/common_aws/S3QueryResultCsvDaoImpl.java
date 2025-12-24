@@ -1,6 +1,7 @@
 package io.eel.common_aws;
 
 import io.eel.common.dao.QueryResultCsvDao;
+import io.eel.common.model.StorageLocation;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -20,18 +21,20 @@ public class S3QueryResultCsvDaoImpl implements QueryResultCsvDao {
     }
 
     @Override
-    public void save(byte[] queryResultCsvBytes, String bucket, String key) {
-        log.info("Saving query result CSV bytes to bucket " + bucket + " and key " + key);
+    public StorageLocation save(byte[] queryResultCsvBytes, StorageLocation storageLocation) {
+        log.info("Saving query result CSV bytes to bucket " + storageLocation.bucket() + " and key " + storageLocation.key());
 
         final PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
+                .bucket(storageLocation.bucket())
+                .key(storageLocation.key())
                 .contentType("text/csv")
                 .build();
 
         final RequestBody requestBody = RequestBody.fromBytes(queryResultCsvBytes);
 
         this.s3Client.putObject(request, requestBody);
+
+        return storageLocation;
     }
 
 }

@@ -1,7 +1,9 @@
 package io.eel.common.dao;
 
+import io.eel.common.model.StorageLocation;
+
 public interface QueryResultCsvDao {
 
-    void save(byte[] queryResultCsvBytes, String bucket, String key);
+    StorageLocation save(byte[] queryResultCsvBytes, StorageLocation storageLocation);
 
 }

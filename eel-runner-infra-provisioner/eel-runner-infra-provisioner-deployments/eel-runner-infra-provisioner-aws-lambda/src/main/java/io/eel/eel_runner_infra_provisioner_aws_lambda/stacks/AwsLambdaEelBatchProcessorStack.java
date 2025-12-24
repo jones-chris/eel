@@ -94,14 +94,14 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
         this.stepFunctionsClient = stepFunctionsClient;
 
 //        this.resources.setRuntimePlatformId("arn:aws:lambda:us-east-1:some_account:function:8817065c-0e13-43ca-978f-544e899365e1v0");
+        this.inputQueueUrl = "https://sqs.us-east-1.amazonaws.com/526661363425/eel-input-8817065c-0e13-43ca-978f-544e899365e1";
         this.resources.setLambdaRolePolicyArn("arn:aws:iam::526661363425:policy/eel-engine-8817065c-0e13-43ca-978f-544e899365e1");
         this.resources.setDeadLetterQueueId("arn:aws:sqs:us-east-1:526661363425:dlq-8817065c-0e13-43ca-978f-544e899365e1");
         this.resources.setLandingBucketId("eel-input-8817065c-0e13-43ca-978f-544e899365e1");
         this.resources.setInputQueueArn("arn:aws:sqs:us-east-1:526661363425:eel-input-8817065c-0e13-43ca-978f-544e899365e1");
         this.resources.setRuntimePlatformId("arn:aws:lambda:us-east-1:526661363425:function:8817065c-0e13-43ca-978f-544e899365e1");
-        this.resources.setStepFunctionStateMachineArn("arn:aws:states:us-east-1:526661363425:stateMachine:8817065c-0e13-43ca-978f-544e899365e1");
+//        this.resources.setStepFunctionStateMachineArn("arn:aws:states:us-east-1:526661363425:stateMachine:8817065c-0e13-43ca-978f-544e899365e1");
         this.resources.setLambdaRoleArn("arn:aws:iam::526661363425:role/eel-engine-8817065c-0e13-43ca-978f-544e899365e1");
-//        this.resources.setLambdaRolePolicyArn("");
 //        this.resources.setEventSourceMappingArn("arn:aws:lambda:us-east-1:526661363425:event-source-mapping:c5d8d25b-57a2-49e6-a7b8-5312f033c5fe");
     }
 
@@ -116,8 +116,8 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
 //        this.buildLandingBucketTrigger(flowId);
 
 //        this.buildInputQueueLambdaEventSourceMapping();
-//        this.buildQueryStepFunction(flowId);
-        this.buildCronSchedule(flowId, cronExpression, flowId);
+        this.buildQueryStepFunction(flowId);
+//        this.buildCronSchedule(canonicalId, cronExpression, flowId);
     }
 
     // https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/javav2/example_code/scheduler/src/main/java/com/example/eventbrideschedule/scenario/EventbridgeSchedulerActions.java#L104
@@ -418,8 +418,13 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
             // 1. Define the Lambda Task (Used in both branches)
             // Note: The Lambda should be designed to return the S3 Bucket/Key it created.
             State.Builder runLambdaTask = TaskState.builder()
-                    .resource(lambdaArn)
-                    .transition(end());
+                    .resource("arn:aws:states:::lambda:invoke") // Use the optimized resource
+                    .parameters(
+                            Map.of(
+                                    "FunctionName", lambdaArn,
+                                    "Payload.$", "$"
+                            )
+                    ).transition(end());
 
             // 2. Create the Parallel State with two identical branches
             State.Builder parallelProcessing = ParallelState.builder()
@@ -499,7 +504,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                 """.formatted(
                         this.resources.getLandingBucketId(),
                         eelFlowsDynamoDbTableArn,
-                        this.resources.getRuntimePlatformId(),
+                        System.getenv("EEL_QUERY_RUNNER_ARN"),
                         this.resources.getInputQueueArn()
                 );
 

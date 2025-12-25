@@ -1,8 +1,10 @@
 package io.eel.eel_runner_infra_provisioner_core.stacks;
 
+import java.util.Set;
+
 public interface EelBatchProcessorStack {
 
-    void deploy(String canonicalId, String cronExpression, String flowId);
+    void deploy(String canonicalId, String cronExpression, String flowId, int version, Set<String> sheetNames);
 
     void buildCronSchedule(String canonicalId, String cronExpression, String flowId);
 

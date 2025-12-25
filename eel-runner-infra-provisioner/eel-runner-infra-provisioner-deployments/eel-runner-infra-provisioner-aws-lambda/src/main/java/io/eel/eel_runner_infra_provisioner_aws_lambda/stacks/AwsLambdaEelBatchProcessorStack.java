@@ -8,6 +8,7 @@ import com.amazonaws.services.stepfunctions.builder.states.TaskState;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.eel.common.EelPackager;
+import io.eel.common.model.Query;
 import io.eel.eel_runner_infra_provisioner_core.stacks.EelBatchProcessorStack;
 import io.eel.eel_runner_infra_provisioner_core.stacks.EelBatchProcessorStackResources;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -37,10 +38,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletionException;
 import java.util.logging.Logger;
 
@@ -55,6 +53,8 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
     private static final String SQS_EXECUTION_POLICY_ARN = "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole";
 
     private static final String EEL_TRANSFORMATIONS_BUCKET_NAME = System.getenv("EEL_TRANSFORMATIONS_BUCKET_NAME");
+
+    private static final String EEL_QUERY_RUNNER_ARN = System.getenv("EEL_QUERY_RUNNER_ID");
 
     private final static Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
@@ -94,29 +94,29 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
         this.stepFunctionsClient = stepFunctionsClient;
 
 //        this.resources.setRuntimePlatformId("arn:aws:lambda:us-east-1:some_account:function:8817065c-0e13-43ca-978f-544e899365e1v0");
-        this.inputQueueUrl = "https://sqs.us-east-1.amazonaws.com/526661363425/eel-input-8817065c-0e13-43ca-978f-544e899365e1";
-        this.resources.setLambdaRolePolicyArn("arn:aws:iam::526661363425:policy/eel-engine-8817065c-0e13-43ca-978f-544e899365e1");
-        this.resources.setDeadLetterQueueId("arn:aws:sqs:us-east-1:526661363425:dlq-8817065c-0e13-43ca-978f-544e899365e1");
-        this.resources.setLandingBucketId("eel-input-8817065c-0e13-43ca-978f-544e899365e1");
-        this.resources.setInputQueueArn("arn:aws:sqs:us-east-1:526661363425:eel-input-8817065c-0e13-43ca-978f-544e899365e1");
-        this.resources.setRuntimePlatformId("arn:aws:lambda:us-east-1:526661363425:function:8817065c-0e13-43ca-978f-544e899365e1");
+        this.inputQueueUrl = "https://sqs.us-east-1.amazonaws.com/526661363425/eel-input-b6ec0a10-ef89-4c0f-9ce9-4e516b942a17";
+//        this.resources.setLambdaRolePolicyArn("arn:aws:iam::526661363425:policy/eel-engine-8817065c-0e13-43ca-978f-544e899365e1");
+        this.resources.setDeadLetterQueueId("arn:aws:sqs:us-east-1:526661363425:eel-input-b6ec0a10-ef89-4c0f-9ce9-4e516b942a17");
+        this.resources.setLandingBucketId("eel-input-b6ec0a10-ef89-4c0f-9ce9-4e516b942a17");
+        this.resources.setInputQueueArn("arn:aws:sqs:us-east-1:526661363425:eel-input-b6ec0a10-ef89-4c0f-9ce9-4e516b942a17");
+//        this.resources.setRuntimePlatformId("arn:aws:lambda:us-east-1:526661363425:function:8817065c-0e13-43ca-978f-544e899365e1");
 //        this.resources.setStepFunctionStateMachineArn("arn:aws:states:us-east-1:526661363425:stateMachine:8817065c-0e13-43ca-978f-544e899365e1");
-        this.resources.setLambdaRoleArn("arn:aws:iam::526661363425:role/eel-engine-8817065c-0e13-43ca-978f-544e899365e1");
+//        this.resources.setLambdaRoleArn("arn:aws:iam::526661363425:role/eel-engine-8817065c-0e13-43ca-978f-544e899365e1");
 //        this.resources.setEventSourceMappingArn("arn:aws:lambda:us-east-1:526661363425:event-source-mapping:c5d8d25b-57a2-49e6-a7b8-5312f033c5fe");
     }
 
     @Override
-    public void deploy(String canonicalId, String cronExpression, String flowId) {
-//        this.buildLandingBucket(flowId);
-//        this.buildInputQueue(flowId);
-//        this.buildDeadLetterQueue(flowId);
-//        this.buildEelRuntimePlatform(flowId, canonicalId);
+    public void deploy(String canonicalId, String cronExpression, String flowId, int version, Set<String> sheetNames) {
+        this.buildLandingBucket(flowId);
+        this.buildInputQueue(flowId);
+        this.buildDeadLetterQueue(flowId);
+        this.buildEelRuntimePlatform(flowId, canonicalId);
 //
         // todo: may be able to remove this.
 //        this.buildLandingBucketTrigger(flowId);
 
-//        this.buildInputQueueLambdaEventSourceMapping();
-        this.buildQueryStepFunction(flowId);
+        this.buildInputQueueLambdaEventSourceMapping();
+        this.buildQueryStepFunction(flowId, version, sheetNames);
 //        this.buildCronSchedule(canonicalId, cronExpression, flowId);
     }
 
@@ -411,28 +411,57 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
         }
     }
 
-    public void buildQueryStepFunction(String flowId) {
-        try {
-            String lambdaArn = System.getenv("EEL_QUERY_RUNNER_ID");
+    private State.Builder buildQueryRunnerState(String flowId, int version, String sheetName) {
+        return TaskState.builder()
+                .resource("arn:aws:states:::lambda:invoke") // Use the optimized resource
+                .parameters(
+                        Map.of(
+                                "FunctionName", EEL_QUERY_RUNNER_ARN,
+                                "Payload", Map.of(
+                                        "flowId", flowId,
+                                        "version", version,
+                                        "inputSheet", sheetName,
+                                        "destinationBucket", this.resources.getLandingBucketId()
+                                )
+//                                    "Payload.$", "$"
+                        )
+                ).transition(end());
+    }
 
-            // 1. Define the Lambda Task (Used in both branches)
-            // Note: The Lambda should be designed to return the S3 Bucket/Key it created.
-            State.Builder runLambdaTask = TaskState.builder()
-                    .resource("arn:aws:states:::lambda:invoke") // Use the optimized resource
-                    .parameters(
-                            Map.of(
-                                    "FunctionName", lambdaArn,
-                                    "Payload.$", "$"
-                            )
-                    ).transition(end());
+    public void buildQueryStepFunction(String flowId, int version, Set<String> sheetNames) {
+        try {
+//            // 1. Define the Lambda Task (Used in both branches)
+//            // Note: The Lambda should be designed to return the S3 Bucket/Key it created.
+//            State.Builder runLambdaTask = TaskState.builder()
+//                    .resource("arn:aws:states:::lambda:invoke") // Use the optimized resource
+//                    .parameters(
+//                            Map.of(
+//                                    "FunctionName", EEL_QUERY_RUNNER_ARN,
+//                                    "Payload", Map.of(
+//                                            "flowId", flowId,
+//                                            "version", version,
+//                                            "inputSheet", "input_customer",
+//                                            "destinationBucket", this.resources.getLandingBucketId()
+//                                    )
+////                                    "Payload.$", "$"
+//                            )
+//                    ).transition(end());
 
             // 2. Create the Parallel State with two identical branches
-            State.Builder parallelProcessing = ParallelState.builder()
-                    .comment("Run two CSV generations in parallel")
+            ParallelState.Builder parallelProcessing = ParallelState.builder()
+                    .comment("Run two CSV generations in parallel");
+
+            for (String sheetName : sheetNames) {
+                State.Builder queryRunnerState = this.buildQueryRunnerState(flowId, version, sheetName);
+                parallelProcessing.branch(Branch.builder().startAt("GenerateCSV_1").state(sheetName, queryRunnerState));
+            }
+
+            parallelProcessing.transition(next("NotifySQS"));
+
                     // todo:  dynamically create a branch for each input data source.
-                    .branch(Branch.builder().startAt("GenerateCSV_1").state("GenerateCSV_1", runLambdaTask))
-                    .branch(Branch.builder().startAt("GenerateCSV_2").state("GenerateCSV_2", runLambdaTask))
-                    .transition(next("NotifySQS"));
+//                    .branch(Branch.builder().startAt("GenerateCSV_1").state("GenerateCSV_1", runLambdaTask))
+//                    .branch(Branch.builder().startAt("GenerateCSV_2").state("GenerateCSV_2", runLambdaTask))
+//                    .transition(next("NotifySQS"));
 
             // 3. Define the SQS Task
             // We use Parameters to format the message using the output from the parallel branches

@@ -57,7 +57,7 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
             // This should be the execution id.
             // todo: fix this later.
 //            final String destinationKey = event.getId();
-            final String destinationKey = UUID.randomUUID().toString();
+            final String destinationKey = UUID.randomUUID() + "/" + inputSheet + ".csv";
             final StorageLocation storageLocation = new StorageLocation(destinationBucket, destinationKey);
 
             log.info("Getting flow with canonical id of " + canonicalId + " and input sheet of " + inputSheet + ".  Will write result to bucket " + storageLocation.bucket() + " and key " + storageLocation.key());

@@ -115,7 +115,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
         // todo: may be able to remove this.
 //        this.buildLandingBucketTrigger(flowId);
 
-        this.buildInputQueueLambdaEventSourceMapping();
+//        this.buildInputQueueLambdaEventSourceMapping();
         this.buildQueryStepFunction(flowId, version, sheetNames);
 //        this.buildCronSchedule(canonicalId, cronExpression, flowId);
     }
@@ -171,14 +171,14 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
             Thread.sleep(Duration.ofSeconds(10));
 
             // Create the Scheduler instance.
-            final String input = gson.toJson(
-                    Map.of("canonicalId", canonicalId)
-            );
+//            final String input = gson.toJson(
+//                    Map.of("canonicalId", canonicalId)
+//            );
 
             Target target = Target.builder()
                     .arn(this.resources.getStepFunctionStateMachineArn())
                     .roleArn(role.arn())
-                    .input(input)
+//                    .input(input) // todo: is this required?  If so, does it need to be null or an empty string?
                     .build();
 
             CreateScheduleRequest request = CreateScheduleRequest.builder()
@@ -423,45 +423,22 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                                         "inputSheet", sheetName,
                                         "destinationBucket", this.resources.getLandingBucketId()
                                 )
-//                                    "Payload.$", "$"
                         )
                 ).transition(end());
     }
 
     public void buildQueryStepFunction(String flowId, int version, Set<String> sheetNames) {
         try {
-//            // 1. Define the Lambda Task (Used in both branches)
-//            // Note: The Lambda should be designed to return the S3 Bucket/Key it created.
-//            State.Builder runLambdaTask = TaskState.builder()
-//                    .resource("arn:aws:states:::lambda:invoke") // Use the optimized resource
-//                    .parameters(
-//                            Map.of(
-//                                    "FunctionName", EEL_QUERY_RUNNER_ARN,
-//                                    "Payload", Map.of(
-//                                            "flowId", flowId,
-//                                            "version", version,
-//                                            "inputSheet", "input_customer",
-//                                            "destinationBucket", this.resources.getLandingBucketId()
-//                                    )
-////                                    "Payload.$", "$"
-//                            )
-//                    ).transition(end());
-
             // 2. Create the Parallel State with two identical branches
             ParallelState.Builder parallelProcessing = ParallelState.builder()
-                    .comment("Run two CSV generations in parallel");
+                    .comment("Run the sheet queries in parallel");
 
             for (String sheetName : sheetNames) {
                 State.Builder queryRunnerState = this.buildQueryRunnerState(flowId, version, sheetName);
-                parallelProcessing.branch(Branch.builder().startAt("GenerateCSV_1").state(sheetName, queryRunnerState));
+                parallelProcessing.branch(Branch.builder().startAt(sheetName).state(sheetName, queryRunnerState));
             }
 
             parallelProcessing.transition(next("NotifySQS"));
-
-                    // todo:  dynamically create a branch for each input data source.
-//                    .branch(Branch.builder().startAt("GenerateCSV_1").state("GenerateCSV_1", runLambdaTask))
-//                    .branch(Branch.builder().startAt("GenerateCSV_2").state("GenerateCSV_2", runLambdaTask))
-//                    .transition(next("NotifySQS"));
 
             // 3. Define the SQS Task
             // We use Parameters to format the message using the output from the parallel branches

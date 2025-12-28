@@ -11,7 +11,6 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.logging.Logger;
-import java.util.zip.ZipInputStream;
 
 public class AwsS3WorkbookDaoImpl implements WorkbookDao {
 

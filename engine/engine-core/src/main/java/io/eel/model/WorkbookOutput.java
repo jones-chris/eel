@@ -1,23 +1,21 @@
 package io.eel.model;
 
-import org.apache.poi.ss.usermodel.Sheet;
-
 import java.util.Map;
 
 public class WorkbookOutput {
 
-    private final Map<Sheet, Object[][]> output;
+    private final Map<String, Object[][]> output;
 
-    public WorkbookOutput(Map<Sheet, Object[][]> output) {
+    public WorkbookOutput(Map<String, Object[][]> output) {
         this.output = output;
     }
 
-    public Map<Sheet, Object[][]> getAllOutputs() {
+    public Map<String, Object[][]> getAllOutputs() {
         return this.output;
     }
 
-    public Object[][] getOutput(Sheet sheet) {
-        return this.output.get(sheet);
+    public Object[][] getOutput(String sheetName) {
+        return this.output.get(sheetName);
     }
 
     public void logOutput() {

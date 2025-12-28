@@ -46,9 +46,9 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
 
         try {
             // Get data source configuration
-            final UUID id = UUID.fromString(event.get("flowId"));
+            final UUID flowId = UUID.fromString(event.get("flowId"));
             final int version = Integer.parseInt(event.get("version"));
-            final String canonicalId = Flow.Utils.getCanonicalId(id, version);
+            final String canonicalId = Flow.Utils.getCanonicalId(flowId, version);
 
             final String inputSheet = event.get("inputSheet");
 
@@ -58,7 +58,7 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
             // todo: fix this later.
 //            final String destinationKey = event.getId();
             final String destinationKey = UUID.randomUUID() + "/" + inputSheet + ".csv";
-            final StorageLocation storageLocation = new StorageLocation(destinationBucket, destinationKey);
+            final StorageLocation storageLocation = new StorageLocation(destinationBucket, destinationKey, flowId.toString());
 
             log.info("Getting flow with canonical id of " + canonicalId + " and input sheet of " + inputSheet + ".  Will write result to bucket " + storageLocation.bucket() + " and key " + storageLocation.key());
 

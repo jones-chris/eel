@@ -45,7 +45,7 @@ public class WorkbookProxy implements AutoCloseable {
     }
 
     public WorkbookOutput getOutputs() {
-        Map<Sheet, Object[][]> outputData = new HashMap<>();
+        Map<String, Object[][]> outputData = new HashMap<>();
 
         for (int sheetIdx = 0; sheetIdx < workbook.getNumberOfSheets(); sheetIdx++) {
             Sheet sheet = workbook.getSheetAt(sheetIdx);
@@ -79,7 +79,7 @@ public class WorkbookProxy implements AutoCloseable {
                     sheetDataBlock.add(rowDataBlock.toArray());
                 }
 
-                outputData.put(sheet, sheetDataBlock.toArray(new Object[0][]));
+                outputData.put(sheet.getSheetName(), sheetDataBlock.toArray(new Object[0][]));
             }
         }
 

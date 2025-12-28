@@ -3,9 +3,15 @@ package io.eel.common_aws;
 import io.eel.common.dao.QueryResultCsvDao;
 import io.eel.common.model.StorageLocation;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.InputStream;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 public class S3QueryResultCsvDaoImpl implements QueryResultCsvDao {
@@ -35,6 +41,24 @@ public class S3QueryResultCsvDaoImpl implements QueryResultCsvDao {
         this.s3Client.putObject(request, requestBody);
 
         return storageLocation;
+    }
+
+    @Override
+    public Optional<InputStream> get(StorageLocation storageLocation) {
+        log.info("Getting query result CSV at bucket " + storageLocation.bucket() + " and key " + storageLocation.key());
+
+        final GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(storageLocation.bucket())
+                .key(storageLocation.key())
+                .build();
+
+        try {
+            InputStream inputStream = this.s3Client.getObject(request, ResponseTransformer.toInputStream());
+            return Optional.of(inputStream);
+        } catch (NoSuchBucketException | NoSuchKeyException e) {
+            return Optional.empty();
+        }
+
     }
 
 }

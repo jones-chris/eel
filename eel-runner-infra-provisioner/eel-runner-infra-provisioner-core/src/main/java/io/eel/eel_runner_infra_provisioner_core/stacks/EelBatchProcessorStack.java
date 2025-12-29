@@ -6,6 +6,8 @@ public interface EelBatchProcessorStack {
 
     void deploy(String canonicalId, String cronExpression, String flowId, int version, Set<String> sheetNames);
 
+    void rollback(String flowId, int version);
+
     void buildCronSchedule(String canonicalId, String cronExpression, String flowId);
 
     void buildLandingBucket(String canonicalId);

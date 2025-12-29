@@ -12,6 +12,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 
@@ -41,7 +42,8 @@ public class WorkbookCalculationEngine {
 
             int rowIdx = 0;
 
-            Sheet sheet = workbookProxy.getWorkbook().getSheet(worksheetName);
+            Sheet sheet = Optional.ofNullable(this.workbookProxy.getWorkbook().getSheet(worksheetName))
+                    .orElseThrow(() -> new RuntimeException("Could not find sheet with name " + worksheetName));
 
             Row headerRow = sheet.getRow(0);
             int numOfColumns = new Object[headerRow.getLastCellNum()].length;

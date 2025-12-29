@@ -11,6 +11,7 @@ import io.eel.common.EelPackager;
 import io.eel.common.model.Query;
 import io.eel.eel_runner_infra_provisioner_core.stacks.EelBatchProcessorStack;
 import io.eel.eel_runner_infra_provisioner_core.stacks.EelBatchProcessorStackResources;
+import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
@@ -57,6 +58,8 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
     private static final String EEL_QUERY_RUNNER_ARN = System.getenv("EEL_QUERY_RUNNER_ID");
 
     private final static Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+    private final static int ENGINE_TIMEOUT_IN_SECONDS = 120; // 2 minutes
 
     private String inputQueueUrl;
 
@@ -115,9 +118,14 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
         // todo: may be able to remove this.
 //        this.buildLandingBucketTrigger(flowId);
 
-//        this.buildInputQueueLambdaEventSourceMapping();
+        this.buildInputQueueLambdaEventSourceMapping();
         this.buildQueryStepFunction(flowId, version, sheetNames);
 //        this.buildCronSchedule(canonicalId, cronExpression, flowId);
+    }
+
+    @Override
+    public void rollback(String flowId, int version) {
+        // todo:  implement this.
     }
 
     // https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/javav2/example_code/scheduler/src/main/java/com/example/eventbrideschedule/scenario/EventbridgeSchedulerActions.java#L104
@@ -348,6 +356,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
             final CreateFunctionRequest request = CreateFunctionRequest.builder()
                     .functionName(flowId)
                     .role(lambdaRole.arn())
+                    .timeout(ENGINE_TIMEOUT_IN_SECONDS)
                     .runtime(Runtime.JAVA21)
                     .architectures(Architecture.X86_64)
                     .deadLetterConfig(
@@ -447,7 +456,7 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
                     .parameters(
                             Map.of(
                                     "QueueUrl", this.inputQueueUrl,
-                                    "MessageBody.$", "$"
+                                    "MessageBody.$", "$[*].Payload"
                             )
                     ).transition(end());
 
@@ -543,7 +552,11 @@ public class AwsLambdaEelBatchProcessorStack implements EelBatchProcessorStack {
         try {
             final CreateQueueRequest request = CreateQueueRequest.builder()
                     .queueName("eel-input-" + flowId)
-                    .tags(this.tags)
+                    .attributes(
+                            Map.of(
+                                    QueueAttributeName.VISIBILITY_TIMEOUT, String.valueOf(ENGINE_TIMEOUT_IN_SECONDS)
+                            )
+                    ).tags(this.tags)
                     .build();
 
             CreateQueueResponse response = this.sqsClient.createQueue(request);

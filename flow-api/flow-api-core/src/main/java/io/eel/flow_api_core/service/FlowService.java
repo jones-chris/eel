@@ -22,6 +22,6 @@ public interface FlowService {
 
     String generateTransformationStagingPresignedUrl(UUID flowId);
 
-    Flow finalizeFlow(String canonicalId) throws ResourceNotFoundException;
+    Flow finalizeFlow(Flow flow);
 
 }

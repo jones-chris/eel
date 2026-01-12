@@ -16,8 +16,8 @@ public interface FlowDao {
 
     Flow createNewFlow(String author);
 
-    String generateTransformationStagingPresignedUrl(UUID flowId);
+    Flow incrementFlow(Flow flow);
 
-//    void saveFileToS3(Path path);
+    String generateTransformationStagingPresignedUrl(UUID flowId);
 
 }

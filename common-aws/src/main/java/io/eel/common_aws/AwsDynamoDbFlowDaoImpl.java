@@ -106,6 +106,14 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
     }
 
     @Override
+    public Flow incrementFlow(Flow flow) {
+        return super.save(
+                flow,
+                f -> AttributeValue.fromS(f.getCanonicalId())
+        );
+    }
+
+    @Override
     public String generateTransformationStagingPresignedUrl(UUID flowId) {
         try (S3Presigner preSigner = S3Presigner.create()) {
             PutObjectRequest objectRequest = PutObjectRequest.builder()

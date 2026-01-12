@@ -59,7 +59,9 @@ public class FlowServiceImpl implements FlowService {
 
     @Override
     public Flow incrementFlow(Flow flow) {
-        final Flow newFlowVersion = flow.increment();
+        final Flow newFlow = flow.increment();
+
+        return this.flowDao.incrementFlow(newFlow);
     }
 
     @Override
@@ -78,27 +80,27 @@ public class FlowServiceImpl implements FlowService {
     }
 
     @Override
-    public Flow finalizeFlow(String canonicalId) throws ResourceNotFoundException {
-        Optional<Flow> flowOptional = this.getFlowByCanonicalId(canonicalId);
+    public Flow finalizeFlow(Flow flow) {
+        // Mark isFinalized as true.
+        flow.setFinalized(true);
+        this.flowDao.updateFlow(flow);
 
-        if (flowOptional.isEmpty()) {
-            throw new ResourceNotFoundException(canonicalId);
-        } else {
-            Flow flow = flowOptional.get();
+        // Deploy infra.
+        try {
+            Set<String> sheetNames = flow.getScheduledBatchConfiguration().sheetQueries().keySet();
+            this.eelBatchProcessorStack.deploy(flow.getCanonicalId(), "", "", 0, sheetNames);
 
-            // mark isFinalized as true.
-            flow.setFinalized(true);
+            return flow;
+        } catch (Throwable t) {
+            // If there is an error, then rollback and mark isFinalized as false.
+            log.error(t);
+
+            flow.setFinalized(false);
             this.flowDao.updateFlow(flow);
 
-            // deploy infra.
-            try {
-                Set<String> sheetNames = flow.getScheduledBatchConfiguration().sheetQueries().keySet();
-                this.eelBatchProcessorStack.deploy(canonicalId, "", "", 0, sheetNames);
+            this.eelBatchProcessorStack.rollback(flow.getId().toString(), flow.getVersion());
 
-                return flow;
-            } catch (EelStackDeploymentException e) {
-                // todo: if error, then rollback and mark isFinalized as false.
-            }
+            throw t;
         }
 
     }

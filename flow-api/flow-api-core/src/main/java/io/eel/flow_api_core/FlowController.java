@@ -211,28 +211,42 @@ public class FlowController extends BaseController {
                     );
                 }
         ).addRouteHandler(
-                "GET", "/flow/finalize",
+                "GET", "/flow/deploy",
                 (request, response) -> {
-                    deserializeRequestBody(request)
-                            .ifPresentOrElse(
-                                    flow -> {
-                                        if (flow.isFinalized()) {
-                                            String message = "Flow with canonical id of " + f.getCanonicalId() + " is already finalized";
+                    // Request validation.  Make sure the required flow id an version are present.
+                    if (! request.getQueryParameters().containsKey("flowId") || ! request.getQueryParameters().containsKey("version")) {
+                        clientError(response);
+                        return;
+                    }
 
-                                            log.severe(message);
-                                            clientError(response, message);
+                    final UUID flowId = UUID.fromString(request.getQueryParameters().get("flowId").getFirst());
+                    final int version = Integer.parseInt(request.getQueryParameters().get("version").getFirst());
 
-                                            return;
-                                        }
+                    // Get the flow by the id and version.
+                    final String canonicalId = Flow.Utils.getCanonicalId(flowId, version);
+                    Optional<Flow> flowOptional = this.flowService.getFlowByCanonicalId(canonicalId);
 
-                                        final Flow persistedFlow = this.flowService.finalizeFlow(flow);
+                    // If not found, return a 404.
+                    if (flowOptional.isEmpty()) {
+                        notFound(response);
+                        return;
+                    }
 
-                                        created(response).setBody(gson.toJson(persistedFlow));
-                                    },
-                                    () -> {
-                                        clientError(response);
-                                    }
-                            );
+                    // If found, but it is already finalized/deployed, then return a 400.
+                    Flow flow = flowOptional.get();
+                    if (flow.isFinalized()) {
+                        String message = "Flow with canonical id of " + flow.getCanonicalId() + " is already deployed";
+
+                        log.severe(message);
+                        clientError(response, message);
+
+                        return;
+                    }
+
+                    // Otherwise, finalize/deploy the flow and return a 201.
+                    final Flow persistedFlow = this.flowService.finalizeFlow(flow);
+
+                    created(response).setBody(gson.toJson(persistedFlow));
                 }
         );
     }

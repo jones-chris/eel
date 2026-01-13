@@ -58,6 +58,13 @@ public abstract class FlowComponentStack {
     public abstract boolean delete(String flowId, int version);
 
     public final boolean rollback() {
+        // If the stack did not provision any resources (ex:  it failed on it's first resource), then just return true.
+        if (this.provisionedResources.isEmpty()) {
+            log.debug("No provisioned resources in stack {} with flow id {} to rollback", this.getClass().getName(), this.getFlowId());
+            return true;
+        }
+
+        // Otherwise, rollback the resources in the reverse order that they were created in.
         AtomicBoolean allResourcesWereDeleted = new AtomicBoolean(true);
 
         try {
@@ -71,7 +78,7 @@ public abstract class FlowComponentStack {
                                     boolean wasSuccessful = tryToDeleteResource(resourceId, rollbackAction);
                                     if (!wasSuccessful) allResourcesWereDeleted.set(false);
                                 },
-                                () -> log.error("Encountered unexpected resource type of {} for flow with id {}", resourceType, flow.getId())
+                                () -> log.error("Encountered unexpected resource type of {} for flow with id {}", resourceType, this.getFlowId())
                         );
             }
 

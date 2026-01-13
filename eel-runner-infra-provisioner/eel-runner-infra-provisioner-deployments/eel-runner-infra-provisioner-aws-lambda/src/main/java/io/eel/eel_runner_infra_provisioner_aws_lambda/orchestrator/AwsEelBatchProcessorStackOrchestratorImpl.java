@@ -30,7 +30,8 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
 
             boolean wasSuccessful = flowComponentStack.deploy();
             if (! wasSuccessful) {
-                log.error("Flow component stack {} did not deploy successfully for flow ID {} and version {}",
+                log.error(
+                        "Flow component stack {} did not deploy successfully for flow ID {} and version {}",
                         flowComponentStack.getClass().getName(),
                         flowComponentStack.getFlowId(),
                         flowComponentStack.getFlowVersion()

@@ -1,11 +1,13 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.model.Flow;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedHashMap;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 public abstract class FlowComponentStack {
 
@@ -23,8 +25,14 @@ public abstract class FlowComponentStack {
      */
     protected Flow flow;
 
+    private Map<ResourceType, Consumer<String>> rollbackActions;
+
     protected FlowComponentStack(Flow flow) {
         this.flow = flow;
+    }
+
+    protected void setRollbackActions(Map<ResourceType, Consumer<String>> rollbackActions) {
+        this.rollbackActions = rollbackActions;
     }
 
     public UUID getFlowId() {
@@ -49,17 +57,41 @@ public abstract class FlowComponentStack {
      */
     public abstract boolean delete(String flowId, int version);
 
-    public abstract boolean rollback();
+    public final boolean rollback() {
+        AtomicBoolean allResourcesWereDeleted = new AtomicBoolean(true);
 
-    protected static boolean tryToDeleteResource(String resourceId, Runnable runnable) {
         try {
-            runnable.run();
+            for (Map.Entry<ResourceType, String> entry : this.provisionedResources.reversed().entrySet()) {
+                final ResourceType resourceType = entry.getKey();
+                final String resourceId = entry.getValue();
 
-            log.info("Successfully deleted resource with id {}", resourceId);
+                Optional.ofNullable(rollbackActions.get(resourceType))
+                        .ifPresentOrElse(
+                                rollbackAction -> {
+                                    boolean wasSuccessful = tryToDeleteResource(resourceId, rollbackAction);
+                                    if (!wasSuccessful) allResourcesWereDeleted.set(false);
+                                },
+                                () -> log.error("Encountered unexpected resource type of {} for flow with id {}", resourceType, flow.getId())
+                        );
+            }
+
+            return allResourcesWereDeleted.get();
+        } catch (Throwable t) {
+            log.error("", t);
+
+            return false;
+        }
+    };
+
+    protected static boolean tryToDeleteResource(String resourceId, Consumer<String> rollbackAction) {
+        try {
+            rollbackAction.accept(resourceId);
+
+            log.debug("Successfully deleted resource with id {}", resourceId);
 
             return true;
         } catch (Throwable t) {
-            log.error("Failed to delete role {}.  Moving onto next resource.", resourceId);
+            log.error("Failed to delete resource {}.  Moving onto next resource", resourceId);
             log.error("", t);
 
             return false;
@@ -69,8 +101,8 @@ public abstract class FlowComponentStack {
     protected enum ResourceType {
 
         AWS_IAM_ROLE,
-        AWS_IAM_POLICY,
-        AWS_SCHEDULER
+        AWS_SCHEDULER,
+        AWS_S3_BUCKET
 
     }
 

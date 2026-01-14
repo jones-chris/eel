@@ -1,7 +1,6 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.model.Flow;
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +10,9 @@ import java.util.function.Consumer;
 
 public abstract class FlowComponentStack {
 
-    private static final Logger log = LoggerFactory.getLogger(FlowComponentStack.class);
+    protected static final Logger log = LoggerFactory.getLogger(FlowComponentStack.class);
+
+    protected Map<String, String> tags = new HashMap<>();
 
     /**
      * An {@link LinkedHashMap} that maintains the order the resources were provisioned.  The key is the unique identifier
@@ -31,8 +32,23 @@ public abstract class FlowComponentStack {
         this.flow = flow;
     }
 
+    protected FlowComponentStack(Flow flow, Map<String, String> tags) {
+        this.flow = flow;
+        this.tags = tags;
+    }
+
     protected void setRollbackActions(Map<ResourceType, Consumer<String>> rollbackActions) {
         this.rollbackActions = rollbackActions;
+    }
+
+    protected FlowComponentStack addRollbackAction(Map.Entry<ResourceType, Consumer<String>> rollbackAction) {
+        this.rollbackActions.put(rollbackAction.getKey(), rollbackAction.getValue());
+        return this;
+    }
+
+    protected FlowComponentStack addRollbackAction(ResourceType resourceType, Consumer<String> rollbackAction) {
+        this.rollbackActions.put(resourceType, rollbackAction);
+        return this;
     }
 
     public UUID getFlowId() {
@@ -105,11 +121,14 @@ public abstract class FlowComponentStack {
         }
     }
 
-    protected enum ResourceType {
+    public enum ResourceType {
 
         AWS_IAM_ROLE,
+        AWS_IAM_POLICY,
         AWS_SCHEDULER,
-        AWS_S3_BUCKET
+        AWS_S3_BUCKET,
+        AWS_LAMBDA_FUNCTION
+//        AWS_LAMBDA_ROLE
 
     }
 

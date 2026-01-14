@@ -8,19 +8,15 @@ import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.scheduler.SchedulerClient;
 import software.amazon.awssdk.services.scheduler.model.*;
 
-import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_IAM_ROLE;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_SCHEDULER;
+import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.TEN_SECONDS;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.sleep;
 
 public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
 
     private static final Logger log = LoggerFactory.getLogger(AwsSchedulerFlowComponentStackImpl.class);
-
-    private static final Duration TEN_SECONDS = Duration.ofSeconds(10);
 
     private static final String TRUST_POLICY = """
                 {
@@ -55,8 +51,8 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
         this.schedulerClient = schedulerClient;
         this.stepFunctionArn = stepFunctionArn;
 
-        super.setRollbackActions(
-                Map.of(
+        super.addRollbackAction(RollbackActions.deleteRole(iamClient))
+                .addRollbackAction(
                         AWS_SCHEDULER,
                         (resourceId) -> {
                             this.schedulerClient.deleteSchedule(
@@ -64,19 +60,8 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
                                             .name(resourceId)
                                             .build()
                             );
-                        },
-                        AWS_IAM_ROLE,
-                        (resourceId) -> {
-                            this.iamClient.deleteRole(
-                                    DeleteRoleRequest.builder()
-                                            .roleName(resourceId)
-                                            .build()
-                            );
-
-                            sleep(TEN_SECONDS);
                         }
-                )
-        );
+                );
     }
 
     @Override

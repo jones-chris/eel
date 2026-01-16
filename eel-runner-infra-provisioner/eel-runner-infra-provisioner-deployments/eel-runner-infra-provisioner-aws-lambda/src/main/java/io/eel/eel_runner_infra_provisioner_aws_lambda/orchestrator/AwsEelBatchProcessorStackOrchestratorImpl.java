@@ -8,10 +8,12 @@ import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.scheduler.SchedulerClient;
+import software.amazon.awssdk.services.sfn.SfnClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProcessorStackOrchestrator {
 
@@ -28,6 +30,7 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
         final SqsClient sqsClient = SqsClient.create();
         final IamClient iamClient = IamClient.builder().build();
         final LambdaClient lambdaClient = LambdaClient.create();
+        final SfnClient stepFunctionsClient = SfnClient.create();
 
         // Create the flow component stacks and their dependent flow component stacks.
         FlowComponentStack landingBucketStack = new AwsS3LandingBucketFlowComponentStackImpl(s3Client);
@@ -42,10 +45,11 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
                 lambdaClient,
                 List.of(landingBucketStack, sqsDeadLetterQueueStack, sqsInputQueueStack)
         );
-        // todo: input queue event source mapping.
-        FlowComponentStack inputQueueToLambdaFunctionEventSourceMappingStack = null;
-        // todo: step function.
-        FlowComponentStack queriesStepFunction = null;
+        FlowComponentStack queriesStepFunction = new AwsQueriesStepFunctionFlowComponentStackImpl(
+                stepFunctionsClient,
+                iamClient,
+                List.of(sqsInputQueueStack, landingBucketStack)
+        );
         FlowComponentStack schedulerStack = new AwsSchedulerFlowComponentStackImpl(
                 iamClient,
                 SchedulerClient.create(),
@@ -60,7 +64,6 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
                 sqsInputQueueStack,
                 sqsDeadLetterQueueStack,
                 lambdaFunctionStack,
-                inputQueueToLambdaFunctionEventSourceMappingStack,
                 queriesStepFunction,
                 schedulerStack
         );

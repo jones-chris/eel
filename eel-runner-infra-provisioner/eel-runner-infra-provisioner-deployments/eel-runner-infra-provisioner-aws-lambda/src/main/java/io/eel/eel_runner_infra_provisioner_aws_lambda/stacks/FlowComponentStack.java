@@ -104,16 +104,19 @@ public abstract class FlowComponentStack {
     public enum ResourceType {
 
         // AWS resource types
-        AWS_IAM_ROLE,
+        AWS_IAM_ROLE_NAME,
+        AWS_IAM_ROLE_ARN,
         AWS_IAM_POLICY_ARN,
         AWS_SCHEDULER_NAME,
         AWS_S3_BUCKET_NAME,
+        AWS_S3_BUCKET_ARN,
         AWS_LAMBDA_FUNCTION_NAME,
         AWS_SQS_INPUT_QUEUE_URL,
         AWS_SQS_INPUT_QUEUE_ARN,
         AWS_SQS_DEAD_LETTER_QUEUE_URL,
         AWS_SQS_DEAD_LETTER_QUEUE_ARN,
         AWS_STEP_FUNCTION_ARN,
+        AWS_LAMBDA_EVENT_SOURCE_MAPPING_ARN,
 
         // GCP resource types
         GCP_IAM_ROLE,

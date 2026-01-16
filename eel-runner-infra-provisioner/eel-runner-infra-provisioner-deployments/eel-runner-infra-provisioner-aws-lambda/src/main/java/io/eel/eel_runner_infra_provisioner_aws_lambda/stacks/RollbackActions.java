@@ -12,6 +12,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
 import software.amazon.awssdk.services.scheduler.SchedulerClient;
 import software.amazon.awssdk.services.scheduler.model.DeleteScheduleRequest;
+import software.amazon.awssdk.services.sfn.SfnClient;
+import software.amazon.awssdk.services.sfn.model.DeleteStateMachineRequest;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest;
 
@@ -31,18 +33,8 @@ public class RollbackActions {
 
     public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteRole(IamClient iamClient) {
         return new AbstractMap.SimpleEntry<>(
-                AWS_IAM_ROLE,
-                ResourceDeletionAttempt.of(
-                        resourceId  -> {
-                            iamClient.deleteRole(
-                                    DeleteRoleRequest.builder()
-                                            .roleName(resourceId)
-                                            .build()
-                            );
-
-                            sleep(TEN_SECONDS);
-                        }
-                )
+                AWS_IAM_ROLE_ARN,
+                iamRoleDeletionAttempt.apply(iamClient)
         );
     }
 
@@ -97,11 +89,35 @@ public class RollbackActions {
     public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteSqsQueue(SqsClient sqsClient) {
         return new AbstractMap.SimpleEntry<>(
                 AWS_SQS_INPUT_QUEUE_URL,
-                deleteSqsQueueDeletionAttempt.apply(sqsClient)
+                sqsQueueDeletionAttempt.apply(sqsClient)
         );
     }
 
-    private static final Function<SqsClient, ResourceDeletionAttempt> deleteSqsQueueDeletionAttempt = sqsClient -> ResourceDeletionAttempt.of(
+    public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteStepFunction(SfnClient stepFunctionClient) {
+        return new AbstractMap.SimpleEntry<>(
+                AWS_STEP_FUNCTION_ARN,
+                ResourceDeletionAttempt.of(
+                        resourceId -> stepFunctionClient.deleteStateMachine(
+                                DeleteStateMachineRequest.builder()
+                                        .stateMachineArn(resourceId)
+                                        .build())
+                )
+        );
+    }
+
+    private static final Function<IamClient, ResourceDeletionAttempt> iamRoleDeletionAttempt = iamClient -> ResourceDeletionAttempt.of(
+            resourceId  -> {
+                iamClient.deleteRole(
+                        DeleteRoleRequest.builder()
+                                .roleName(resourceId)
+                                .build()
+                );
+
+                sleep(TEN_SECONDS);
+            }
+    );
+
+    private static final Function<SqsClient, ResourceDeletionAttempt> sqsQueueDeletionAttempt = sqsClient -> ResourceDeletionAttempt.of(
             resourceId -> {
                 sqsClient.deleteQueue(
                         DeleteQueueRequest.builder()

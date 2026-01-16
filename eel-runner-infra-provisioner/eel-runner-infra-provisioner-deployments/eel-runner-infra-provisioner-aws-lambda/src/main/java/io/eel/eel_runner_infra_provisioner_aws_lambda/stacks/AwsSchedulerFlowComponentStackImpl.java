@@ -64,7 +64,7 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
                             .build()
             ).role();
 
-            this.provisionedResources.put(ResourceType.AWS_IAM_ROLE, role.roleName());
+            this.provisionedResources.put(ResourceType.AWS_IAM_ROLE_NAME, role.roleName());
 
             // Sleep 10 seconds while the IAM role propagates in AWS.
             sleep(TEN_SECONDS);

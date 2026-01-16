@@ -2,6 +2,8 @@ package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.EelPackager;
 import io.eel.common.model.Flow;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
@@ -27,6 +29,8 @@ import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponen
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.sleep;
 
 public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
+
+    private static final Logger log = LoggerFactory.getLogger(AwsLambdaFlowComponentStackImpl.class);
 
     private static final String ORIGINAL_EEL_JAR_BUCKET = System.getenv("ORIGINAL_EEL_ARTIFACTS_BUCKET_NAME");
 
@@ -97,10 +101,13 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
             this.provisionLambdaRolePolicy(lambdaRole, flow);
 
             // Build the Lambda Function.
-            this.provisionLambdaFunction(lambdaRole, eelJar, flow);
+            String lambdaFunctionName = this.provisionLambdaFunction(lambdaRole, eelJar, flow);
 
             // Add SQS policy to role.
             this.addSqsRolePolicy(lambdaRole);
+
+            // Create event source mapping between input queue and Lambda Function.
+            this.provisionEventSourceMapping(lambdaFunctionName);
 
             return true;
         } catch (Throwable t) {
@@ -129,6 +136,22 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         return s3Object.asInputStream();
     }
 
+    private void provisionEventSourceMapping(String lambdaFunctionName) {
+        String inputQueueArn = this.getDependentResource(AWS_SQS_INPUT_QUEUE_ARN).orElseThrow();
+
+        CreateEventSourceMappingRequest mappingRequest = CreateEventSourceMappingRequest.builder()
+                .eventSourceArn(inputQueueArn) // The ARN of the SQS queue
+                .functionName(lambdaFunctionName) // The ARN/Name of the Lambda function
+                .batchSize(1) // Number of messages to process in a single batch
+                .enabled(true)
+                .build();
+
+        String eventSourceMappingArn = this.lambdaClient.createEventSourceMapping(mappingRequest)
+                .eventSourceMappingArn();
+
+        this.provisionedResources.put(AWS_LAMBDA_EVENT_SOURCE_MAPPING_ARN, eventSourceMappingArn);
+    }
+
     private Role provisionLambdaRole(Flow flow) {
         CreateRoleRequest lambdaCreateRoleRequest = CreateRoleRequest.builder()
                 .roleName("eel-engine-" + flow.getId().toString())
@@ -138,7 +161,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
         Role lambdaRole = this.iamClient.createRole(lambdaCreateRoleRequest).role();
 
-        this.provisionedResources.put(AWS_IAM_ROLE, lambdaRole.roleName());
+        this.provisionedResources.put(AWS_IAM_ROLE_NAME, lambdaRole.roleName());
 
         return lambdaRole;
     }
@@ -202,7 +225,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         sleep(TEN_SECONDS);
     }
 
-    private void provisionLambdaFunction(Role lambdaRole, File eelJar, Flow flow) throws FileNotFoundException {
+    private String provisionLambdaFunction(Role lambdaRole, File eelJar, Flow flow) throws FileNotFoundException {
         String deadLetterQueueArn = this.getDependentResource(AWS_SQS_DEAD_LETTER_QUEUE_ARN).orElseThrow();
 
         final CreateFunctionRequest request = CreateFunctionRequest.builder()
@@ -223,9 +246,11 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
                 .tags(this.tags)
                 .build();
 
-        CreateFunctionResponse response = this.lambdaClient.createFunction(request);
+        String lambdaFunctionName = this.lambdaClient.createFunction(request).functionName();
 
-        this.provisionedResources.put(AWS_LAMBDA_FUNCTION_NAME, response.functionName());
+        this.provisionedResources.put(AWS_LAMBDA_FUNCTION_NAME, lambdaFunctionName);
+
+        return lambdaFunctionName;
     }
 
     // todo: is this really needed?  Can this be added to the previous create policy call?

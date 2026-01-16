@@ -69,8 +69,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
     private final String inputQueueArn;
 
-    protected AwsLambdaFlowComponentStackImpl(
-            Flow flow,
+    public AwsLambdaFlowComponentStackImpl(
             Map<String, String> tags,
             S3Client s3Client,
             IamClient iamClient,
@@ -79,7 +78,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
             final String deadLetterQueueId,
             final String inputQueueArn
     ) {
-        super(flow, tags);
+        super(tags);
 
         this.iamResourceTags = this.buildTags();
         this.s3Client = s3Client;
@@ -96,30 +95,22 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
     }
 
     @Override
-    public boolean deploy() {
+    public boolean deploy(Flow flow) {
         try {
             // Build the Lambda EEL jar artifact.
             InputStream originalJarInputStream = this.getS3ObjectAsInputStream(ORIGINAL_EEL_JAR_BUCKET, ORIGINAL_EEL_JAR_KEY);
-            InputStream excelInputStream = this.getS3ObjectAsInputStream(EEL_TRANSFORMATIONS_BUCKET_NAME, this.flow.getCanonicalId());
+            InputStream excelInputStream = this.getS3ObjectAsInputStream(EEL_TRANSFORMATIONS_BUCKET_NAME, flow.getCanonicalId());
 
             final File eelJar = EelPackager.build(originalJarInputStream, excelInputStream);
 
             // Build the Lambda role.
-            Role lambdaRole = this.provisionLambdaRole();
+            Role lambdaRole = this.provisionLambdaRole(flow);
 
             // Build the Lambda role policy.
-            this.provisionLambdaRolePolicy(lambdaRole);
+            this.provisionLambdaRolePolicy(lambdaRole, flow);
 
             // Build the Lambda Function.
-            this.provisionLambdaFunction(lambdaRole, eelJar);
-
-            // Attach role policy to role.
-            AttachRolePolicyRequest attachRequest = AttachRolePolicyRequest.builder()
-                    .roleName(lambdaRole.roleName())
-                    .policyArn(SQS_EXECUTION_POLICY_ARN)
-                    .build();
-
-            iamClient.attachRolePolicy(attachRequest);
+            this.provisionLambdaFunction(lambdaRole, eelJar, flow);
 
             // Add SQS policy to role.
             this.addSqsRolePolicy(lambdaRole);
@@ -129,7 +120,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
             log.error("Encountered error when trying to create Lambda Function {}", flow.getId().toString());
             log.error("", t);
 
-            this.rollback();
+            this.rollback(flow);
 
             return false;
         }
@@ -151,9 +142,9 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         return s3Object.asInputStream();
     }
 
-    private Role provisionLambdaRole() {
+    private Role provisionLambdaRole(Flow flow) {
         CreateRoleRequest lambdaCreateRoleRequest = CreateRoleRequest.builder()
-                .roleName("eel-engine-" + this.getFlowId().toString())
+                .roleName("eel-engine-" + flow.getId().toString())
                 .tags(this.iamResourceTags)
                 .assumeRolePolicyDocument(ASSUME_ROLE_POLICY_DOCUMENT_FOR_LAMBDA)
                 .build();
@@ -165,9 +156,9 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         return lambdaRole;
     }
 
-    private void provisionLambdaRolePolicy(Role lambdaRole) {
+    private void provisionLambdaRolePolicy(Role lambdaRole, Flow flow) {
         CreatePolicyRequest createPolicyRequest = CreatePolicyRequest.builder()
-                .policyName("eel-engine-" + this.getFlowId().toString())
+                .policyName("eel-engine-" + flow.getId().toString())
                 .policyDocument(
                         """
                                 {
@@ -220,9 +211,9 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         sleep(TEN_SECONDS);
     }
 
-    private void provisionLambdaFunction(Role lambdaRole, File eelJar) throws FileNotFoundException {
+    private void provisionLambdaFunction(Role lambdaRole, File eelJar, Flow flow) throws FileNotFoundException {
         final CreateFunctionRequest request = CreateFunctionRequest.builder()
-                .functionName(this.getFlowId().toString())
+                .functionName(flow.getId().toString())
                 .role(lambdaRole.arn())
                 .timeout(ENGINE_TIMEOUT_IN_SECONDS)
                 .runtime(Runtime.JAVA21)

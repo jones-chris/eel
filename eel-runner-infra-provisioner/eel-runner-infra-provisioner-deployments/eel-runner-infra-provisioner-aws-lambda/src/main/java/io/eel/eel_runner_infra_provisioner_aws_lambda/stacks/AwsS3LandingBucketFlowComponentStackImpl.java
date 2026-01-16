@@ -5,9 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
-
-import java.util.Map;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_S3_BUCKET;
 
@@ -17,11 +14,8 @@ public class AwsS3LandingBucketFlowComponentStackImpl extends FlowComponentStack
 
     private final S3Client s3Client;
 
-    protected AwsS3LandingBucketFlowComponentStackImpl(
-        S3Client s3Client,
-        Flow flow
-    ) {
-        super(flow);
+    public AwsS3LandingBucketFlowComponentStackImpl(S3Client s3Client) {
+        super();
 
         this.s3Client = s3Client;
 
@@ -29,7 +23,7 @@ public class AwsS3LandingBucketFlowComponentStackImpl extends FlowComponentStack
     }
 
     @Override
-    public boolean deploy() {
+    public boolean deploy(Flow flow) {
         try {
             final String bucketName = "eel-input-" + flow.getId().toString();
 
@@ -46,7 +40,7 @@ public class AwsS3LandingBucketFlowComponentStackImpl extends FlowComponentStack
             log.error("Encountered error when trying to create bucket {}", flow.getId().toString());
             log.error("", t);
 
-            this.rollback();
+            this.rollback(flow);
 
             return false;
         }

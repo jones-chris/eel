@@ -42,10 +42,9 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
     public AwsSchedulerFlowComponentStackImpl(
             IamClient iamClient,
             SchedulerClient schedulerClient,
-            Flow flow,
             final String stepFunctionArn
     ) {
-        super(flow);
+        super();
 
         this.iamClient = iamClient;
         this.schedulerClient = schedulerClient;
@@ -56,7 +55,7 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
     }
 
     @Override
-    public boolean deploy() {
+    public boolean deploy(Flow flow) {
         try {
             // Create the Scheduler role and policy so that Scheduler can assume the role and invoke the SFN.
             final Role role = this.iamClient.createRole(
@@ -112,7 +111,7 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
             log.error("", t);
             log.error("Initiating rollback");
 
-            this.rollback();
+            this.rollback(flow);
 
             return false;
         }

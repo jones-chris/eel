@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.RollbackActions.ResourceDeletionAttempt.tryToDeleteResource;
 
@@ -23,19 +22,11 @@ public abstract class FlowComponentStack {
      */
     protected final LinkedHashMap<ResourceType, String> provisionedResources = new LinkedHashMap<>();
 
-    /**
-     * The {@link Flow} encapsulating the data to provision resources for.
-     */
-    protected Flow flow;
-
     private Map<ResourceType, RollbackActions.ResourceDeletionAttempt> rollbackActions;
 
-    protected FlowComponentStack(Flow flow) {
-        this.flow = flow;
-    }
+    protected FlowComponentStack() {}
 
-    protected FlowComponentStack(Flow flow, Map<String, String> tags) {
-        this.flow = flow;
+    protected FlowComponentStack(Map<String, String> tags) {
         this.tags = tags;
     }
 
@@ -53,20 +44,12 @@ public abstract class FlowComponentStack {
         return this;
     }
 
-    public UUID getFlowId() {
-        return this.flow.getId();
-    }
-
-    public int getFlowVersion() {
-        return this.flow.getVersion();
-    }
-
     /**
      * Deploys/provisions the necessary resources in the target platform.
      *
      * @return true if deployment was successful.  Otherwise, false.
      */
-    public abstract boolean deploy();
+    public abstract boolean deploy(Flow flow);
 
     /**
      * Deletes/rolls back the necessary resources in the target platform.
@@ -75,10 +58,10 @@ public abstract class FlowComponentStack {
      */
     public abstract boolean delete(String flowId, int version);
 
-    public final boolean rollback() {
+    public final boolean rollback(Flow flow) {
         // If the stack did not provision any resources (ex:  it failed on it's first resource), then just return true.
         if (this.provisionedResources.isEmpty()) {
-            log.debug("No provisioned resources in stack {} with flow id {} to rollback", this.getClass().getName(), this.getFlowId());
+            log.debug("No provisioned resources in stack {} with flow id {} to rollback", this.getClass().getName(), flow.getCanonicalId());
             return true;
         }
 
@@ -96,7 +79,7 @@ public abstract class FlowComponentStack {
                                     boolean wasSuccessful = tryToDeleteResource(resourceId, resourceDeletionAttempt.getRollbackAction());
                                     if (!wasSuccessful) allResourcesWereDeleted.set(false);
                                 },
-                                () -> log.error("Encountered unexpected resource type of {} for flow with id {}", resourceType, this.getFlowId())
+                                () -> log.error("Encountered unexpected resource type of {} for flow with id {}", resourceType, flow.getCanonicalId())
                         );
             }
 

@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.Map;
@@ -91,16 +92,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         super.addRollbackAction(RollbackActions.deleteRole(this.iamClient))
                 .addRollbackAction(RollbackActions.deleteS3Bucket(this.s3Client))
                 .addRollbackAction(RollbackActions.deletePolicy(this.iamClient))
-                .addRollbackAction(
-                        AWS_LAMBDA_FUNCTION,
-                        (resourceId) -> {
-                            this.lambdaClient.deleteFunction(
-                                    DeleteFunctionRequest.builder()
-                                            .functionName(resourceId)
-                                            .build()
-                            );
-                        }
-                );
+                .addRollbackAction(RollbackActions.deleteLambdaFunction(this.lambdaClient));
     }
 
     @Override
@@ -113,98 +105,24 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
             final File eelJar = EelPackager.build(originalJarInputStream, excelInputStream);
 
             // Build the Lambda role.
-            CreateRoleRequest lambdaCreateRoleRequest = CreateRoleRequest.builder()
-                    .roleName("eel-engine-" + this.getFlowId().toString())
-                    .tags(this.iamResourceTags)
-                    .assumeRolePolicyDocument(ASSUME_ROLE_POLICY_DOCUMENT_FOR_LAMBDA)
-                    .build();
-
-            Role lambdaRole = this.iamClient.createRole(lambdaCreateRoleRequest).role();
-            this.provisionedResources.put(AWS_IAM_ROLE, lambdaRole.roleName());
+            Role lambdaRole = this.provisionLambdaRole();
 
             // Build the Lambda role policy.
-            CreatePolicyRequest createPolicyRequest = CreatePolicyRequest.builder()
-                    .policyName("eel-engine-" + this.getFlowId().toString())
-                    .policyDocument(
-                            """
-                                    {
-                                      "Version": "2012-10-17",
-                                      "Statement": [
-                                        {
-                                            "Effect": "Allow",
-                                            "Action": [
-                                                "s3:Get*"
-                                            ],
-                                            "Resource": [
-                                                "arn:aws:s3:::%s",
-                                                "arn:aws:s3:::%s/*"
-                                            ]
-                                        },
-                                        {
-                                            "Effect": "Allow",
-                                            "Action": [
-                                                "sqs:*",
-                                                "sqs:SendMessage"
-                                            ],
-                                            "Resource": [
-                                                "%s",
-                                                "%s"
-                                            ]
-                                        }
-                                      ]
-                                    }
-                                    """.formatted(
-                                    this.landingBucketId,
-                                    this.landingBucketId,
-                                    this.deadLetterQueueId,
-                                    this.inputQueueArn
-                            )
-                    ).tags(iamResourceTags)
-                    .build();
+            this.provisionLambdaRolePolicy(lambdaRole);
 
-            CreatePolicyResponse createPolicyResponse = this.iamClient.createPolicy(createPolicyRequest);
+            // Build the Lambda Function.
+            this.provisionLambdaFunction(lambdaRole, eelJar);
 
-            AttachRolePolicyRequest attachRolePolicyRequest = AttachRolePolicyRequest.builder()
-                    .roleName(lambdaRole.roleName())
-                    .policyArn(createPolicyResponse.policy().arn())
-                    .build();
-
-            this.iamClient.attachRolePolicy(attachRolePolicyRequest);
-            this.provisionedResources.put(AWS_IAM_POLICY, createPolicyResponse.policy().arn());
-
-            // Let the current thread sleep so that IAM role and policy are fully registered with IAM before creating the Lambda function.
-            sleep(TEN_SECONDS);
-
-            final CreateFunctionRequest request = CreateFunctionRequest.builder()
-                    .functionName(this.getFlowId().toString())
-                    .role(lambdaRole.arn())
-                    .timeout(ENGINE_TIMEOUT_IN_SECONDS)
-                    .runtime(Runtime.JAVA21)
-                    .architectures(Architecture.X86_64)
-                    .deadLetterConfig(
-                            DeadLetterConfig.builder()
-                                    .targetArn(this.deadLetterQueueId)
-                                    .build()
-                    ).code(
-                            FunctionCode.builder()
-                                    .zipFile(SdkBytes.fromInputStream(new FileInputStream(eelJar)))
-                                    .build()
-                    ).handler("io.eel.engine_deployments_aws_lambda.S3PutObjectHandler")
-                    .tags(this.tags)
-                    .build();
-
-            CreateFunctionResponse response = this.lambdaClient.createFunction(request);
-            this.provisionedResources.put(AWS_LAMBDA_FUNCTION, response.functionName());
-
-//            this.resources.setLambdaRoleArn(response.role());
-//            this.resources.setRuntimePlatformId(response.functionArn());
-
+            // Attach role policy to role.
             AttachRolePolicyRequest attachRequest = AttachRolePolicyRequest.builder()
                     .roleName(lambdaRole.roleName())
                     .policyArn(SQS_EXECUTION_POLICY_ARN)
                     .build();
 
             iamClient.attachRolePolicy(attachRequest);
+
+            // Add SQS policy to role.
+            this.addSqsRolePolicy(lambdaRole);
 
             return true;
         } catch (Throwable t) {
@@ -233,10 +151,116 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         return s3Object.asInputStream();
     }
 
+    private Role provisionLambdaRole() {
+        CreateRoleRequest lambdaCreateRoleRequest = CreateRoleRequest.builder()
+                .roleName("eel-engine-" + this.getFlowId().toString())
+                .tags(this.iamResourceTags)
+                .assumeRolePolicyDocument(ASSUME_ROLE_POLICY_DOCUMENT_FOR_LAMBDA)
+                .build();
+
+        Role lambdaRole = this.iamClient.createRole(lambdaCreateRoleRequest).role();
+
+        this.provisionedResources.put(AWS_IAM_ROLE, lambdaRole.roleName());
+
+        return lambdaRole;
+    }
+
+    private void provisionLambdaRolePolicy(Role lambdaRole) {
+        CreatePolicyRequest createPolicyRequest = CreatePolicyRequest.builder()
+                .policyName("eel-engine-" + this.getFlowId().toString())
+                .policyDocument(
+                        """
+                                {
+                                  "Version": "2012-10-17",
+                                  "Statement": [
+                                    {
+                                        "Effect": "Allow",
+                                        "Action": [
+                                            "s3:Get*"
+                                        ],
+                                        "Resource": [
+                                            "arn:aws:s3:::%s",
+                                            "arn:aws:s3:::%s/*"
+                                        ]
+                                    },
+                                    {
+                                        "Effect": "Allow",
+                                        "Action": [
+                                            "sqs:*",
+                                            "sqs:SendMessage"
+                                        ],
+                                        "Resource": [
+                                            "%s",
+                                            "%s"
+                                        ]
+                                    }
+                                  ]
+                                }
+                                """.formatted(
+                                this.landingBucketId,
+                                this.landingBucketId,
+                                this.deadLetterQueueId,
+                                this.inputQueueArn
+                        )
+                ).tags(iamResourceTags)
+                .build();
+
+        CreatePolicyResponse createPolicyResponse = this.iamClient.createPolicy(createPolicyRequest);
+
+        AttachRolePolicyRequest attachRolePolicyRequest = AttachRolePolicyRequest.builder()
+                .roleName(lambdaRole.roleName())
+                .policyArn(createPolicyResponse.policy().arn())
+                .build();
+
+        this.iamClient.attachRolePolicy(attachRolePolicyRequest);
+
+        this.provisionedResources.put(AWS_IAM_POLICY, createPolicyResponse.policy().arn());
+
+        // Let the current thread sleep so that IAM role and policy are fully registered with IAM before creating the Lambda function.
+        sleep(TEN_SECONDS);
+    }
+
+    private void provisionLambdaFunction(Role lambdaRole, File eelJar) throws FileNotFoundException {
+        final CreateFunctionRequest request = CreateFunctionRequest.builder()
+                .functionName(this.getFlowId().toString())
+                .role(lambdaRole.arn())
+                .timeout(ENGINE_TIMEOUT_IN_SECONDS)
+                .runtime(Runtime.JAVA21)
+                .architectures(Architecture.X86_64)
+                .deadLetterConfig(
+                        DeadLetterConfig.builder()
+                                .targetArn(this.deadLetterQueueId)
+                                .build()
+                ).code(
+                        FunctionCode.builder()
+                                .zipFile(SdkBytes.fromInputStream(new FileInputStream(eelJar)))
+                                .build()
+                ).handler("io.eel.engine_deployments_aws_lambda.S3PutObjectHandler")
+                .tags(this.tags)
+                .build();
+
+        CreateFunctionResponse response = this.lambdaClient.createFunction(request);
+
+        this.provisionedResources.put(AWS_LAMBDA_FUNCTION, response.functionName());
+    }
+
+    // todo: is this really needed?  Can this be added to the previous create policy call?
+    private void addSqsRolePolicy(Role lambdaRole) {
+        AttachRolePolicyRequest attachRequest = AttachRolePolicyRequest.builder()
+                .roleName(lambdaRole.roleName())
+                .policyArn(SQS_EXECUTION_POLICY_ARN)
+                .build();
+
+        iamClient.attachRolePolicy(attachRequest);
+    }
+
     private Collection<Tag> buildTags() {
         return this.tags.entrySet().stream()
-                .map(entry -> Tag.builder().key(entry.getKey()).value(entry.getValue()).build())
-                .toList();
+                .map(entry -> Tag.builder()
+                        .key(entry.getKey())
+                        .value(entry.getValue())
+                        .build()
+                ).toList();
     }
 
 }

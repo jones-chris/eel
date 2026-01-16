@@ -25,18 +25,7 @@ public class AwsS3LandingBucketFlowComponentStackImpl extends FlowComponentStack
 
         this.s3Client = s3Client;
 
-        super.setRollbackActions(
-                Map.of(
-                        AWS_S3_BUCKET,
-                        (resourceId) -> {
-                            this.s3Client.deleteBucket(
-                                    DeleteBucketRequest.builder()
-                                            .bucket(resourceId)
-                                            .build()
-                            );
-                        }
-                )
-        );
+        super.addRollbackAction(RollbackActions.deleteS3Bucket(s3Client));
     }
 
     @Override

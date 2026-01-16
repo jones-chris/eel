@@ -33,9 +33,9 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
                 }
                 """;
 
-    private IamClient iamClient;
+    private final IamClient iamClient;
 
-    private SchedulerClient schedulerClient;
+    private final SchedulerClient schedulerClient;
 
     private final String stepFunctionArn;
 
@@ -52,16 +52,7 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
         this.stepFunctionArn = stepFunctionArn;
 
         super.addRollbackAction(RollbackActions.deleteRole(iamClient))
-                .addRollbackAction(
-                        AWS_SCHEDULER,
-                        (resourceId) -> {
-                            this.schedulerClient.deleteSchedule(
-                                    DeleteScheduleRequest.builder()
-                                            .name(resourceId)
-                                            .build()
-                            );
-                        }
-                );
+                .addRollbackAction(RollbackActions.deleteScheduler(schedulerClient));
     }
 
     @Override
@@ -131,55 +122,6 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
     public boolean delete(String flowId, int version) {
         return false;  // todo:  implement this.
     }
-
-//    @Override
-//    public boolean rollback() {
-//        AtomicBoolean allResourcesWereDeleted = new AtomicBoolean(true);
-//
-//        try {
-//            for (Map.Entry<ResourceType, String> entry : this.provisionedResources.reversed().entrySet()) {
-//                final ResourceType resourceType = entry.getKey();
-//                final String resourceId = entry.getValue();
-//
-//                switch (resourceType) {
-//                    case AWS_SCHEDULER -> {
-//                        boolean wasSuccessful = tryToDeleteResource(
-//                                resourceId,
-//                                () -> this.schedulerClient.deleteSchedule(
-//                                        DeleteScheduleRequest.builder()
-//                                                .name(resourceId)
-//                                                .build())
-//                        );
-//
-//                        if (!wasSuccessful) allResourcesWereDeleted.set(false);
-//                    }
-//                    case AWS_IAM_ROLE -> {
-//                        boolean wasSuccessful = tryToDeleteResource(
-//                                resourceId,
-//                                () -> {
-//                                    this.iamClient.deleteRole(
-//                                            DeleteRoleRequest.builder()
-//                                                    .roleName(resourceId)
-//                                                    .build()
-//                                    );
-//
-//                                    sleep(TEN_SECONDS);
-//                                }
-//                        );
-//
-//                        if (!wasSuccessful) allResourcesWereDeleted.set(false);
-//                    }
-//                    default -> throw new RuntimeException("Encountered unexpected resource type of " + resourceType + " for flow with id " + flow.getId());
-//                }
-//            }
-//
-//            return allResourcesWereDeleted.get();
-//        } catch (Throwable t) {
-//            log.error("", t);
-//
-//            return false;
-//        }
-//    }
 
     private String buildPermissionsPolicy() {
         return """

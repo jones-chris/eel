@@ -8,6 +8,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.RollbackActions.ResourceDeletionAttempt.tryToDeleteResource;
+
 public abstract class FlowComponentStack {
 
     protected static final Logger log = LoggerFactory.getLogger(FlowComponentStack.class);
@@ -26,7 +28,7 @@ public abstract class FlowComponentStack {
      */
     protected Flow flow;
 
-    private Map<ResourceType, Consumer<String>> rollbackActions;
+    private Map<ResourceType, RollbackActions.ResourceDeletionAttempt> rollbackActions;
 
     protected FlowComponentStack(Flow flow) {
         this.flow = flow;
@@ -37,16 +39,16 @@ public abstract class FlowComponentStack {
         this.tags = tags;
     }
 
-    protected void setRollbackActions(Map<ResourceType, Consumer<String>> rollbackActions) {
-        this.rollbackActions = rollbackActions;
-    }
+//    protected void setRollbackActions(Map<ResourceType, Consumer<String>> rollbackActions) {
+//        this.rollbackActions = rollbackActions;
+//    }
 
-    protected FlowComponentStack addRollbackAction(Map.Entry<ResourceType, Consumer<String>> rollbackAction) {
+    protected FlowComponentStack addRollbackAction(Map.Entry<ResourceType, RollbackActions.ResourceDeletionAttempt> rollbackAction) {
         this.rollbackActions.put(rollbackAction.getKey(), rollbackAction.getValue());
         return this;
     }
 
-    protected FlowComponentStack addRollbackAction(ResourceType resourceType, Consumer<String> rollbackAction) {
+    protected FlowComponentStack addRollbackAction(ResourceType resourceType, RollbackActions.ResourceDeletionAttempt rollbackAction) {
         this.rollbackActions.put(resourceType, rollbackAction);
         return this;
     }
@@ -90,8 +92,8 @@ public abstract class FlowComponentStack {
 
                 Optional.ofNullable(rollbackActions.get(resourceType))
                         .ifPresentOrElse(
-                                rollbackAction -> {
-                                    boolean wasSuccessful = tryToDeleteResource(resourceId, rollbackAction);
+                                resourceDeletionAttempt -> {
+                                    boolean wasSuccessful = tryToDeleteResource(resourceId, resourceDeletionAttempt.getRollbackAction());
                                     if (!wasSuccessful) allResourcesWereDeleted.set(false);
                                 },
                                 () -> log.error("Encountered unexpected resource type of {} for flow with id {}", resourceType, this.getFlowId())
@@ -105,21 +107,6 @@ public abstract class FlowComponentStack {
             return false;
         }
     };
-
-    protected static boolean tryToDeleteResource(String resourceId, Consumer<String> rollbackAction) {
-        try {
-            rollbackAction.accept(resourceId);
-
-            log.debug("Successfully deleted resource with id {}", resourceId);
-
-            return true;
-        } catch (Throwable t) {
-            log.error("Failed to delete resource {}.  Moving onto next resource", resourceId);
-            log.error("", t);
-
-            return false;
-        }
-    }
 
     public enum ResourceType {
 

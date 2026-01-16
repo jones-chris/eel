@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_S3_BUCKET;
+import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_S3_BUCKET_NAME;
 
 public class AwsS3LandingBucketFlowComponentStackImpl extends FlowComponentStack {
 
@@ -33,7 +33,7 @@ public class AwsS3LandingBucketFlowComponentStackImpl extends FlowComponentStack
 
             this.s3Client.createBucket(request);
 
-            this.provisionedResources.put(AWS_S3_BUCKET, bucketName);
+            this.provisionedResources.put(AWS_S3_BUCKET_NAME, bucketName);
 
             return true;
         } catch (Throwable t) {

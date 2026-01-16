@@ -12,13 +12,17 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
 import software.amazon.awssdk.services.scheduler.SchedulerClient;
 import software.amazon.awssdk.services.scheduler.model.DeleteScheduleRequest;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest;
 
+import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
+import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.TEN_SECONDS;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.*;
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.TEN_SECONDS;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.sleep;
 
 public class RollbackActions {
@@ -44,7 +48,7 @@ public class RollbackActions {
 
     public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteS3Bucket(S3Client s3Client) {
         return new AbstractMap.SimpleEntry<>(
-                AWS_S3_BUCKET,
+                AWS_S3_BUCKET_NAME,
                 ResourceDeletionAttempt.of(
                         resourceId -> s3Client.deleteBucket(
                                 DeleteBucketRequest.builder()
@@ -56,7 +60,7 @@ public class RollbackActions {
 
     public static Map.Entry<ResourceType, ResourceDeletionAttempt> deletePolicy(IamClient iamClient) {
         return new AbstractMap.SimpleEntry<>(
-                AWS_IAM_POLICY,
+                AWS_IAM_POLICY_ARN,
                 ResourceDeletionAttempt.of(
                         resourceId -> iamClient.deletePolicy(
                                 DeletePolicyRequest.builder()
@@ -68,7 +72,7 @@ public class RollbackActions {
 
     public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteScheduler(SchedulerClient schedulerClient) {
         return new AbstractMap.SimpleEntry<>(
-                AWS_SCHEDULER,
+                AWS_SCHEDULER_NAME,
                 ResourceDeletionAttempt.of(
                         resourceId -> schedulerClient.deleteSchedule(
                                 DeleteScheduleRequest.builder()
@@ -80,7 +84,7 @@ public class RollbackActions {
 
     public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteLambdaFunction(LambdaClient lambdaClient) {
         return new AbstractMap.SimpleEntry<>(
-                AWS_LAMBDA_FUNCTION,
+                AWS_LAMBDA_FUNCTION_NAME,
                 ResourceDeletionAttempt.of(
                         resourceId -> lambdaClient.deleteFunction(
                                 DeleteFunctionRequest.builder()
@@ -89,6 +93,27 @@ public class RollbackActions {
                 )
         );
     }
+
+    public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteSqsQueue(SqsClient sqsClient) {
+        return new AbstractMap.SimpleEntry<>(
+                AWS_SQS_INPUT_QUEUE_URL,
+                deleteSqsQueueDeletionAttempt.apply(sqsClient)
+        );
+    }
+
+    private static final Function<SqsClient, ResourceDeletionAttempt> deleteSqsQueueDeletionAttempt = sqsClient -> ResourceDeletionAttempt.of(
+            resourceId -> {
+                sqsClient.deleteQueue(
+                        DeleteQueueRequest.builder()
+                                .queueUrl(resourceId)
+                                .build()
+                );
+
+                // SQS requires a minimum of 60 seconds to expire before a queue can be created with the same
+                // name as the one we just deleted.
+                sleep(Duration.ofSeconds(60));
+            }
+    );
 
     public static class ResourceDeletionAttempt {
 

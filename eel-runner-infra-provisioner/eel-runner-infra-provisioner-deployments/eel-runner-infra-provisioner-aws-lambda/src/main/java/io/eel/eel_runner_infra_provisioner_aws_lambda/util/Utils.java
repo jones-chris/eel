@@ -4,8 +4,6 @@ import java.time.Duration;
 
 public class Utils {
 
-    public static final Duration TEN_SECONDS = Duration.ofSeconds(10);
-
     public static void sleep(Duration duration) {
         try {
             Thread.sleep(duration);

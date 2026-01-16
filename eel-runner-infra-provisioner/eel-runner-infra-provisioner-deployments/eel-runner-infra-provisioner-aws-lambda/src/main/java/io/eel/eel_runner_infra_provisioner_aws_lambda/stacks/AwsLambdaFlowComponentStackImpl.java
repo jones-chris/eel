@@ -19,10 +19,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 
+import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.ENGINE_TIMEOUT_IN_SECONDS;
+import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.TEN_SECONDS;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.*;
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.TEN_SECONDS;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.sleep;
 
 public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
@@ -37,8 +38,6 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
      *  The ARN of the AWS managed policy that grants Lambda read/delete access to SQS.
      */
     private static final String SQS_EXECUTION_POLICY_ARN = "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole";
-
-    private final static int ENGINE_TIMEOUT_IN_SECONDS = 120; // 2 minutes
 
     private static final String ASSUME_ROLE_POLICY_DOCUMENT_FOR_LAMBDA = """
         {
@@ -63,30 +62,18 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
     private final LambdaClient lambdaClient;
 
-    private final String landingBucketId;
-
-    private final String deadLetterQueueId;
-
-    private final String inputQueueArn;
-
     public AwsLambdaFlowComponentStackImpl(
-            Map<String, String> tags,
             S3Client s3Client,
             IamClient iamClient,
             LambdaClient lambdaClient,
-            final String landingBucketId,
-            final String deadLetterQueueId,
-            final String inputQueueArn
+            List<FlowComponentStack> dependentStacks
     ) {
-        super(tags);
+        super(dependentStacks);
 
         this.iamResourceTags = this.buildTags();
         this.s3Client = s3Client;
         this.iamClient = iamClient;
         this.lambdaClient = lambdaClient;
-        this.landingBucketId = landingBucketId;
-        this.deadLetterQueueId = deadLetterQueueId;
-        this.inputQueueArn = inputQueueArn;
 
         super.addRollbackAction(RollbackActions.deleteRole(this.iamClient))
                 .addRollbackAction(RollbackActions.deleteS3Bucket(this.s3Client))
@@ -157,6 +144,10 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
     }
 
     private void provisionLambdaRolePolicy(Role lambdaRole, Flow flow) {
+        String landingBucketId = this.getDependentResource(AWS_S3_BUCKET_NAME).orElseThrow();
+        String deadLetterQueueArn = this.getDependentResource(AWS_SQS_DEAD_LETTER_QUEUE_URL).orElseThrow();
+        String inputQueueArn = this.getDependentResource(AWS_SQS_INPUT_QUEUE_ARN).orElseThrow();
+
         CreatePolicyRequest createPolicyRequest = CreatePolicyRequest.builder()
                 .policyName("eel-engine-" + flow.getId().toString())
                 .policyDocument(
@@ -188,10 +179,10 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
                                   ]
                                 }
                                 """.formatted(
-                                this.landingBucketId,
-                                this.landingBucketId,
-                                this.deadLetterQueueId,
-                                this.inputQueueArn
+                                landingBucketId,
+                                landingBucketId,
+                                deadLetterQueueArn,
+                                inputQueueArn
                         )
                 ).tags(iamResourceTags)
                 .build();
@@ -205,13 +196,15 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
         this.iamClient.attachRolePolicy(attachRolePolicyRequest);
 
-        this.provisionedResources.put(AWS_IAM_POLICY, createPolicyResponse.policy().arn());
+        this.provisionedResources.put(AWS_IAM_POLICY_ARN, createPolicyResponse.policy().arn());
 
         // Let the current thread sleep so that IAM role and policy are fully registered with IAM before creating the Lambda function.
         sleep(TEN_SECONDS);
     }
 
     private void provisionLambdaFunction(Role lambdaRole, File eelJar, Flow flow) throws FileNotFoundException {
+        String deadLetterQueueArn = this.getDependentResource(AWS_SQS_DEAD_LETTER_QUEUE_ARN).orElseThrow();
+
         final CreateFunctionRequest request = CreateFunctionRequest.builder()
                 .functionName(flow.getId().toString())
                 .role(lambdaRole.arn())
@@ -220,7 +213,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
                 .architectures(Architecture.X86_64)
                 .deadLetterConfig(
                         DeadLetterConfig.builder()
-                                .targetArn(this.deadLetterQueueId)
+                                .targetArn(deadLetterQueueArn)
                                 .build()
                 ).code(
                         FunctionCode.builder()
@@ -232,7 +225,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
         CreateFunctionResponse response = this.lambdaClient.createFunction(request);
 
-        this.provisionedResources.put(AWS_LAMBDA_FUNCTION, response.functionName());
+        this.provisionedResources.put(AWS_LAMBDA_FUNCTION_NAME, response.functionName());
     }
 
     // todo: is this really needed?  Can this be added to the previous create policy call?

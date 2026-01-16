@@ -9,9 +9,11 @@ import software.amazon.awssdk.services.scheduler.SchedulerClient;
 import software.amazon.awssdk.services.scheduler.model.*;
 
 import java.time.Instant;
+import java.util.List;
 
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_SCHEDULER;
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.TEN_SECONDS;
+import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.TEN_SECONDS;
+import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_SCHEDULER_NAME;
+import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_STEP_FUNCTION_ARN;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.sleep;
 
 public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
@@ -37,18 +39,15 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
 
     private final SchedulerClient schedulerClient;
 
-    private final String stepFunctionArn;
-
     public AwsSchedulerFlowComponentStackImpl(
             IamClient iamClient,
             SchedulerClient schedulerClient,
-            final String stepFunctionArn
+            List<FlowComponentStack> dependentStacks
     ) {
         super();
 
         this.iamClient = iamClient;
         this.schedulerClient = schedulerClient;
-        this.stepFunctionArn = stepFunctionArn;
 
         super.addRollbackAction(RollbackActions.deleteRole(iamClient))
                 .addRollbackAction(RollbackActions.deleteScheduler(schedulerClient));
@@ -86,13 +85,14 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
 //                    Map.of("canonicalId", canonicalId)
 //            );
 
-            final String schedulerName = flow.getId().toString();
+            String schedulerName = flow.getId().toString();
+            String stepFunctionArn = this.getDependentResource(AWS_STEP_FUNCTION_ARN).orElseThrow();
             CreateScheduleRequest request = CreateScheduleRequest.builder()
                     .name(schedulerName)
                     .scheduleExpression(flow.getScheduledBatchConfiguration().cronExpression())
                     .target(
                             Target.builder()
-                                    .arn(this.stepFunctionArn)
+                                    .arn(stepFunctionArn)
                                     .roleArn(role.arn())
                 //                    .input(input)
                                     .build()
@@ -102,9 +102,9 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
 
             CreateScheduleResponse response = this.schedulerClient.createSchedule(request);
 
-            this.provisionedResources.put(AWS_SCHEDULER, schedulerName);
+            this.provisionedResources.put(AWS_SCHEDULER_NAME, schedulerName);
 
-            log.info("Successfully created schedule {}, The ARN is {}", flow.getId(), response.scheduleArn());
+            log.debug("Successfully created schedule {}, The ARN is {}", flow.getId(), response.scheduleArn());
 
             return true;
         } catch (Throwable t) {
@@ -123,6 +123,7 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
     }
 
     private String buildPermissionsPolicy() {
+        String stepFunctionArn = this.getDependentResource(AWS_STEP_FUNCTION_ARN).orElseThrow();
         return """
                 {
                     "Version": "2012-10-17",
@@ -134,7 +135,7 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
                         }
                     ]
                 }
-                """.formatted(this.stepFunctionArn);
+                """.formatted(stepFunctionArn);
     }
 
 }

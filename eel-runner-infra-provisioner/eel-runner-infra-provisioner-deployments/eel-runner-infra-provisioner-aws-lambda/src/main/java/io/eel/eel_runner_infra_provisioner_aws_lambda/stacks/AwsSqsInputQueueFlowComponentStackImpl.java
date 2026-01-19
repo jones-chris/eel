@@ -29,7 +29,7 @@ public class AwsSqsInputQueueFlowComponentStackImpl extends FlowComponentStack {
 
         this.sqsClient = sqsClient;
 
-        super.addRollbackAction(RollbackActions.deleteSqsQueue(sqsClient));
+        super.addRollbackAction(RollbackActions.deleteInputSqsQueue(sqsClient));
     }
 
     @Override

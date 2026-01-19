@@ -90,15 +90,25 @@ public abstract class FlowComponentStack {
     }
 
     /**
-     * Finds the first resource id of the given {@link ResourceType} that it finds among the {@link this#dependentStacks}.
+     * Finds the first resource id of the given {@link ResourceType} that it finds among the dependent stacks.
      *
      * @param resourceType {@link ResourceType}
      * @return The resource ID {@link String}
      */
     protected Optional<String> getDependentResource(ResourceType resourceType) {
-        return this.dependentStacks.stream()
-                .map(stack -> stack.provisionedResources.get(resourceType))
-                .findFirst();
+        for (FlowComponentStack dependentStack : this.dependentStacks) {
+            Optional<String> resourceIdOptional = Optional.ofNullable(dependentStack.provisionedResources.get(resourceType));
+
+            if (resourceIdOptional.isPresent()) {
+                return resourceIdOptional;
+            }
+        }
+
+        return Optional.empty();
+
+//        return this.dependentStacks.stream()
+//                .map(stack -> stack.provisionedResources.get(resourceType))
+//                .findFirst();
     }
 
     public enum ResourceType {
@@ -107,6 +117,7 @@ public abstract class FlowComponentStack {
         AWS_IAM_ROLE_NAME,
         AWS_IAM_ROLE_ARN,
         AWS_IAM_POLICY_ARN,
+        AWS_IAM_POLICY_NAME,
         AWS_SCHEDULER_NAME,
         AWS_S3_BUCKET_NAME,
         AWS_S3_BUCKET_ARN,
@@ -116,7 +127,7 @@ public abstract class FlowComponentStack {
         AWS_SQS_DEAD_LETTER_QUEUE_URL,
         AWS_SQS_DEAD_LETTER_QUEUE_ARN,
         AWS_STEP_FUNCTION_ARN,
-        AWS_LAMBDA_EVENT_SOURCE_MAPPING_ARN,
+        AWS_LAMBDA_EVENT_SOURCE_MAPPING_UUID,
 
         // GCP resource types
         GCP_IAM_ROLE,

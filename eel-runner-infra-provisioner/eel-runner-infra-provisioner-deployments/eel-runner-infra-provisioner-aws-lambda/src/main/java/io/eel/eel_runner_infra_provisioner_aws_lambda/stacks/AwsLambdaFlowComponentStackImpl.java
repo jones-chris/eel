@@ -80,9 +80,9 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         this.lambdaClient = lambdaClient;
 
         super.addRollbackAction(RollbackActions.deleteRole(this.iamClient))
-                .addRollbackAction(RollbackActions.deleteS3Bucket(this.s3Client))
                 .addRollbackAction(RollbackActions.deletePolicy(this.iamClient))
-                .addRollbackAction(RollbackActions.deleteLambdaFunction(this.lambdaClient));
+                .addRollbackAction(RollbackActions.deleteLambdaFunction(this.lambdaClient))
+                .addRollbackAction(RollbackActions.deleteLambdaEventSourceMapping(this.lambdaClient));
     }
 
     @Override
@@ -146,10 +146,9 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
                 .enabled(true)
                 .build();
 
-        String eventSourceMappingArn = this.lambdaClient.createEventSourceMapping(mappingRequest)
-                .eventSourceMappingArn();
+        String eventSourceMappingArn = this.lambdaClient.createEventSourceMapping(mappingRequest).uuid();
 
-        this.provisionedResources.put(AWS_LAMBDA_EVENT_SOURCE_MAPPING_ARN, eventSourceMappingArn);
+        this.provisionedResources.put(AWS_LAMBDA_EVENT_SOURCE_MAPPING_UUID, eventSourceMappingArn);
     }
 
     private Role provisionLambdaRole(Flow flow) {
@@ -168,7 +167,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
     private void provisionLambdaRolePolicy(Role lambdaRole, Flow flow) {
         String landingBucketId = this.getDependentResource(AWS_S3_BUCKET_NAME).orElseThrow();
-        String deadLetterQueueArn = this.getDependentResource(AWS_SQS_DEAD_LETTER_QUEUE_URL).orElseThrow();
+        String deadLetterQueueArn = this.getDependentResource(AWS_SQS_DEAD_LETTER_QUEUE_ARN).orElseThrow();
         String inputQueueArn = this.getDependentResource(AWS_SQS_INPUT_QUEUE_ARN).orElseThrow();
 
         CreatePolicyRequest createPolicyRequest = CreatePolicyRequest.builder()
@@ -220,6 +219,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         this.iamClient.attachRolePolicy(attachRolePolicyRequest);
 
         this.provisionedResources.put(AWS_IAM_POLICY_ARN, createPolicyResponse.policy().arn());
+        this.provisionedResources.put(AWS_IAM_POLICY_NAME, createPolicyResponse.policy().policyName());
 
         // Let the current thread sleep so that IAM role and policy are fully registered with IAM before creating the Lambda function.
         sleep(TEN_SECONDS);

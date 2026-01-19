@@ -7,6 +7,7 @@ import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.iam.model.DeletePolicyRequest;
 import software.amazon.awssdk.services.iam.model.DeleteRoleRequest;
 import software.amazon.awssdk.services.lambda.LambdaClient;
+import software.amazon.awssdk.services.lambda.model.DeleteEventSourceMappingRequest;
 import software.amazon.awssdk.services.lambda.model.DeleteFunctionRequest;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
@@ -31,9 +32,22 @@ public class RollbackActions {
 
     protected static final Logger log = LoggerFactory.getLogger(RollbackActions.class);
 
+    public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteLambdaEventSourceMapping(LambdaClient lambdaClient) {
+        return new AbstractMap.SimpleEntry<>(
+                AWS_LAMBDA_EVENT_SOURCE_MAPPING_UUID,
+                ResourceDeletionAttempt.of(
+                        resourceId -> lambdaClient.deleteEventSourceMapping(
+                                DeleteEventSourceMappingRequest.builder()
+                                        .uuid(resourceId)
+                                        .build()
+                        )
+                )
+        );
+    }
+
     public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteRole(IamClient iamClient) {
         return new AbstractMap.SimpleEntry<>(
-                AWS_IAM_ROLE_ARN,
+                AWS_IAM_ROLE_NAME,
                 iamRoleDeletionAttempt.apply(iamClient)
         );
     }
@@ -86,9 +100,16 @@ public class RollbackActions {
         );
     }
 
-    public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteSqsQueue(SqsClient sqsClient) {
+    public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteInputSqsQueue(SqsClient sqsClient) {
         return new AbstractMap.SimpleEntry<>(
                 AWS_SQS_INPUT_QUEUE_URL,
+                sqsQueueDeletionAttempt.apply(sqsClient)
+        );
+    }
+
+    public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteDeadLetterSqsQueue(SqsClient sqsClient) {
+        return new AbstractMap.SimpleEntry<>(
+                AWS_SQS_DEAD_LETTER_QUEUE_URL,
                 sqsQueueDeletionAttempt.apply(sqsClient)
         );
     }

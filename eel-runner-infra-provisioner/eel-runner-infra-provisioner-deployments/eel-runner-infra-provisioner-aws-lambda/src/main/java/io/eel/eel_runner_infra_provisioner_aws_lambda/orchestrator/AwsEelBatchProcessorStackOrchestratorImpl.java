@@ -13,7 +13,6 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProcessorStackOrchestrator {
 
@@ -86,7 +85,7 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
 
     @Override
     public void deploy(Flow flow) {
-        for (int i = 0; i < this.flowComponentStacks.size() - 1; i++) {
+        for (int i = 0; i <= this.flowComponentStacks.size() - 1; i++) {
             currentFlowComponentStackIndex = i;
 
             FlowComponentStack flowComponentStack = this.flowComponentStacks.get(i);
@@ -99,7 +98,10 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
                         flow.getId().toString(),
                         flow.getVersion()
                 );
+
                 this.rollback(flow);
+
+                return;
             }
 
         }
@@ -114,7 +116,7 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
     public void delete(Flow flow) {
         // Set the current stack index to the last stack in the flow component stacks, so that it will delete all resources starting
         // with the last resource and working backwards sequentially.
-        this.currentFlowComponentStackIndex = this.flowComponentStacks.size() - 1;
+        this.currentFlowComponentStackIndex = this.flowComponentStacks.size();
         this.rollback(flow);
     }
 

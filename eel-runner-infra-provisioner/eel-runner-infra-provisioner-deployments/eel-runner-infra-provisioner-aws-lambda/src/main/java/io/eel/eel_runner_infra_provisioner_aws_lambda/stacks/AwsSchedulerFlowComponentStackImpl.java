@@ -44,7 +44,7 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
             SchedulerClient schedulerClient,
             List<FlowComponentStack> dependentStacks
     ) {
-        super();
+        super(dependentStacks);
 
         this.iamClient = iamClient;
         this.schedulerClient = schedulerClient;

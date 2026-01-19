@@ -142,7 +142,7 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
 
     private State.Builder buildQueryRunnerState(Flow flow, String sheetName) {
         String landingBucketName = this.getDependentResource(AWS_S3_BUCKET_NAME).orElseThrow();
-        String landingBucketArn = "arn:aws:s3:::%s".formatted(landingBucketName);
+//        String landingBucketArn = "arn:aws:s3:::%s".formatted(landingBucketName);
 
         return TaskState.builder()
                 .resource("arn:aws:states:::lambda:invoke")
@@ -153,7 +153,7 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
                                         "flowId", flow.getId().toString(),
                                         "version", flow.getVersion(),
                                         "inputSheet", sheetName,
-                                        "destinationBucket", landingBucketArn
+                                        "destinationBucket", landingBucketName
                                 )
                         )
                 ).transition(end());

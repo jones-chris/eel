@@ -4,6 +4,7 @@ import io.eel.common.model.Flow;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
+import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_SQS_DEAD_LETTER_QUEUE_ARN;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_SQS_DEAD_LETTER_QUEUE_URL;
 
 public class AwsSqsDeadLetterQueueFlowComponentStackImpl extends FlowComponentStack {
@@ -17,12 +18,13 @@ public class AwsSqsDeadLetterQueueFlowComponentStackImpl extends FlowComponentSt
 
         this.sqsClient = sqsClient;
 
-        this.addRollbackAction(RollbackActions.deleteSqsQueue(sqsClient));
+        this.addRollbackAction(RollbackActions.deleteDeadLetterSqsQueue(sqsClient));
     }
 
     @Override
     public boolean deploy(Flow flow) {
         try {
+            // Create the queue.
             final CreateQueueRequest request = CreateQueueRequest.builder()
                     .queueName("dlq-" + flow.getId().toString())
                     .tags(this.tags)
@@ -32,6 +34,18 @@ public class AwsSqsDeadLetterQueueFlowComponentStackImpl extends FlowComponentSt
                     .queueUrl();
 
             this.provisionedResources.put(AWS_SQS_DEAD_LETTER_QUEUE_URL, queueUrl);
+
+            // Get the queue's ARN.
+            GetQueueAttributesRequest getQueueAttributesRequest = GetQueueAttributesRequest.builder()
+                    .queueUrl(queueUrl)
+                    .attributeNames(QueueAttributeName.QUEUE_ARN)
+                    .build();
+
+            String deadLetterQueueArn = this.sqsClient.getQueueAttributes(getQueueAttributesRequest)
+                    .attributes()
+                    .get(QueueAttributeName.QUEUE_ARN);
+
+            this.provisionedResources.put(AWS_SQS_DEAD_LETTER_QUEUE_ARN, deadLetterQueueArn);
 
             return true;
         } catch (Throwable t) {

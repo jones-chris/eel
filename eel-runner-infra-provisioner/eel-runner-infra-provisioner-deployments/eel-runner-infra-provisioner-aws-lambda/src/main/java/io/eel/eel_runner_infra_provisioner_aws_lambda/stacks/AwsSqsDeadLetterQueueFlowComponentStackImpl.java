@@ -1,12 +1,14 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.model.Flow;
+import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_SQS_DEAD_LETTER_QUEUE_ARN;
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_SQS_DEAD_LETTER_QUEUE_URL;
+import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.AWS_SQS_DEAD_LETTER_QUEUE_ARN;
+import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.AWS_SQS_DEAD_LETTER_QUEUE_URL;
 
+@Slf4j
 public class AwsSqsDeadLetterQueueFlowComponentStackImpl extends FlowComponentStack {
 
     private SqsClient sqsClient;
@@ -17,6 +19,8 @@ public class AwsSqsDeadLetterQueueFlowComponentStackImpl extends FlowComponentSt
         super();
 
         this.sqsClient = sqsClient;
+
+        this.addExpectedProvisionedResources(AWS_SQS_DEAD_LETTER_QUEUE_URL, AWS_SQS_DEAD_LETTER_QUEUE_ARN);
 
         this.addRollbackAction(RollbackActions.deleteDeadLetterSqsQueue(sqsClient));
     }

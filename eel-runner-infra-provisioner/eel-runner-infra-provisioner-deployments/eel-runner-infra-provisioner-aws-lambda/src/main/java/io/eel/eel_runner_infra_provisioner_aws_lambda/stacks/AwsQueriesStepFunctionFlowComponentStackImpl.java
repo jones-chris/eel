@@ -21,7 +21,7 @@ import java.util.Map;
 
 import static com.amazonaws.services.stepfunctions.builder.StepFunctionBuilder.end;
 import static com.amazonaws.services.stepfunctions.builder.StepFunctionBuilder.next;
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.*;
+import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.*;
 
 public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentStack {
 
@@ -58,6 +58,8 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
         this.stepFunctionsClient = stepFunctionsClient;
         this.iamClient = iamClient;
 
+        this.addExpectedProvisionedResources(AWS_IAM_ROLE_ARN, AWS_STEP_FUNCTION_ARN);
+
         this.addRollbackAction(RollbackActions.deleteStepFunction(stepFunctionsClient))
                 .addRollbackAction(RollbackActions.deleteRole(iamClient));
     }
@@ -78,7 +80,7 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
 
             // Create the state/stage that sends the queries' output to the input SQS queue. We use the parameters to
             // format the message using the output from the parallel branches that run the queries.
-            String inputQueueUrl = this.getDependentResource(ResourceType.AWS_SQS_INPUT_QUEUE_URL).orElseThrow();
+            String inputQueueUrl = this.getDependentResource(AWS_SQS_INPUT_QUEUE_URL).orElseThrow();
             State.Builder sendToSqs = TaskState.builder()
                     .resource("arn:aws:states:::sqs:sendMessage")
                     .parameters(

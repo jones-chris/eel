@@ -12,9 +12,10 @@ import java.time.Instant;
 import java.util.List;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.TEN_SECONDS;
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_SCHEDULER_NAME;
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.AWS_STEP_FUNCTION_ARN;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.sleep;
+import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.AWS_IAM_ROLE_NAME;
+import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.AWS_SCHEDULER_NAME;
+import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.AWS_STEP_FUNCTION_ARN;
 
 public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
 
@@ -49,6 +50,8 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
         this.iamClient = iamClient;
         this.schedulerClient = schedulerClient;
 
+        this.addExpectedProvisionedResources(AWS_IAM_ROLE_NAME, AWS_SCHEDULER_NAME);
+
         super.addRollbackAction(RollbackActions.deleteRole(iamClient))
                 .addRollbackAction(RollbackActions.deleteScheduler(schedulerClient));
     }
@@ -64,7 +67,7 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
                             .build()
             ).role();
 
-            this.provisionedResources.put(ResourceType.AWS_IAM_ROLE_NAME, role.roleName());
+            this.provisionedResources.put(AWS_IAM_ROLE_NAME, role.roleName());
 
             // Sleep 10 seconds while the IAM role propagates in AWS.
             sleep(TEN_SECONDS);

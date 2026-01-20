@@ -17,6 +17,7 @@ import java.util.function.Function;
 public abstract class BaseAwsDynamoDbDao<T, U> {
 
     public static final String OBJECT_KEY = "object";
+
     private static final Logger log = LoggerFactory.getLogger(BaseAwsDynamoDbDao.class);
 
     private String tableName;
@@ -25,7 +26,7 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
 
     protected DynamoDbClient dynamoDbClient;
 
-    private static final Gson gson = new GsonBuilder()
+    protected static final Gson gson = new GsonBuilder()
             .setPrettyPrinting()
             .create();
 

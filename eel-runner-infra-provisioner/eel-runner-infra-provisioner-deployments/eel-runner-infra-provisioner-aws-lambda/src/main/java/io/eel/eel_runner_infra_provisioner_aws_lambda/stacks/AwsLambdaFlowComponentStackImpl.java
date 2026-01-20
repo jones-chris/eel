@@ -25,8 +25,8 @@ import java.util.List;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.ENGINE_TIMEOUT_IN_SECONDS;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.TEN_SECONDS;
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.*;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.sleep;
+import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.*;
 
 public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
@@ -74,11 +74,22 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
     ) {
         super(dependentStacks);
 
+        // Instantiate clients.
         this.iamResourceTags = this.buildTags();
         this.s3Client = s3Client;
         this.iamClient = iamClient;
         this.lambdaClient = lambdaClient;
 
+        // Populate/hydrate the expected provisioned resources.
+        this.addExpectedProvisionedResources(
+                AWS_LAMBDA_EVENT_SOURCE_MAPPING_UUID,
+                AWS_IAM_ROLE_NAME,
+                AWS_IAM_POLICY_ARN,
+                AWS_IAM_POLICY_NAME,
+                AWS_LAMBDA_FUNCTION_NAME
+        );
+
+        // Add rollback actions.
         super.addRollbackAction(RollbackActions.deleteRole(this.iamClient))
                 .addRollbackAction(RollbackActions.deletePolicy(this.iamClient))
                 .addRollbackAction(RollbackActions.deleteLambdaFunction(this.lambdaClient))

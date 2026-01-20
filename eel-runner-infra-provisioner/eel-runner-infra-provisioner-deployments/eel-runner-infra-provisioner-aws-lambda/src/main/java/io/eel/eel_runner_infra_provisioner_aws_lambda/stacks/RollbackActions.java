@@ -1,6 +1,6 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
-import io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType;
+import io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.iam.IamClient;
@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.TEN_SECONDS;
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.*;
+import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.*;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.sleep;
 
 public class RollbackActions {

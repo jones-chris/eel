@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.ENGINE_TIMEOUT_IN_SECONDS;
-import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.FlowComponentStack.ResourceType.*;
+import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.*;
 import static java.util.Map.of;
 
 public class AwsSqsInputQueueFlowComponentStackImpl extends FlowComponentStack {
@@ -28,6 +28,8 @@ public class AwsSqsInputQueueFlowComponentStackImpl extends FlowComponentStack {
         super(dependentStacks);
 
         this.sqsClient = sqsClient;
+
+        this.addExpectedProvisionedResources(AWS_SQS_INPUT_QUEUE_URL, AWS_SQS_INPUT_QUEUE_ARN);
 
         super.addRollbackAction(RollbackActions.deleteInputSqsQueue(sqsClient));
     }

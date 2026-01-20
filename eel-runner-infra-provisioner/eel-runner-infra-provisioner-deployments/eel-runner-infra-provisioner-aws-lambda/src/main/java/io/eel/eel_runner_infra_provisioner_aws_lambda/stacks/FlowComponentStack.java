@@ -1,17 +1,17 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.model.Flow;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.RollbackActions.ResourceDeletionAttempt.tryToDeleteResource;
 
+@Slf4j
 public abstract class FlowComponentStack {
-
-    protected static final Logger log = LoggerFactory.getLogger(FlowComponentStack.class);
 
     protected Map<String, String> tags = new HashMap<>();
 
@@ -22,6 +22,7 @@ public abstract class FlowComponentStack {
      * (most likely something like an ARN) that allows users to quickly access a resource.  An {@link LinkedHashMap} is
      * used here so resources can be rolled back/deleted in the reverse order they were provisioned, if needed.
      */
+    @Getter
     protected final LinkedHashMap<ResourceType, String> provisionedResources = new LinkedHashMap<>();
 
     private final Map<ResourceType, RollbackActions.ResourceDeletionAttempt> rollbackActions = new HashMap<>();
@@ -40,6 +41,20 @@ public abstract class FlowComponentStack {
     protected FlowComponentStack addRollbackAction(ResourceType resourceType, RollbackActions.ResourceDeletionAttempt rollbackAction) {
         this.rollbackActions.put(resourceType, rollbackAction);
         return this;
+    }
+
+    /**
+     * Adds a {@link ResourceType} that is expected to be provisioned when this stack is deployed.  Care should be taken
+     * to order the {@param resourceTypes} in the same order that the stack will provision them, because insertion/creation
+     * order is vital for rollback/deletion to succeed.
+     *
+     * @param resourceTypes Variable number of {@link ResourceType}s that are expected to be provisioned when deploying
+     *                      this stack.
+     */
+    protected void addExpectedProvisionedResources(ResourceType... resourceTypes) {
+        for (ResourceType resourceType : resourceTypes) {
+            this.provisionedResources.put(resourceType, null);
+        }
     }
 
     /**
@@ -105,39 +120,6 @@ public abstract class FlowComponentStack {
         }
 
         return Optional.empty();
-
-//        return this.dependentStacks.stream()
-//                .map(stack -> stack.provisionedResources.get(resourceType))
-//                .findFirst();
-    }
-
-    public enum ResourceType {
-
-        // AWS resource types
-        AWS_IAM_ROLE_NAME,
-        AWS_IAM_ROLE_ARN,
-        AWS_IAM_POLICY_ARN,
-        AWS_IAM_POLICY_NAME,
-        AWS_SCHEDULER_NAME,
-        AWS_S3_BUCKET_NAME,
-        AWS_S3_BUCKET_ARN,
-        AWS_LAMBDA_FUNCTION_NAME,
-        AWS_SQS_INPUT_QUEUE_URL,
-        AWS_SQS_INPUT_QUEUE_ARN,
-        AWS_SQS_DEAD_LETTER_QUEUE_URL,
-        AWS_SQS_DEAD_LETTER_QUEUE_ARN,
-        AWS_STEP_FUNCTION_ARN,
-        AWS_LAMBDA_EVENT_SOURCE_MAPPING_UUID,
-
-        // GCP resource types
-        GCP_IAM_ROLE,
-        GCP_IAM_POLICY,
-        GCP_SCHEDULER,
-        GCP_BUCKET,
-        GCP_CLOUD_FUNCTION,
-        GCP_PUB_SUB_INPUT_QUEUE_URL,
-        GCP_PUB_SUB_DEAD_LETTER_QUEUE_URL
-
     }
 
 }

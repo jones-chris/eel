@@ -1,9 +1,13 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.orchestrator;
 
 import io.eel.common.model.Flow;
+import io.eel.eel_runner_infra_provisioner_aws_lambda.dao.AwsDynamoDbFlowResourcesDaoImpl;
 import io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.*;
+import io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowResources;
+import io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -13,6 +17,9 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProcessorStackOrchestrator {
 
@@ -22,7 +29,15 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
 
     private int currentFlowComponentStackIndex = 0;
 
+    private AwsDynamoDbFlowResourcesDaoImpl flowResourcesDao;
+
     public AwsEelBatchProcessorStackOrchestratorImpl() {
+        this(DynamoDbClient.create());
+    }
+
+    public AwsEelBatchProcessorStackOrchestratorImpl(DynamoDbClient dynamoDbClient) {
+        this.flowResourcesDao = new AwsDynamoDbFlowResourcesDaoImpl(dynamoDbClient);
+
         // Create AWS service clients that are shared amongst the flow component stacks below.  It would be a waste of
         // memory for each flow component stack to have their own duplicated AWS service client.
         final S3Client s3Client = S3Client.create();
@@ -103,8 +118,21 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
 
                 return;
             }
-
         }
+
+        // Persist all provisioned resources' key-value pairs to DDB to retrieve when needing to delete the stack.
+        Map<ResourceType, String> resources = flowComponentStacks.stream()
+                .flatMap(stack -> stack.getProvisionedResources().entrySet().stream())
+                .collect(
+                        Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue
+                        )
+                );
+
+        FlowResources flowResources = FlowResources.from(flow, resources);
+
+        this.flowResourcesDao.save(flowResources);
     }
 
     /**
@@ -114,10 +142,27 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
      */
     @Override
     public void delete(Flow flow) {
+        // Get flow resources.
+        FlowResources flowResources = this.flowResourcesDao.getById(flow.getCanonicalId())
+                .orElseThrow(() -> new RuntimeException("Could not find existing flow resource to delete for canonical id " + flow.getCanonicalId()));
+
+        // Hydrate the stacks with their required provisioned resources.  Each stack should be instantiated with the resource
+        // keys that it expects to provision.  The values should be null/empty until hydrated.
+        for (FlowComponentStack stack : this.flowComponentStacks) {
+            for (ResourceType resourceType : stack.getProvisionedResources().keySet()) {
+                String resourceId = Optional.ofNullable(flowResources.resources().get(resourceType))
+                        .orElseThrow(() -> new RuntimeException("Could not find resource for flow canonical id " + flow.getCanonicalId() + " resource type " + resourceType + " and stack " + stack.getClass().getName()));
+
+                stack.getProvisionedResources().put(resourceType, resourceId);
+            }
+        }
+
         // Set the current stack index to the last stack in the flow component stacks, so that it will delete all resources starting
         // with the last resource and working backwards sequentially.
         this.currentFlowComponentStackIndex = this.flowComponentStacks.size();
         this.rollback(flow);
+
+        // todo:  if rollback is successful, then delete flow resources from DDB.
     }
 
     /**

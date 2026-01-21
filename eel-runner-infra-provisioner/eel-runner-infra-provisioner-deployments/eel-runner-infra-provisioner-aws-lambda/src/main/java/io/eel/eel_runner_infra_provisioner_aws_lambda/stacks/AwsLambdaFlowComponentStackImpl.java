@@ -83,15 +83,16 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         // Populate/hydrate the expected provisioned resources.
         this.addExpectedProvisionedResources(
                 AWS_LAMBDA_EVENT_SOURCE_MAPPING_UUID,
-                AWS_IAM_ROLE_NAME,
-                AWS_IAM_POLICY_ARN,
-                AWS_IAM_POLICY_NAME,
+                AWS_LAMBDA_FUNCTION_IAM_ROLE_NAME,
+                AWS_LAMBDA_IAM_ROLE_POLICY_NAME,
+//                AWS_LAMBDA_FUNCTION_IAM_POLICY_ARN,
+//                AWS_LAMBDA_FUNCTION_IAM_POLICY_NAME,
                 AWS_LAMBDA_FUNCTION_NAME
         );
 
         // Add rollback actions.
-        super.addRollbackAction(RollbackActions.deleteRole(this.iamClient))
-                .addRollbackAction(RollbackActions.deletePolicy(this.iamClient))
+        super.addRollbackAction(RollbackActions.deleteRole(AWS_LAMBDA_FUNCTION_IAM_ROLE_NAME, this.iamClient))
+                .addRollbackAction(RollbackActions.deleteRolePolicy(AWS_LAMBDA_IAM_ROLE_POLICY_NAME, this.iamClient))
                 .addRollbackAction(RollbackActions.deleteLambdaFunction(this.lambdaClient))
                 .addRollbackAction(RollbackActions.deleteLambdaEventSourceMapping(this.lambdaClient));
     }
@@ -171,7 +172,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
         Role lambdaRole = this.iamClient.createRole(lambdaCreateRoleRequest).role();
 
-        this.provisionedResources.put(AWS_IAM_ROLE_NAME, lambdaRole.roleName());
+        this.provisionedResources.put(AWS_LAMBDA_FUNCTION_IAM_ROLE_NAME, lambdaRole.roleName());
 
         return lambdaRole;
     }
@@ -181,56 +182,94 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         String deadLetterQueueArn = this.getDependentResource(AWS_SQS_DEAD_LETTER_QUEUE_ARN).orElseThrow();
         String inputQueueArn = this.getDependentResource(AWS_SQS_INPUT_QUEUE_ARN).orElseThrow();
 
-        CreatePolicyRequest createPolicyRequest = CreatePolicyRequest.builder()
-                .policyName("eel-engine-" + flow.getId().toString())
-                .policyDocument(
-                        """
-                                {
-                                  "Version": "2012-10-17",
-                                  "Statement": [
-                                    {
-                                        "Effect": "Allow",
-                                        "Action": [
-                                            "s3:Get*"
-                                        ],
-                                        "Resource": [
-                                            "arn:aws:s3:::%s",
-                                            "arn:aws:s3:::%s/*"
-                                        ]
-                                    },
-                                    {
-                                        "Effect": "Allow",
-                                        "Action": [
-                                            "sqs:*",
-                                            "sqs:SendMessage"
-                                        ],
-                                        "Resource": [
-                                            "%s",
-                                            "%s"
-                                        ]
-                                    }
-                                  ]
-                                }
-                                """.formatted(
-                                landingBucketId,
-                                landingBucketId,
-                                deadLetterQueueArn,
-                                inputQueueArn
-                        )
-                ).tags(iamResourceTags)
-                .build();
+//        CreatePolicyRequest createPolicyRequest = CreatePolicyRequest.builder()
+//                .policyName("eel-engine-" + flow.getId().toString())
+//                .policyDocument(
+//                        """
+//                                {
+//                                  "Version": "2012-10-17",
+//                                  "Statement": [
+//                                    {
+//                                        "Effect": "Allow",
+//                                        "Action": [
+//                                            "s3:Get*"
+//                                        ],
+//                                        "Resource": [
+//                                            "arn:aws:s3:::%s",
+//                                            "arn:aws:s3:::%s/*"
+//                                        ]
+//                                    },
+//                                    {
+//                                        "Effect": "Allow",
+//                                        "Action": [
+//                                            "sqs:*",
+//                                            "sqs:SendMessage"
+//                                        ],
+//                                        "Resource": [
+//                                            "%s",
+//                                            "%s"
+//                                        ]
+//                                    }
+//                                  ]
+//                                }
+//                                """.formatted(
+//                                landingBucketId,
+//                                landingBucketId,
+//                                deadLetterQueueArn,
+//                                inputQueueArn
+//                        )
+//                ).tags(iamResourceTags)
+//                .build();
 
-        CreatePolicyResponse createPolicyResponse = this.iamClient.createPolicy(createPolicyRequest);
+        final String policyDocument = """
+                               {
+                                 "Version": "2012-10-17",
+                                 "Statement": [
+                                   {
+                                       "Effect": "Allow",
+                                       "Action": [
+                                           "s3:Get*"
+                                       ],
+                                       "Resource": [
+                                           "arn:aws:s3:::%s",
+                                           "arn:aws:s3:::%s/*"
+                                       ]
+                                   },
+                                   {
+                                       "Effect": "Allow",
+                                       "Action": [
+                                           "sqs:*",
+                                           "sqs:SendMessage"
+                                       ],
+                                       "Resource": [
+                                           "%s",
+                                           "%s"
+                                       ]
+                                   }
+                                 ]
+                               }
+                               """.formatted(landingBucketId, landingBucketId, deadLetterQueueArn, inputQueueArn);
 
-        AttachRolePolicyRequest attachRolePolicyRequest = AttachRolePolicyRequest.builder()
-                .roleName(lambdaRole.roleName())
-                .policyArn(createPolicyResponse.policy().arn())
-                .build();
+        this.iamClient.putRolePolicy(
+                PutRolePolicyRequest.builder()
+                        .roleName(lambdaRole.roleName())
+                        .policyName(lambdaRole.roleName())
+                        .policyDocument(policyDocument)
+                        .build()
+        );
+        this.provisionedResources.put(AWS_LAMBDA_IAM_ROLE_POLICY_NAME, lambdaRole.roleName());
 
-        this.iamClient.attachRolePolicy(attachRolePolicyRequest);
-
-        this.provisionedResources.put(AWS_IAM_POLICY_ARN, createPolicyResponse.policy().arn());
-        this.provisionedResources.put(AWS_IAM_POLICY_NAME, createPolicyResponse.policy().policyName());
+//        CreatePolicyResponse createPolicyResponse = this.iamClient.createPolicy(createPolicyRequest);
+//
+//        AttachRolePolicyRequest attachRolePolicyRequest = AttachRolePolicyRequest.builder()
+//                .roleName(lambdaRole.roleName())
+//                .policyArn(createPolicyResponse.policy().arn())
+//                .build();
+//
+//        this.iamClient.attachRolePolicy(attachRolePolicyRequest);
+//
+//        this.provisionedResources.put(AWS_LAMBDA_FUNCTION_IAM_POLICY_ARN, createPolicyResponse.policy().arn());
+//        this.provisionedResources.put(AWS_LAMBDA_FUNCTION_IAM_POLICY_NAME, createPolicyResponse.policy().policyName());
 
         // Let the current thread sleep so that IAM role and policy are fully registered with IAM before creating the Lambda function.
         sleep(TEN_SECONDS);

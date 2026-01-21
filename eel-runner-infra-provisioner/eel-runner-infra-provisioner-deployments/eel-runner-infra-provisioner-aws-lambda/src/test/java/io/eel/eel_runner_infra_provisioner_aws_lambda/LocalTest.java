@@ -65,7 +65,8 @@ public class LocalTest {
         Flow flow = flowDao.getFlowByCanonicalId(Flow.Utils.getCanonicalId(UUID.fromString(flowId), version))
                 .orElseThrow();
 
-        stackOrchestrator.deploy(flow);
+//        stackOrchestrator.deploy(flow);
+        stackOrchestrator.delete(flow);
 
     }
 

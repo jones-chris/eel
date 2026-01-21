@@ -5,12 +5,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.iam.model.DeletePolicyRequest;
+import software.amazon.awssdk.services.iam.model.DeleteRolePolicyRequest;
 import software.amazon.awssdk.services.iam.model.DeleteRoleRequest;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.lambda.model.DeleteEventSourceMappingRequest;
 import software.amazon.awssdk.services.lambda.model.DeleteFunctionRequest;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
+import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.scheduler.SchedulerClient;
 import software.amazon.awssdk.services.scheduler.model.DeleteScheduleRequest;
 import software.amazon.awssdk.services.sfn.SfnClient;
@@ -20,9 +21,11 @@ import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest;
 
 import java.time.Duration;
 import java.util.AbstractMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.TEN_SECONDS;
 import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.*;
@@ -45,9 +48,9 @@ public class RollbackActions {
         );
     }
 
-    public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteRole(IamClient iamClient) {
+    public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteRole(ResourceType iamRoleNameResourceType, IamClient iamClient) {
         return new AbstractMap.SimpleEntry<>(
-                AWS_IAM_ROLE_NAME,
+                iamRoleNameResourceType,
                 iamRoleDeletionAttempt.apply(iamClient)
         );
     }
@@ -56,22 +59,43 @@ public class RollbackActions {
         return new AbstractMap.SimpleEntry<>(
                 AWS_S3_BUCKET_NAME,
                 ResourceDeletionAttempt.of(
-                        resourceId -> s3Client.deleteBucket(
-                                DeleteBucketRequest.builder()
-                                        .bucket(resourceId)
-                                        .build())
+                        resourceId -> {
+                            // Empty bucket before deleting it.
+                            deleteAllBucketObjects(resourceId, s3Client);
+
+                            // Delete the empty bucket.
+                            s3Client.deleteBucket(
+                                    DeleteBucketRequest.builder()
+                                            .bucket(resourceId)
+                                            .build()
+                            );
+                        }
                 )
         );
     }
 
-    public static Map.Entry<ResourceType, ResourceDeletionAttempt> deletePolicy(IamClient iamClient) {
+    public static Map.Entry<ResourceType, ResourceDeletionAttempt> deletePolicy(ResourceType iamPolicyArnResourceType, IamClient iamClient) {
         return new AbstractMap.SimpleEntry<>(
-                AWS_IAM_POLICY_ARN,
+                iamPolicyArnResourceType,
                 ResourceDeletionAttempt.of(
                         resourceId -> iamClient.deletePolicy(
                                 DeletePolicyRequest.builder()
                                         .policyArn(resourceId)
                                         .build())
+                )
+        );
+    }
+
+    public static Map.Entry<ResourceType, ResourceDeletionAttempt> deleteRolePolicy(ResourceType iamRolePolicyNameResourceType, IamClient iamClient) {
+        return new AbstractMap.SimpleEntry<>(
+                iamRolePolicyNameResourceType,
+                ResourceDeletionAttempt.of(
+                        resourceId -> iamClient.deleteRolePolicy(
+                                DeleteRolePolicyRequest.builder()
+                                        .roleName(resourceId)
+                                        .policyName(resourceId)
+                                        .build()
+                        )
                 )
         );
     }
@@ -151,6 +175,44 @@ public class RollbackActions {
                 sleep(Duration.ofSeconds(60));
             }
     );
+
+    private static void deleteAllBucketObjects(String bucketName, S3Client s3Client) {
+        // 1. List all objects in the bucket
+        ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .build();
+
+        ListObjectsV2Response listResponse;
+
+        do {
+            listResponse = s3Client.listObjectsV2(listRequest);
+
+            if (listResponse.contents().isEmpty()) {
+                log.info("Bucket {} is already empty", bucketName);
+                return;
+            }
+
+            // 2. Extract keys of objects to delete
+            List<ObjectIdentifier> keysToDelete = listResponse.contents().stream()
+                    .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
+                    .collect(Collectors.toList());
+
+            // 3. Execute the batch delete
+            DeleteObjectsRequest deleteRequest = DeleteObjectsRequest.builder()
+                    .bucket(bucketName)
+                    .delete(Delete.builder().objects(keysToDelete).build())
+                    .build();
+
+            s3Client.deleteObjects(deleteRequest);
+            log.debug("Deleted {} objects", keysToDelete.size());
+
+            // 4. Handle pagination if there are > 1000 objects
+            listRequest = listRequest.toBuilder()
+                    .continuationToken(listResponse.nextContinuationToken())
+                    .build();
+
+        } while (listResponse.isTruncated());
+    }
 
     public static class ResourceDeletionAttempt {
 

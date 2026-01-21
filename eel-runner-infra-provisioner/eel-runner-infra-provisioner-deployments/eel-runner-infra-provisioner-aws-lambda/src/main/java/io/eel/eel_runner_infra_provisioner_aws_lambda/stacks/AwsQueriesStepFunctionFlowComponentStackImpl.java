@@ -58,10 +58,16 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
         this.stepFunctionsClient = stepFunctionsClient;
         this.iamClient = iamClient;
 
-        this.addExpectedProvisionedResources(AWS_IAM_ROLE_ARN, AWS_STEP_FUNCTION_ARN);
+        this.addExpectedProvisionedResources(
+                AWS_STEP_FUNCTION_IAM_ROLE_ARN,
+                AWS_STEP_FUNCTION_IAM_ROLE_NAME,
+                AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME,
+                AWS_STEP_FUNCTION_ARN
+        );
 
         this.addRollbackAction(RollbackActions.deleteStepFunction(stepFunctionsClient))
-                .addRollbackAction(RollbackActions.deleteRole(iamClient));
+                .addRollbackAction(RollbackActions.deleteRolePolicy(AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME, iamClient))
+                .addRollbackAction(RollbackActions.deleteRole(AWS_STEP_FUNCTION_IAM_ROLE_NAME, iamClient));
     }
 
     @Override
@@ -105,7 +111,8 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
                             .build()
             ).role();
 
-            this.provisionedResources.put(AWS_IAM_ROLE_ARN, role.arn());
+            this.provisionedResources.put(AWS_STEP_FUNCTION_IAM_ROLE_ARN, role.arn());
+            this.provisionedResources.put(AWS_STEP_FUNCTION_IAM_ROLE_NAME, role.roleName());
 
             // Attach the policy as an inline policy
             this.iamClient.putRolePolicy(PutRolePolicyRequest.builder()
@@ -113,6 +120,7 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
                     .policyName(role.roleName())
                     .policyDocument(this.buildStepFunctionRolePolicy())
                     .build());
+            this.provisionedResources.put(AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME, role.roleName());
 
             CreateStateMachineRequest machineRequest = CreateStateMachineRequest.builder()
                     .definition(stateMachine.toPrettyJson())

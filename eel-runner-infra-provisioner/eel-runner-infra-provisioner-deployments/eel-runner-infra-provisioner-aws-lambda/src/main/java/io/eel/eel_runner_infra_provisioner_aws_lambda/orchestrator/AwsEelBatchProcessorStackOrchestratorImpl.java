@@ -143,7 +143,7 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
     @Override
     public void delete(Flow flow) {
         // Get flow resources.
-        FlowResources flowResources = this.flowResourcesDao.getById(flow.getCanonicalId())
+        FlowResources flowResources = this.flowResourcesDao.getById(flow.getId().toString())
                 .orElseThrow(() -> new RuntimeException("Could not find existing flow resource to delete for canonical id " + flow.getCanonicalId()));
 
         // Hydrate the stacks with their required provisioned resources.  Each stack should be instantiated with the resource

@@ -1,6 +1,5 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.dao;
 
-import io.eel.common.model.Flow;
 import io.eel.common_aws.BaseAwsDynamoDbDao;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowResources;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -14,7 +13,7 @@ public class AwsDynamoDbFlowResourcesDaoImpl extends BaseAwsDynamoDbDao<FlowReso
 
     private static final String TABLE_NAME = "eel-flow-resources";
 
-    private static final String PARTITION_KEY = "canonicalId";
+    private static final String PARTITION_KEY = "id";
 
     private static final Function<
             Map<String, AttributeValue>,
@@ -29,14 +28,14 @@ public class AwsDynamoDbFlowResourcesDaoImpl extends BaseAwsDynamoDbDao<FlowReso
         super(dynamoDbClient, TABLE_NAME, PARTITION_KEY);
     }
 
-    public Optional<FlowResources> getById(String canonicalId) {
-        return super.getById(canonicalId, DYNAMO_DB_ITEM_MAPPER);
+    public Optional<FlowResources> getById(String flowId) {
+        return super.getById(flowId, DYNAMO_DB_ITEM_MAPPER);
     }
 
     public FlowResources save(FlowResources flowResources) {
         return super.save(
                 flowResources,
-                f -> AttributeValue.fromS(flowResources.canonicalId())
+                f -> AttributeValue.fromS(flowResources.flowId())
         );
     }
 }

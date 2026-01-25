@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
+import software.amazon.awssdk.services.cloudwatchlogs.model.PutRetentionPolicyRequest;
 import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.lambda.LambdaClient;
@@ -66,10 +68,13 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
     private final LambdaClient lambdaClient;
 
+    private final CloudWatchLogsClient cloudWatchLogsClient;
+
     public AwsLambdaFlowComponentStackImpl(
             S3Client s3Client,
             IamClient iamClient,
             LambdaClient lambdaClient,
+            CloudWatchLogsClient cloudWatchLogsClient,
             List<FlowComponentStack> dependentStacks
     ) {
         super(dependentStacks);
@@ -79,12 +84,13 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         this.s3Client = s3Client;
         this.iamClient = iamClient;
         this.lambdaClient = lambdaClient;
+        this.cloudWatchLogsClient = cloudWatchLogsClient;
 
         // Populate/hydrate the expected provisioned resources.
         this.addExpectedProvisionedResources(
                 AWS_LAMBDA_EVENT_SOURCE_MAPPING_UUID,
                 AWS_LAMBDA_FUNCTION_IAM_ROLE_NAME,
-                AWS_LAMBDA_IAM_ROLE_POLICY_NAME,
+//                AWS_LAMBDA_IAM_ROLE_POLICY_NAME,
 //                AWS_LAMBDA_FUNCTION_IAM_POLICY_ARN,
 //                AWS_LAMBDA_FUNCTION_IAM_POLICY_NAME,
                 AWS_LAMBDA_FUNCTION_NAME
@@ -92,7 +98,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
         // Add rollback actions.
         super.addRollbackAction(RollbackActions.deleteRole(AWS_LAMBDA_FUNCTION_IAM_ROLE_NAME, this.iamClient))
-                .addRollbackAction(RollbackActions.deleteRolePolicy(AWS_LAMBDA_IAM_ROLE_POLICY_NAME, this.iamClient))
+//                .addRollbackAction(RollbackActions.deleteRolePolicy(AWS_LAMBDA_IAM_ROLE_POLICY_NAME, this.iamClient))
                 .addRollbackAction(RollbackActions.deleteLambdaFunction(this.lambdaClient))
                 .addRollbackAction(RollbackActions.deleteLambdaEventSourceMapping(this.lambdaClient));
     }
@@ -257,7 +263,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
                         .policyDocument(policyDocument)
                         .build()
         );
-        this.provisionedResources.put(AWS_LAMBDA_IAM_ROLE_POLICY_NAME, lambdaRole.roleName());
+//        this.provisionedResources.put(AWS_LAMBDA_IAM_ROLE_POLICY_NAME, lambdaRole.roleName());
 
 //        CreatePolicyResponse createPolicyResponse = this.iamClient.createPolicy(createPolicyRequest);
 //
@@ -282,6 +288,8 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
                 .functionName(flow.getId().toString())
                 .role(lambdaRole.arn())
                 .timeout(ENGINE_TIMEOUT_IN_SECONDS)
+                .memorySize(5000) // 5GB or 5000MB
+                .ephemeralStorage(EphemeralStorage.builder().size(5000).build()) // 5GB or 5000MB
                 .runtime(Runtime.JAVA21)
                 .architectures(Architecture.X86_64)
                 .deadLetterConfig(
@@ -296,9 +304,17 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
                 .tags(this.tags)
                 .build();
 
-        String lambdaFunctionName = this.lambdaClient.createFunction(request).functionName();
-
+        CreateFunctionResponse response = this.lambdaClient.createFunction(request);
+        String lambdaFunctionName = response.functionName();
         this.provisionedResources.put(AWS_LAMBDA_FUNCTION_NAME, lambdaFunctionName);
+
+        // Add a retention policy to the Lambda Function's log group.
+        PutRetentionPolicyRequest putRetentionPolicyRequest = PutRetentionPolicyRequest.builder()
+                .logGroupName(response.loggingConfig().logGroup())
+                .retentionInDays(60) // 60 days or ~2 months which matches the S3 landing bucket life cycle policy.
+                .build();
+
+        this.cloudWatchLogsClient.putRetentionPolicy(putRetentionPolicyRequest);
 
         return lambdaFunctionName;
     }

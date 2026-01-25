@@ -7,6 +7,7 @@ import io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowResources;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.lambda.LambdaClient;
@@ -45,6 +46,7 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
         final IamClient iamClient = IamClient.builder().build();
         final LambdaClient lambdaClient = LambdaClient.create();
         final SfnClient stepFunctionsClient = SfnClient.create();
+        final CloudWatchLogsClient cloudWatchLogsClient = CloudWatchLogsClient.create();
 
         // Create the flow component stacks and their dependent flow component stacks.
         FlowComponentStack landingBucketStack = new AwsS3LandingBucketFlowComponentStackImpl(s3Client);
@@ -57,6 +59,7 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
                 s3Client,
                 iamClient,
                 lambdaClient,
+                cloudWatchLogsClient,
                 List.of(landingBucketStack, sqsDeadLetterQueueStack, sqsInputQueueStack)
         );
         FlowComponentStack queriesStepFunction = new AwsQueriesStepFunctionFlowComponentStackImpl(

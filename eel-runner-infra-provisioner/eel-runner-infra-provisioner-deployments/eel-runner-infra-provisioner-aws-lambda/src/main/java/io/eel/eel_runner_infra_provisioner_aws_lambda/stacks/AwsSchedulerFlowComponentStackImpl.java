@@ -48,10 +48,10 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
         this.iamClient = iamClient;
         this.schedulerClient = schedulerClient;
 
-        this.addExpectedProvisionedResources(AWS_SCHEDULER_IAM_ROLE_NAME, AWS_SCHEDULER_IAM_ROLE_POLICY_NAME, AWS_SCHEDULER_NAME);
+        this.addExpectedProvisionedResources(AWS_SCHEDULER_IAM_ROLE_NAME, AWS_SCHEDULER_NAME);
 
         super.addRollbackAction(RollbackActions.deleteRole(AWS_SCHEDULER_IAM_ROLE_NAME, iamClient))
-                .addRollbackAction(RollbackActions.deleteRolePolicy(AWS_SCHEDULER_IAM_ROLE_POLICY_NAME, iamClient))
+//                .addRollbackAction(RollbackActions.deleteRolePolicy(AWS_SCHEDULER_IAM_ROLE_POLICY_NAME, iamClient))
                 .addRollbackAction(RollbackActions.deleteScheduler(schedulerClient));
     }
 
@@ -78,7 +78,7 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
                              .policyDocument(this.buildPermissionsPolicy())
                              .build()
             );
-            this.provisionedResources.put(AWS_SCHEDULER_IAM_ROLE_POLICY_NAME, role.roleName());
+//            this.provisionedResources.put(AWS_SCHEDULER_IAM_ROLE_POLICY_NAME, role.roleName());
 
             // Wait another 10 seconds while this policy change propagates throughout AWS.
             sleep(TEN_SECONDS);

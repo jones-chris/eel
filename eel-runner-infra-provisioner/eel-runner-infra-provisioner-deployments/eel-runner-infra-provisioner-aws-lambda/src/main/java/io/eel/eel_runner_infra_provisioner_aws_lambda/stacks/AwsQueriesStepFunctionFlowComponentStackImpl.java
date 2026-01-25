@@ -61,12 +61,12 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
         this.addExpectedProvisionedResources(
                 AWS_STEP_FUNCTION_IAM_ROLE_ARN,
                 AWS_STEP_FUNCTION_IAM_ROLE_NAME,
-                AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME,
+//                AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME,
                 AWS_STEP_FUNCTION_ARN
         );
 
         this.addRollbackAction(RollbackActions.deleteStepFunction(stepFunctionsClient))
-                .addRollbackAction(RollbackActions.deleteRolePolicy(AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME, iamClient))
+//                .addRollbackAction(RollbackActions.deleteRolePolicy(AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME, iamClient))
                 .addRollbackAction(RollbackActions.deleteRole(AWS_STEP_FUNCTION_IAM_ROLE_NAME, iamClient));
     }
 
@@ -120,7 +120,7 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
                     .policyName(role.roleName())
                     .policyDocument(this.buildStepFunctionRolePolicy())
                     .build());
-            this.provisionedResources.put(AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME, role.roleName());
+//            this.provisionedResources.put(AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME, role.roleName());
 
             CreateStateMachineRequest machineRequest = CreateStateMachineRequest.builder()
                     .definition(stateMachine.toPrettyJson())

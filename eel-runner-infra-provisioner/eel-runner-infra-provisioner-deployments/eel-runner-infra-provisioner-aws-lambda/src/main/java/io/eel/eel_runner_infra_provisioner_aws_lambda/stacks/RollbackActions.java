@@ -4,9 +4,7 @@ import io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.iam.IamClient;
-import software.amazon.awssdk.services.iam.model.DeletePolicyRequest;
-import software.amazon.awssdk.services.iam.model.DeleteRolePolicyRequest;
-import software.amazon.awssdk.services.iam.model.DeleteRoleRequest;
+import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.lambda.model.DeleteEventSourceMappingRequest;
 import software.amazon.awssdk.services.lambda.model.DeleteFunctionRequest;
@@ -152,11 +150,47 @@ public class RollbackActions {
 
     private static final Function<IamClient, ResourceDeletionAttempt> iamRoleDeletionAttempt = iamClient -> ResourceDeletionAttempt.of(
             resourceId  -> {
+                // 1. Detach Managed Policies
+                ListAttachedRolePoliciesResponse attachedPolicies = iamClient.listAttachedRolePolicies(
+                        ListAttachedRolePoliciesRequest.builder()
+                                .roleName(resourceId)
+                                .build()
+                );
+
+                for (AttachedPolicy policy : attachedPolicies.attachedPolicies()) {
+                    iamClient.detachRolePolicy(
+                            DetachRolePolicyRequest.builder()
+                                    .roleName(resourceId)
+                                    .policyArn(policy.policyArn())
+                                    .build()
+                    );
+                    log.debug("Detached managed policy {} from role {}", policy.policyName(), resourceId);
+                }
+
+                // 2. Delete Inline Policies
+                ListRolePoliciesResponse inlinePolicies = iamClient.listRolePolicies(
+                        ListRolePoliciesRequest.builder()
+                                .roleName(resourceId)
+                                .build()
+                );
+
+                for (String policyName : inlinePolicies.policyNames()) {
+                    iamClient.deleteRolePolicy(
+                            DeleteRolePolicyRequest.builder()
+                                    .roleName(resourceId)
+                                    .policyName(policyName)
+                                    .build()
+                    );
+                    log.debug("Deleted inline policy {} from role {}", policyName, resourceId);
+                }
+
+                // 3. Delete the Role
                 iamClient.deleteRole(
                         DeleteRoleRequest.builder()
                                 .roleName(resourceId)
                                 .build()
                 );
+                log.debug("Role {} deleted successfully", resourceId);
 
                 sleep(TEN_SECONDS);
             }

@@ -2,7 +2,8 @@ package io.eel.flow_api_core.service;
 
 import io.eel.common.model.Flow;
 import io.eel.common.dao.FlowDao;
-import io.eel.eel_runner_infra_provisioner_core.stacks.EelBatchProcessorStack;
+import io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowInfrastructureActionRequestDto;
+import io.eel.flow_api_core.dao.FlowInfrastructureActionQueueDao;
 import io.eel.flow_api_core.exception.ImmutableFlowException;
 import io.eel.flow_api_core.exception.ResourceNotFoundException;
 import org.apache.logging.log4j.LogManager;
@@ -18,16 +19,16 @@ public class FlowServiceImpl implements FlowService {
 
     private FlowDao flowDao;
 
-    private EelBatchProcessorStack eelBatchProcessorStack;
+    private FlowInfrastructureActionQueueDao flowInfrastructureActionQueueDao;
 
     private FlowServiceImpl() {}
 
     public FlowServiceImpl(
             FlowDao flowDao,
-            EelBatchProcessorStack eelBatchProcessorStack
+            FlowInfrastructureActionQueueDao flowInfrastructureActionQueueDao
     ) {
         this.flowDao = flowDao;
-        this.eelBatchProcessorStack = eelBatchProcessorStack;
+        this.flowInfrastructureActionQueueDao = flowInfrastructureActionQueueDao;
     }
 
     @Override
@@ -81,27 +82,15 @@ public class FlowServiceImpl implements FlowService {
 
     @Override
     public Flow finalizeFlow(Flow flow) {
-        // Mark isFinalized as true.
+        // Mark isFinalized as true, so that it is locked/immutable while the deployment is attempted.
         flow.setFinalized(true);
         this.flowDao.updateFlow(flow);
 
-        // Deploy infra.
-        try {
-            Set<String> sheetNames = flow.getScheduledBatchConfiguration().sheetQueries().keySet();
-            this.eelBatchProcessorStack.deploy(flow.getCanonicalId(), "", "", 0, sheetNames);
+        // Send message to infra provisioner queue for the infra to be deployed or deleted.
+        this.flowInfrastructureActionQueueDao.sendDeploymentMessage(
+                FlowInfrastructureActionRequestDto.newDeploymentRequest(flow)
+        );
 
-            return flow;
-        } catch (Throwable t) {
-            // If there is an error, then rollback and mark isFinalized as false.
-            log.error(t);
-
-            flow.setFinalized(false);
-            this.flowDao.updateFlow(flow);
-
-            this.eelBatchProcessorStack.rollback(flow.getId().toString(), flow.getVersion());
-
-            throw t;
-        }
-
+        return flow;
     }
 }

@@ -4,7 +4,7 @@ import io.eel.common.dao.FlowDao;
 import io.eel.common.model.Flow;
 import io.eel.common_aws.AwsDynamoDbFlowDaoImpl;
 import io.eel.eel_runner_infra_provisioner_aws_lambda.orchestrator.AwsEelBatchProcessorStackOrchestratorImpl;
-import io.eel.eel_runner_infra_provisioner_aws_lambda.orchestrator.EelBatchProcessorStackOrchestrator;
+import io.eel.eel_runner_infra_provisioner_core.stacks.orchestrator.EelBatchProcessorStackOrchestrator;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 import java.util.UUID;

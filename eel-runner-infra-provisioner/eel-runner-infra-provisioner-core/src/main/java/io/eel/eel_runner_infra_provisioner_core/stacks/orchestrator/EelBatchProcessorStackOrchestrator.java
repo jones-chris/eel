@@ -1,4 +1,4 @@
-package io.eel.eel_runner_infra_provisioner_aws_lambda.orchestrator;
+package io.eel.eel_runner_infra_provisioner_core.stacks.orchestrator;
 
 import io.eel.common.model.Flow;
 

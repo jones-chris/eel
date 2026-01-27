@@ -5,6 +5,7 @@ import io.eel.eel_runner_infra_provisioner_aws_lambda.dao.AwsDynamoDbFlowResourc
 import io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.*;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowResources;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType;
+import io.eel.eel_runner_infra_provisioner_core.stacks.orchestrator.EelBatchProcessorStackOrchestrator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
@@ -103,6 +104,9 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
 
     @Override
     public void deploy(Flow flow) {
+        // Always clear the resources that were created from the last deployment.
+        this.clearProvisionedResources();
+
         for (int i = 0; i <= this.flowComponentStacks.size() - 1; i++) {
             currentFlowComponentStackIndex = i;
 
@@ -145,6 +149,9 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
      */
     @Override
     public void delete(Flow flow) {
+        // Always clear the resources that were created from the last deployment.
+        this.clearProvisionedResources();
+
         // Get flow resources.
         FlowResources flowResources = this.flowResourcesDao.getById(flow.getId().toString())
                 .orElseThrow(() -> new RuntimeException("Could not find existing flow resource to delete for canonical id " + flow.getCanonicalId()));
@@ -182,6 +189,15 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
                 log.error("Flow component stack {} did not rollback successfully for flow ID {}", flowComponentStack.getClass().getName(), flow.getCanonicalId());
             }
         }
+    }
+
+    /**
+     * Clears the resources that may have been provisioned in a previous `deploy` call or hydrated in a previous `delete`
+     * call.  This method should always be called first in the `deploy` and `delete` methods.
+     */
+    private void clearProvisionedResources() {
+        this.flowComponentStacks
+                .forEach(stack -> stack.getProvisionedResources().clear());
     }
 
 }

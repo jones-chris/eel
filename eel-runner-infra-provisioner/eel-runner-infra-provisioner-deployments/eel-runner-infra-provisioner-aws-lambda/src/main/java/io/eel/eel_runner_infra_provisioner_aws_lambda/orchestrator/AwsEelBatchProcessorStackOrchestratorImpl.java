@@ -140,6 +140,10 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
         FlowResources flowResources = FlowResources.from(flow, resources);
 
         this.flowResourcesDao.save(flowResources);
+
+        // todo:  update flow in DDB to be finalized.
+
+        // todo:  update status of deployment in eel-deployments DDB table.
     }
 
     /**
@@ -149,7 +153,7 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
      */
     @Override
     public void delete(Flow flow) {
-        // Always clear the resources that were created from the last deployment.
+        // Always clear the resources that were hydrated from the last flow stack deletion.
         this.clearProvisionedResources();
 
         // Get flow resources.
@@ -173,6 +177,10 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
         this.rollback(flow);
 
         // todo:  if rollback is successful, then delete flow resources from DDB.
+
+        // todo:  update flow in DDB to NOT be finalized?
+
+        // todo:  update status of deletion in eel-deployments DDB table.
     }
 
     /**
@@ -189,6 +197,12 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
                 log.error("Flow component stack {} did not rollback successfully for flow ID {}", flowComponentStack.getClass().getName(), flow.getCanonicalId());
             }
         }
+
+        // todo:  delete the stack resources from the DDB.
+
+        // todo:  update flow in DDB to NOT be finalized.
+
+        // todo:  update status of deployment in eel-deployments DDB table.
     }
 
     /**

@@ -2,9 +2,15 @@ provider "aws" {
   region = var.aws_region
 }
 
+variable "aws_region" {
+  type        = string
+  default     = "us-east-1"
+  description = "The AWS region to deploy to"
+}
+
 locals {
   product    = "any-etl"
-  stack_name = "base"
+  stack_name = "vpc-base-vpc"
 }
 
 module "vpc" {
@@ -23,8 +29,8 @@ module "vpc" {
     "${var.aws_region}f"
   ]
 
-  # Private subnets (where your Lambda and Endpoints will live)
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
+  # Private subnets (where the DB Query Runner Lambda Function and VPC endpoints will live)
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
 
   # Public subnets (needed if you want a NAT Gateway for internet access)
   # public_subnets = ["10.0.101.0/24", "10.0.102.0/24"]
@@ -44,10 +50,10 @@ module "vpc" {
 }
 
 # Security Groups
-# 1. The Security Group for your Lambda Function
+# 1. The Security Group for the DB Query Runner Lambda Function
 resource "aws_security_group" "db_query_runner_sg" {
   name        = "db-query-runner-sg"
-  description = "Security group for the DB Query Runner Lambda function"
+  description = "Security group for the AnyETL DB Query Runner Lambda function"
   vpc_id      = module.vpc.vpc_id
 
   # Standard outbound rule to allow Lambda to talk to anything (including the VPCEs)
@@ -115,13 +121,42 @@ resource "aws_vpc_endpoint" "secrets_manager" {
   vpc_endpoint_type   = "Interface"
   ip_address_type     = "ipv4"
   private_dns_enabled = true
+  subnet_ids          = module.vpc.private_subnets
+  security_group_ids  = [aws_security_group.secrets_manager_vpce_sg.id]
 
   dns_options {
-    dns_record_ip_type = "ipv4"
+    dns_record_ip_type                             = "ipv4"
+    private_dns_only_for_inbound_resolver_endpoint = false
   }
 
-  subnet_ids         = module.vpc.private_subnets
-  security_group_ids = [aws_security_group.secrets_manager_vpce_sg.id]
+  tags = {
+    region = var.aws_region
+    stack  = local.stack_name
+  }
+}
+
+# DDB tables
+
+import {
+  to = aws_dynamodb_table.eel_manifests
+  id = "eel-manifests"
+}
+
+resource "aws_dynamodb_table" "eel_manifests" {
+  billing_mode                = "PAY_PER_REQUEST"
+  deletion_protection_enabled = false
+  hash_key                    = "transformationId"
+  name                        = "eel-manifests"
+  stream_enabled              = false
+
+  attribute {
+    name = "transformationId"
+    type = "S"
+  }
+  point_in_time_recovery {
+    enabled                 = false
+    recovery_period_in_days = 0
+  }
 
   tags = {
     region = var.aws_region

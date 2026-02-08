@@ -100,7 +100,7 @@ resource "aws_iam_role_policy" "manifest_api" {
       {
         "Effect" : "Allow",
         "Action" : [
-          "dynamodb:*"
+          "dynamodb:*" # todo:  restrict this.
         ],
         "Resource" : aws_dynamodb_table.eel_flows.arn
       },
@@ -113,7 +113,7 @@ resource "aws_iam_role_policy" "manifest_api" {
       },
       {
         "Effect" : "Allow",
-        "Action" : "kms:*",
+        "Action" : "kms:*", # todo: restrict this.
         "Resource" : data.aws_kms_key.s3_default.arn
       }
     ]

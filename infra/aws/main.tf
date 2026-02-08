@@ -128,6 +128,16 @@ module "manifest_services" {
   aws_region  = var.aws_region
 }
 
+module "flow_services" {
+  source = "./modules/flow-service"
+
+  aws_account                     = local.aws_account
+  s3_manifest_staging_bucket_name = module.manifest_services.s3_staging_bucket_name
+
+  depends_on = [module.manifest_services]
+}
+
+# Base JARs, such as the engine and DB query runner, that will be used in user flows.
 module "engine" {
   source = "./modules/engine"
 

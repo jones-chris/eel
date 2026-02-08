@@ -190,6 +190,6 @@ resource "aws_s3_bucket_cors_configuration" "eel_manifest_cors" {
     allowed_methods = ["PUT"]
     allowed_origins = ["http://localhost:63342"] # todo:  fix this.
     expose_headers  = []
-    max_age_seconds = 3000 # Optional: how long browser caches the preflight
+    max_age_seconds = 3000 # This is how long the browser caches the preflight response
   }
 }

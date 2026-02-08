@@ -156,7 +156,6 @@ public class FlowController extends BaseController {
                     created(response).setBody(
                             gson.toJson(flow)
                     );
-
                 }
         ).addRouteHandler(
                 // Note that this can only be done to finalized flows because finalized flows are immutable.

@@ -1,16 +1,21 @@
-provider "aws" {
-  region = var.aws_region
-}
-
-variable "aws_region" {
-  type        = string
-  default     = "us-east-1"
-  description = "The AWS region to deploy to"
-}
+data "aws_caller_identity" "current" {}
 
 locals {
-  product    = "any-etl"
-  stack_name = "vpc-base-vpc"
+  product     = "eel"
+  stack_name  = "vpc-base-vpc"
+  aws_account = data.aws_caller_identity.current.account_id
+}
+
+provider "aws" {
+  region = var.aws_region
+
+  default_tags {
+    tags = {
+      product = local.product
+      region  = var.aws_region
+      stack   = local.stack_name
+    }
+  }
 }
 
 module "vpc" {
@@ -42,11 +47,6 @@ module "vpc" {
   # Optional: Set to true if your Lambda needs to talk to the public internet
   # enable_nat_gateway = false
   # single_nat_gateway = true
-
-  tags = {
-    product = local.product
-    stack   = local.stack_name
-  }
 }
 
 # Security Groups
@@ -95,11 +95,6 @@ resource "aws_vpc_endpoint" "s3" {
   service_name      = "com.amazonaws.${var.aws_region}.s3"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = module.vpc.private_route_table_ids
-
-  tags = {
-    region = var.aws_region
-    stack  = local.stack_name
-  }
 }
 
 resource "aws_vpc_endpoint" "dynamodb" {
@@ -108,11 +103,6 @@ resource "aws_vpc_endpoint" "dynamodb" {
   vpc_endpoint_type = "Gateway"
   ip_address_type   = "ipv4"
   route_table_ids   = module.vpc.private_route_table_ids
-
-  tags = {
-    region = var.aws_region
-    stack  = local.stack_name
-  }
 }
 
 resource "aws_vpc_endpoint" "secrets_manager" {
@@ -128,38 +118,18 @@ resource "aws_vpc_endpoint" "secrets_manager" {
     dns_record_ip_type                             = "ipv4"
     private_dns_only_for_inbound_resolver_endpoint = false
   }
-
-  tags = {
-    region = var.aws_region
-    stack  = local.stack_name
-  }
 }
 
-# DDB tables
+# API services
+module "manifest_services" {
+  source = "./modules/manifest-service"
 
-import {
-  to = aws_dynamodb_table.eel_manifests
-  id = "eel-manifests"
+  aws_account = local.aws_account
+  aws_region  = var.aws_region
 }
 
-resource "aws_dynamodb_table" "eel_manifests" {
-  billing_mode                = "PAY_PER_REQUEST"
-  deletion_protection_enabled = false
-  hash_key                    = "transformationId"
-  name                        = "eel-manifests"
-  stream_enabled              = false
+module "engine" {
+  source = "./modules/engine"
 
-  attribute {
-    name = "transformationId"
-    type = "S"
-  }
-  point_in_time_recovery {
-    enabled                 = false
-    recovery_period_in_days = 0
-  }
-
-  tags = {
-    region = var.aws_region
-    stack  = local.stack_name
-  }
+  aws_region = var.aws_region
 }

@@ -25,6 +25,30 @@ resource "aws_dynamodb_table" "eel_flow_resources" {
   }
 }
 
+# Flow SQS queue that holds requests/messages to provision a flow's infrastructure.
+resource "aws_sqs_queue" "flow_infra_provisioner" {
+  message_retention_seconds = 345600 # 4 days
+  name_prefix               = "eel-flow-infra-provisioner-"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Id      = "FlowApiAccessPolicy"
+    Statement = [
+      {
+        Sid    = "AllowFlowApiRoleAccess"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.flow_api_role.arn
+        }
+        Action   = "SQS:SendMessage"
+        Resource = "*"
+      }
+    ]
+  })
+  sqs_managed_sse_enabled    = true
+  visibility_timeout_seconds = 300 # 5 mins because it takes ~1 min to provision flow infra and at least 2 mins to roll it back.
+}
+
+
 # Flow API Lambda Function and IAM role/policy.
 resource "aws_iam_role" "flow_api_role" {
   assume_role_policy = jsonencode({
@@ -115,7 +139,14 @@ resource "aws_iam_role_policy" "manifest_api" {
         "Effect" : "Allow",
         "Action" : "kms:*", # todo: restrict this.
         "Resource" : data.aws_kms_key.s3_default.arn
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : "sqs:SendMessage", # todo: restrict this.
+        "Resource" : aws_sqs_queue.flow_infra_provisioner.arn
       }
     ]
   })
 }
+
+# todo:  add flow infra provisioner lambda function and role/policy.

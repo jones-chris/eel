@@ -150,3 +150,16 @@ resource "aws_iam_role_policy" "manifest_api" {
 }
 
 # todo:  add flow infra provisioner lambda function and role/policy.
+resource "aws_lambda_function" "flow_infra_provisioner" {
+  architectures    = ["x86_64"]
+  description      = "The Lambda Function that consumes the message from the SQS queue that the Flow API produces.  It uses this message to provision flow infrastructure in AWS."
+  filename         = "../../eel-runner-infra-provisioner/eel-runner-infra-provisioner-deployments/eel-runner-infra-provisioner-aws-lambda/target/eel-runner-infra-provisioner-aws-lambda-1.0-SNAPSHOT.jar"
+  source_code_hash = filebase64sha256("../../eel-runner-infra-provisioner/eel-runner-infra-provisioner-deployments/eel-runner-infra-provisioner-aws-lambda/target/eel-runner-infra-provisioner-aws-lambda-1.0-SNAPSHOT.jar")
+  function_name    = "flow-infra-provisioner-consumer"
+  handler          = "io.eel.eel_runner_infra_provisioner_aws_lambda.StreamLambdaHandler"
+  memory_size      = 512
+  package_type     = "Zip"
+  role             = aws_iam_role.flow_api_role.arn # todo:  change this.
+  runtime          = "java21"
+  timeout          = 600  # 10 mins so the Lambda Function has time to provision and/or rollback AWS resources.
+}

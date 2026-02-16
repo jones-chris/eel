@@ -6,6 +6,7 @@ import io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.*;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowResources;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType;
 import io.eel.eel_runner_infra_provisioner_core.stacks.orchestrator.EelBatchProcessorStackOrchestrator;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
@@ -23,9 +24,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProcessorStackOrchestrator {
-
-    private static final Logger log = LoggerFactory.getLogger(AwsEelBatchProcessorStackOrchestratorImpl.class);
 
     private List<FlowComponentStack> flowComponentStacks = new ArrayList<>();
 
@@ -112,6 +112,7 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
 
             FlowComponentStack flowComponentStack = this.flowComponentStacks.get(i);
 
+            log.info("Deploying flow component stack: {}", flowComponentStack.getClass().getSimpleName());
             boolean wasSuccessful = flowComponentStack.deploy(flow);
             if (! wasSuccessful) {
                 log.error(

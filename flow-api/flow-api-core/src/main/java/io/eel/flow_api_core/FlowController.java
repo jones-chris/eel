@@ -57,6 +57,8 @@ public class FlowController extends BaseController {
                 // Get a flow by a flow ID.
                 GET, "/flow",
                 (request, response) -> {
+                    // There are 3 validation steps:
+                    // 1) Check that query parameters exist.
                     if (request.getQueryParameters().isEmpty()) {
                         log.severe("No query parameters");
 
@@ -64,33 +66,28 @@ public class FlowController extends BaseController {
                         return;
                     }
 
-                    final UUID id = request.getQueryParameters().get("id")
-                            .stream()
-                            .map(UUID::fromString)
-                            .toList()
-                            .getFirst();
-
-                    if (id == null) {
-                        log.severe("Empty or non-existent id query parameter");
+                    // 2) Get flow id from query parameters.
+                    final List<String> idValues = request.getQueryParameters().get("id");
+                    if (idValues == null || idValues.size() != 1) {
+                        log.severe("Empty, non-existent, or not exactly 1 'id' query parameter: " + idValues);
 
                         clientError(response);
                         return;
                     }
+                    final UUID id = UUID.fromString(idValues.getFirst());
 
-                    final Integer version = request.getQueryParameters().get("version")
-                            .stream()
-                            .map(Integer::parseInt)
-                            .toList()
-                            .getFirst();
-
-                    if (version == null) {
-                        log.severe("Empty or non-existent version query parameter");
+                    // 3) Get version from query parameters.
+                    final List<String> versionValues = request.getQueryParameters().get("version");
+                    if (versionValues == null || versionValues.size() != 1) {
+                        log.severe("Empty, non-existent, or not exactly 1 'version' query parameter: " + versionValues);
 
                         clientError(response);
                         return;
                     }
+                    final int versionInt = Integer.parseInt(versionValues.getFirst());
 
-                    final String canonicalId = Flow.Utils.getCanonicalId(id, version);
+                    // Get flow by canonical ID.
+                    final String canonicalId = Flow.Utils.getCanonicalId(id, versionInt);
                     this.flowService.getFlowByCanonicalId(canonicalId)
                             .ifPresentOrElse(
                                     flow -> ok(response).setBody(gson.toJson(flow)),
@@ -212,7 +209,7 @@ public class FlowController extends BaseController {
         ).addRouteHandler(
                 "GET", "/flow/deploy",
                 (request, response) -> {
-                    // Request validation.  Make sure the required flow id an version are present.
+                    // Request validation.  Make sure the required flow id a version are present.
                     if (! request.getQueryParameters().containsKey("flowId") || ! request.getQueryParameters().containsKey("version")) {
                         clientError(response);
                         return;

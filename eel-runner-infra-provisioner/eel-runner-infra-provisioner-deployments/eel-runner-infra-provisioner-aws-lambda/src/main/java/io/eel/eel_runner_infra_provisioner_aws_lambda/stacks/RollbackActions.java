@@ -54,11 +54,11 @@ public class RollbackActions {
 
                                 attempts++;
                                 if (attempts == maxAttempts) {
-                                    log.severe("Reached max attempts while waiting for event source mapping " + resourceId + " to be in state ACTIVE or DISABLED");
+                                    log.severe("Reached max attempts while waiting for event source mapping " + resourceId + " to be in state ENABLED or DISABLED");
 
                                     return;
                                 }
-                            } while (! currentState.equalsIgnoreCase("Active") && ! currentState.equalsIgnoreCase("Disabled"));
+                            } while (! currentState.equalsIgnoreCase("Enabled") && ! currentState.equalsIgnoreCase("Disabled"));
 
                             // ...then delete the event source mapping.
                             lambdaClient.deleteEventSourceMapping(

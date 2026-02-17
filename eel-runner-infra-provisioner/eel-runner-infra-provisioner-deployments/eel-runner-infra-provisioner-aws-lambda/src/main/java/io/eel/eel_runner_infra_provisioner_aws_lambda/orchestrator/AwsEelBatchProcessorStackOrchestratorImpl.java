@@ -103,9 +103,6 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
 
     @Override
     public void deploy(Flow flow) {
-        // Always clear the resources that were created from the last deployment.
-        this.clearProvisionedResources();
-
         for (int i = 0; i <= this.flowComponentStacks.size() - 1; i++) {
             currentFlowComponentStackIndex = i;
 
@@ -148,9 +145,6 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
      */
     @Override
     public void delete(Flow flow) {
-        // Always clear the resources that were hydrated from the last flow stack deletion.
-        this.clearProvisionedResources();
-
         // Get flow resources.
         FlowResources flowResources = this.flowResourcesDao.getById(flow.getId().toString())
                 .orElseThrow(() -> new RuntimeException("Could not find existing flow resource to delete for canonical id " + flow.getCanonicalId()));

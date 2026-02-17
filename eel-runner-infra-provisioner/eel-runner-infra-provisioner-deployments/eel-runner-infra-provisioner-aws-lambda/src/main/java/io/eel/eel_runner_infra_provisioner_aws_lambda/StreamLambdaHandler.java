@@ -27,12 +27,15 @@ public class StreamLambdaHandler implements RequestHandler<SQSEvent, String> {
 
     private static final Gson gson = new Gson();
 
-    private final EelBatchProcessorStackOrchestrator eelBatchProcessorStackOrchestrator = new AwsEelBatchProcessorStackOrchestratorImpl(this.dynamoDbClient);
+    private EelBatchProcessorStackOrchestrator eelBatchProcessorStackOrchestrator;
 
     @Override
     public String handleRequest(SQSEvent sqsEvent, Context context) {
         log.info("sqsEvent is: " + sqsEvent);
         log.info("context is: " + context);
+
+        // We always want a fresh
+        eelBatchProcessorStackOrchestrator = new AwsEelBatchProcessorStackOrchestratorImpl(this.dynamoDbClient);
 
         sqsEvent.getRecords()
                 .forEach(

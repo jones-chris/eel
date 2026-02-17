@@ -2,8 +2,6 @@ package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.EelPackager;
 import io.eel.common.model.Flow;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
@@ -24,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.ENGINE_TIMEOUT_IN_SECONDS;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.TEN_SECONDS;
@@ -32,7 +31,7 @@ import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType
 
 public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
-    private static final Logger log = LoggerFactory.getLogger(AwsLambdaFlowComponentStackImpl.class);
+    private static final Logger log = Logger.getLogger(AwsLambdaFlowComponentStackImpl.class.getName());
 
     private static final String ORIGINAL_EEL_JAR_BUCKET = System.getenv("ORIGINAL_EEL_ARTIFACTS_BUCKET_NAME");
 
@@ -129,8 +128,8 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
             return true;
         } catch (Throwable t) {
-            log.error("Encountered error when trying to create Lambda Function {}", flow.getId().toString());
-            log.error("", t);
+            log.severe("Encountered error when trying to create Lambda Function " + flow.getId().toString());
+            log.severe(t.getMessage());
 
             this.rollback(flow);
 

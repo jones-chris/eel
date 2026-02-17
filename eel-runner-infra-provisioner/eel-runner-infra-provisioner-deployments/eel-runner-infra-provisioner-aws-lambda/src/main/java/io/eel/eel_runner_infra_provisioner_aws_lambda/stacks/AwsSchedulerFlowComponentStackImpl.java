@@ -1,8 +1,6 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.model.Flow;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.scheduler.SchedulerClient;
@@ -10,6 +8,7 @@ import software.amazon.awssdk.services.scheduler.model.*;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.TEN_SECONDS;
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.util.Utils.sleep;
@@ -17,7 +16,7 @@ import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType
 
 public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
 
-    private static final Logger log = LoggerFactory.getLogger(AwsSchedulerFlowComponentStackImpl.class);
+    private static final Logger log = Logger.getLogger(AwsSchedulerFlowComponentStackImpl.class.getName());
 
     private static final String TRUST_POLICY = """
                 {
@@ -100,7 +99,8 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
                                     .roleArn(role.arn())
                 //                    .input(input)
                                     .build()
-                    ).startDate(Instant.now())
+                    )
+//                    .startDate(Instant.now())
                     .flexibleTimeWindow(FlexibleTimeWindow.builder().mode(FlexibleTimeWindowMode.OFF).build())
                     .build();
 
@@ -108,12 +108,12 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
 
             this.provisionedResources.put(AWS_SCHEDULER_NAME, schedulerName);
 
-            log.debug("Successfully created schedule {}, The ARN is {}", flow.getId(), response.scheduleArn());
+            log.info("Successfully created schedule " + flow.getId() + ", The ARN is " + response.scheduleArn());
 
             return true;
         } catch (Throwable t) {
-            log.error("", t);
-            log.error("Initiating rollback");
+            log.severe(t.getMessage());
+            log.severe("Initiating rollback");
 
             this.rollback(flow);
 

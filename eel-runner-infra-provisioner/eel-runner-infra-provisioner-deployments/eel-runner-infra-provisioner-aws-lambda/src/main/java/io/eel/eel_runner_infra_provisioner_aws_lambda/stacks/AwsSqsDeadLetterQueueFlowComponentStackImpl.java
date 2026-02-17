@@ -1,15 +1,17 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.model.Flow;
-import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
+
+import java.util.logging.Logger;
 
 import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.AWS_SQS_DEAD_LETTER_QUEUE_ARN;
 import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.AWS_SQS_DEAD_LETTER_QUEUE_URL;
 
-@Slf4j
 public class AwsSqsDeadLetterQueueFlowComponentStackImpl extends FlowComponentStack {
+
+    private static Logger log = Logger.getLogger(AwsSqsDeadLetterQueueFlowComponentStackImpl.class.getName());
 
     private SqsClient sqsClient;
 
@@ -53,8 +55,8 @@ public class AwsSqsDeadLetterQueueFlowComponentStackImpl extends FlowComponentSt
 
             return true;
         } catch (Throwable t) {
-            log.error("", t);
-            log.error("Initiating rollback");
+            log.severe(t.getMessage());
+            log.severe("Initiating rollback");
 
             this.rollback(flow);
 

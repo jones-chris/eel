@@ -2,16 +2,17 @@ package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.model.Flow;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.RollbackActions.ResourceDeletionAttempt.tryToDeleteResource;
 
-@Slf4j
 public abstract class FlowComponentStack {
+
+    private static Logger log = Logger.getLogger(FlowComponentStack.class.getName());
 
     protected Map<String, String> tags = new HashMap<>();
 
@@ -22,7 +23,6 @@ public abstract class FlowComponentStack {
      * (most likely something like an ARN) that allows users to quickly access a resource.  An {@link LinkedHashMap} is
      * used here so resources can be rolled back/deleted in the reverse order they were provisioned, if needed.
      */
-    @Getter
     protected final LinkedHashMap<ResourceType, String> provisionedResources = new LinkedHashMap<>();
 
     private final Map<ResourceType, RollbackActions.ResourceDeletionAttempt> rollbackActions = new HashMap<>();
@@ -41,6 +41,10 @@ public abstract class FlowComponentStack {
     protected FlowComponentStack addRollbackAction(ResourceType resourceType, RollbackActions.ResourceDeletionAttempt rollbackAction) {
         this.rollbackActions.put(resourceType, rollbackAction);
         return this;
+    }
+
+    public LinkedHashMap<ResourceType, String> getProvisionedResources() {
+        return this.provisionedResources;
     }
 
     /**
@@ -74,7 +78,7 @@ public abstract class FlowComponentStack {
     public final boolean rollback(Flow flow) {
         // If the stack did not provision any resources (ex:  it failed on it's first resource), then just return true.
         if (this.provisionedResources.isEmpty()) {
-            log.debug("No provisioned resources in stack {} with flow id {} to rollback", this.getClass().getName(), flow.getCanonicalId());
+            log.info("No provisioned resources in stack " + this.getClass().getName() + " with flow id " + flow.getCanonicalId() + " to rollback");
             return true;
         }
 
@@ -92,13 +96,13 @@ public abstract class FlowComponentStack {
                                     boolean wasSuccessful = tryToDeleteResource(resourceId, resourceDeletionAttempt.getRollbackAction());
                                     if (! wasSuccessful) allResourcesWereDeleted.set(false);
                                 },
-                                () -> log.error("Did not find rollback action for resource type of {} for flow with canonical id {}", resourceType, flow.getCanonicalId())
+                                () -> log.fine("Did not find rollback action for resource type of " + resourceType + " for flow with canonical id " + flow.getCanonicalId())
                         );
             }
 
             return allResourcesWereDeleted.get();
         } catch (Throwable t) {
-            log.error("", t);
+            log.severe(t.getMessage());
 
             return false;
         }

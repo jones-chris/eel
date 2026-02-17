@@ -6,8 +6,6 @@ import com.amazonaws.services.stepfunctions.builder.states.ParallelState;
 import com.amazonaws.services.stepfunctions.builder.states.State;
 import com.amazonaws.services.stepfunctions.builder.states.TaskState;
 import io.eel.common.model.Flow;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.iam.model.CreateRoleRequest;
 import software.amazon.awssdk.services.iam.model.PutRolePolicyRequest;
@@ -18,6 +16,7 @@ import software.amazon.awssdk.services.sfn.model.StateMachineType;
 
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import static com.amazonaws.services.stepfunctions.builder.StepFunctionBuilder.end;
 import static com.amazonaws.services.stepfunctions.builder.StepFunctionBuilder.next;
@@ -25,7 +24,7 @@ import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType
 
 public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentStack {
 
-    private static final Logger log = LoggerFactory.getLogger(AwsQueriesStepFunctionFlowComponentStackImpl.class);
+    private static final Logger log = Logger.getLogger(AwsQueriesStepFunctionFlowComponentStackImpl.class.getName());
 
     private static final String EEL_QUERY_RUNNER_ARN = System.getenv("EEL_QUERY_RUNNER_ARN");
 
@@ -136,8 +135,8 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
 
             return true;
         } catch (Throwable t) {
-            log.error("Encountered error when trying to create Lambda Function {}", flow.getId().toString());
-            log.error("", t);
+            log.severe("Encountered error when trying to create Lambda Function " + flow.getId().toString());
+            log.severe(t.getMessage());
 
             this.rollback(flow);
 

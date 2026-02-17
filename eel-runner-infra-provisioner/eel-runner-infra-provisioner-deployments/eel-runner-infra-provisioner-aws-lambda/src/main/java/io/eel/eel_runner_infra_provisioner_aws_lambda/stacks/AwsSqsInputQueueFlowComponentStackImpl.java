@@ -1,13 +1,12 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.model.Flow;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.Constants.ENGINE_TIMEOUT_IN_SECONDS;
 import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.*;
@@ -15,7 +14,7 @@ import static java.util.Map.of;
 
 public class AwsSqsInputQueueFlowComponentStackImpl extends FlowComponentStack {
 
-    private static final Logger log = LoggerFactory.getLogger(AwsSqsInputQueueFlowComponentStackImpl.class);
+    private static final Logger log = Logger.getLogger(AwsSqsInputQueueFlowComponentStackImpl.class.getName());
 
     private SqsClient sqsClient;
 
@@ -77,12 +76,12 @@ public class AwsSqsInputQueueFlowComponentStackImpl extends FlowComponentStack {
             // 3. Execute the request
             sqsClient.setQueueAttributes(setAttributesRequest);
 
-            log.debug("Successfully created queue and set SQS policy for S3 notifications on queue: {}", queueUrl);
+            log.info("Successfully created queue and set SQS policy for S3 notifications on queue: " + queueUrl);
 
             return true;
         } catch (Throwable t) {
-            log.error("", t);
-            log.error("Initiating rollback");
+            log.severe(t.getMessage());
+            log.severe("Initiating rollback");
 
             this.rollback(flow);
 

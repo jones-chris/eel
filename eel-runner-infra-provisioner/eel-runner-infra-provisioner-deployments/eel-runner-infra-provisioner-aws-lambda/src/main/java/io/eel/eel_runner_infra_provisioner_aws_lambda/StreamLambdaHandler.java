@@ -10,14 +10,16 @@ import io.eel.common_aws.AwsDynamoDbFlowDaoImpl;
 import io.eel.eel_runner_infra_provisioner_aws_lambda.orchestrator.AwsEelBatchProcessorStackOrchestratorImpl;
 import io.eel.eel_runner_infra_provisioner_core.stacks.orchestrator.EelBatchProcessorStackOrchestrator;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowInfrastructureActionRequestDto;
-import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+
+import java.util.logging.Logger;
 
 import static io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowInfrastructureActionRequestDto.InfrastructureAction.DELETE;
 import static io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowInfrastructureActionRequestDto.InfrastructureAction.DEPLOY;
 
-@Slf4j
 public class StreamLambdaHandler implements RequestHandler<SQSEvent, String> {
+
+    private static Logger log = Logger.getLogger(StreamLambdaHandler.class.getName());
 
     final DynamoDbClient dynamoDbClient = DynamoDbClient.create();
 
@@ -29,13 +31,13 @@ public class StreamLambdaHandler implements RequestHandler<SQSEvent, String> {
 
     @Override
     public String handleRequest(SQSEvent sqsEvent, Context context) {
-        log.debug("sqsEvent is: {}", sqsEvent);
-        log.debug("context is: {}", context);
+        log.info("sqsEvent is: " + sqsEvent);
+        log.info("context is: " + context);
 
         sqsEvent.getRecords()
                 .forEach(
                         record -> {
-                            log.debug("record body is: {}", record.getBody());
+                            log.info("record body is: " + record.getBody());
 
                             FlowInfrastructureActionRequestDto flowInfraActionRequest = gson.fromJson(record.getBody(), FlowInfrastructureActionRequestDto.class);
 
@@ -49,7 +51,7 @@ public class StreamLambdaHandler implements RequestHandler<SQSEvent, String> {
                             } else {
                                 String message = "Did not expect flow infrastructure action of " + flowInfraActionRequest.infrastructureAction();
 
-                                log.error(message);
+                                log.severe(message);
 
                                 throw new RuntimeException(message);
                             }

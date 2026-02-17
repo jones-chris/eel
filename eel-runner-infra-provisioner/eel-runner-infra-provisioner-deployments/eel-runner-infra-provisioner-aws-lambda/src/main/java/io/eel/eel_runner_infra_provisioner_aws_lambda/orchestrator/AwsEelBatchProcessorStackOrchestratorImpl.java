@@ -6,9 +6,6 @@ import io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.*;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowResources;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType;
 import io.eel.eel_runner_infra_provisioner_core.stacks.orchestrator.EelBatchProcessorStackOrchestrator;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.iam.IamClient;
@@ -22,10 +19,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-@Slf4j
 public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProcessorStackOrchestrator {
+
+    private static Logger log = Logger.getLogger(AwsEelBatchProcessorStackOrchestratorImpl.class.getName());
 
     private List<FlowComponentStack> flowComponentStacks = new ArrayList<>();
 
@@ -112,15 +111,10 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
 
             FlowComponentStack flowComponentStack = this.flowComponentStacks.get(i);
 
-            log.info("Deploying flow component stack: {}", flowComponentStack.getClass().getSimpleName());
+            log.info("Deploying flow component stack: " + flowComponentStack.getClass().getSimpleName());
             boolean wasSuccessful = flowComponentStack.deploy(flow);
             if (! wasSuccessful) {
-                log.error(
-                        "Flow component stack {} did not deploy successfully for flow ID {} and version {}",
-                        flowComponentStack.getClass().getName(),
-                        flow.getId().toString(),
-                        flow.getVersion()
-                );
+                log.severe("Flow component stack " + flowComponentStack.getClass().getName() + " did not deploy successfully for flow ID " + flow.getId().toString() + " and version " + flow.getVersion());
 
                 this.rollback(flow);
 
@@ -195,7 +189,7 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
 
             boolean wasSuccessful = flowComponentStack.rollback(flow);
             if (! wasSuccessful) {
-                log.error("Flow component stack {} did not rollback successfully for flow ID {}", flowComponentStack.getClass().getName(), flow.getCanonicalId());
+                log.severe("Flow component stack " + flowComponentStack.getClass().getName() + " did not rollback successfully for flow ID " + flow.getCanonicalId());
             }
         }
 

@@ -1,19 +1,18 @@
 package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.model.Flow;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.util.Collections;
+import java.util.logging.Logger;
 
 import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.AWS_S3_BUCKET_ARN;
 import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType.AWS_S3_BUCKET_NAME;
 
 public class AwsS3LandingBucketFlowComponentStackImpl extends FlowComponentStack {
 
-    private static final Logger log = LoggerFactory.getLogger(AwsS3LandingBucketFlowComponentStackImpl.class);
+    private static final Logger log = Logger.getLogger(AwsS3LandingBucketFlowComponentStackImpl.class.getName());
 
     private final S3Client s3Client;
 
@@ -47,8 +46,8 @@ public class AwsS3LandingBucketFlowComponentStackImpl extends FlowComponentStack
 
             return true;
         } catch (Throwable t) {
-            log.error("Encountered error when trying to create bucket {}", flow.getId().toString());
-            log.error("", t);
+            log.severe("Encountered error when trying to create bucket " + flow.getId().toString());
+            log.severe(t.getMessage());
 
             this.rollback(flow);
 

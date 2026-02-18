@@ -24,4 +24,6 @@ public interface FlowService {
 
     Flow finalizeFlow(Flow flow);
 
+    Flow unfinalizeFlow(Flow flow);
+
 }

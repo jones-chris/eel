@@ -244,6 +244,44 @@ public class FlowController extends BaseController {
 
                     created(response).setBody(gson.toJson(persistedFlow));
                 }
+        ).addRouteHandler(
+                "GET", "/flow/rollback",
+                (request, response) -> {
+                    // Request validation.  Make sure the required flow id a version are present.
+                    if (! request.getQueryParameters().containsKey("flowId") || ! request.getQueryParameters().containsKey("version")) {
+                        clientError(response);
+                        return;
+                    }
+
+                    final UUID flowId = UUID.fromString(request.getQueryParameters().get("flowId").getFirst());
+                    final int version = Integer.parseInt(request.getQueryParameters().get("version").getFirst());
+
+                    // Get the flow by the id and version.
+                    final String canonicalId = Flow.Utils.getCanonicalId(flowId, version);
+                    Optional<Flow> flowOptional = this.flowService.getFlowByCanonicalId(canonicalId);
+
+                    // If not found, return a 404.
+                    if (flowOptional.isEmpty()) {
+                        notFound(response);
+                        return;
+                    }
+
+                    // If found, but it is already finalized/deployed, then return a 400.
+                    Flow flow = flowOptional.get();
+                    if (! flow.isFinalized()) {
+                        String message = "Flow with canonical id of " + flow.getCanonicalId() + " is not finalized/deployed";
+
+                        log.severe(message);
+                        clientError(response, message);
+
+                        return;
+                    }
+
+                    // Otherwise, rollback/un-finalize the flow and return a 201.
+                    final Flow persistedFlow = this.flowService.unfinalizeFlow(flow);
+
+                    created(response).setBody(gson.toJson(persistedFlow));
+                }
         );
     }
 

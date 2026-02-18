@@ -97,11 +97,8 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
                             Target.builder()
                                     .arn(stepFunctionArn)
                                     .roleArn(role.arn())
-                //                    .input(input)
                                     .build()
-                    )
-//                    .startDate(Instant.now())
-                    .flexibleTimeWindow(FlexibleTimeWindow.builder().mode(FlexibleTimeWindowMode.OFF).build())
+                    ).flexibleTimeWindow(FlexibleTimeWindow.builder().mode(FlexibleTimeWindowMode.OFF).build())
                     .build();
 
             CreateScheduleResponse response = this.schedulerClient.createSchedule(request);

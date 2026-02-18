@@ -15,10 +15,7 @@ import software.amazon.awssdk.services.scheduler.SchedulerClient;
 import software.amazon.awssdk.services.sfn.SfnClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -136,6 +133,10 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
         // todo:  update flow in DDB to be finalized.
 
         // todo:  update status of deployment in eel-deployments DDB table.
+
+        // Always reset the provisioned resources so the next time the orchestrator is used, the new provisioned resources
+        // do not collide with the old provisioned resources.
+        this.resetProvisionedResources();
     }
 
     /**
@@ -170,6 +171,10 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
         // todo:  update flow in DDB to NOT be finalized?
 
         // todo:  update status of deletion in eel-deployments DDB table.
+
+        // Always reset the provisioned resources so the next time the orchestrator is used, the new provisioned resources
+        // do not collide with the old provisioned resources.
+        this.resetProvisionedResources();
     }
 
     /**
@@ -198,9 +203,12 @@ public class AwsEelBatchProcessorStackOrchestratorImpl implements EelBatchProces
      * Clears the resources that may have been provisioned in a previous `deploy` call or hydrated in a previous `delete`
      * call.  This method should always be called first in the `deploy` and `delete` methods.
      */
-    private void clearProvisionedResources() {
-        this.flowComponentStacks
-                .forEach(stack -> stack.getProvisionedResources().clear());
+    private void resetProvisionedResources() {
+        for (FlowComponentStack stack : this.flowComponentStacks) {
+            for (Map.Entry<ResourceType, String> entry : stack.getProvisionedResources().entrySet()) {
+                entry.setValue(null);
+            }
+        }
     }
 
 }

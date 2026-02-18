@@ -86,9 +86,23 @@ public class FlowServiceImpl implements FlowService {
         flow.setFinalized(true);
         this.flowDao.updateFlow(flow);
 
-        // Send message to infra provisioner queue for the infra to be deployed or deleted.
+        // Send message to infra provisioner queue for the infra to be deployed.
         this.flowInfrastructureActionQueueDao.sendDeploymentMessage(
                 FlowInfrastructureActionRequestDto.newDeploymentRequest(flow)
+        );
+
+        return flow;
+    }
+
+    @Override
+    public Flow unfinalizeFlow(Flow flow) {
+        // Mark isFinalized as false, so that it can be re-deployed in the future, if desired.
+        flow.setFinalized(false);
+        this.flowDao.updateFlow(flow);
+
+        // Send message to infra provisioner queue for the infra to be deleted.
+        this.flowInfrastructureActionQueueDao.sendDeleteMessage(
+                FlowInfrastructureActionRequestDto.newDeletionRequest(flow)
         );
 
         return flow;

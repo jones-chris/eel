@@ -19,23 +19,20 @@ import static io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowInfrastr
 
 public class StreamLambdaHandler implements RequestHandler<SQSEvent, String> {
 
-    private static Logger log = Logger.getLogger(StreamLambdaHandler.class.getName());
-
-    final DynamoDbClient dynamoDbClient = DynamoDbClient.create();
-
-    final FlowDao flowDao = new AwsDynamoDbFlowDaoImpl(this.dynamoDbClient);
+    private final static Logger log = Logger.getLogger(StreamLambdaHandler.class.getName());
 
     private static final Gson gson = new Gson();
 
-    private EelBatchProcessorStackOrchestrator eelBatchProcessorStackOrchestrator;
+    private final DynamoDbClient dynamoDbClient = DynamoDbClient.create();
+
+    private final FlowDao flowDao = new AwsDynamoDbFlowDaoImpl(this.dynamoDbClient);
+
+    private final EelBatchProcessorStackOrchestrator eelBatchProcessorStackOrchestrator = new AwsEelBatchProcessorStackOrchestratorImpl(this.dynamoDbClient);;
 
     @Override
     public String handleRequest(SQSEvent sqsEvent, Context context) {
         log.info("sqsEvent is: " + sqsEvent);
         log.info("context is: " + context);
-
-        // We always want a fresh
-        eelBatchProcessorStackOrchestrator = new AwsEelBatchProcessorStackOrchestratorImpl(this.dynamoDbClient);
 
         sqsEvent.getRecords()
                 .forEach(

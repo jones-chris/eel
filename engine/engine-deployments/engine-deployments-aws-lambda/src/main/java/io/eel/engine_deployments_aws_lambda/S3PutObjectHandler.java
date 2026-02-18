@@ -1,0 +1,93 @@
+package io.eel.engine_deployments_aws_lambda;
+
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.opencsv.CSVReader;
+import io.eel.common.dao.QueryResultCsvDao;
+import io.eel.common.model.StorageLocation;
+import io.eel.common_aws.S3QueryResultCsvDaoImpl;
+import io.eel.service.WorkbookCalculationEngine;
+import software.amazon.awssdk.services.s3.S3Client;
+
+import java.io.InputStreamReader;
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.logging.Logger;
+
+
+// https://github.com/aws-samples/serverless-snippets/blob/main/integration-s3-to-lambda/Handler.java
+public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
+
+    private static final Logger log = Logger.getLogger(S3PutObjectHandler.class.getName());
+
+    Type storageLocationListType = new TypeToken<List<StorageLocation>>(){}.getType();
+
+    private static final QueryResultCsvDao queryResultCsvDao;
+
+    private static final Gson gson = new Gson();
+
+    static {
+        queryResultCsvDao = new S3QueryResultCsvDaoImpl(S3Client.create());
+    }
+
+    @Override
+    public String handleRequest(SQSEvent sqsEvent, Context context) {
+        log.info("sqsEvent: " + sqsEvent);
+        log.info("context: " + context);
+
+        try {
+            // Check that every record is from this flow id.
+            if (sqsEvent.getRecords().isEmpty()) {
+                throw new RuntimeException("Expected at least 1 record, but received SQS message with 0 records");
+            }
+
+            WorkbookCalculationEngine engine = new WorkbookCalculationEngine();
+
+            sqsEvent.getRecords()
+                    .forEach(record -> {
+                        log.info("record body is: " + record.getBody());
+
+                        List<StorageLocation> storageLocations = gson.fromJson(record.getBody(), storageLocationListType);
+
+                        log.info("storageLocations is: " + gson.toJson(storageLocations));
+
+                        for (StorageLocation storageLocation : storageLocations) {
+                            log.info("storageLocation is: " + gson.toJson(storageLocation));
+
+                            String messageFlowId = storageLocation.flowId();
+                            String lambdaFunctionFlowId = context.getFunctionName();
+
+                            if (! messageFlowId.equalsIgnoreCase(lambdaFunctionFlowId)) {
+                                throw new RuntimeException("SQS message included a record with a flow id of " + messageFlowId + " but expected a flow id of " + lambdaFunctionFlowId);
+                            }
+
+                            queryResultCsvDao.get(storageLocation)
+                                    .ifPresentOrElse(
+                                            inputStream -> {
+                                                CSVReader csvReader = new CSVReader(new InputStreamReader(inputStream));
+                                                engine.withInput(storageLocation.inputSheetName(), csvReader);
+                                            },
+                                            () -> {
+                                                throw new RuntimeException("Could not find object: " + storageLocation);
+                                            }
+                                    );
+                        }
+                    });
+
+            log.info("Running workbook"); // todo:  make this a debug statement.
+            engine.runWorkbook().logOutput();
+
+            return "Success";
+        } catch (Throwable t) {
+            log.severe(t.getMessage());
+
+            t.printStackTrace();
+
+            throw new RuntimeException(t);
+        }
+    }
+
+}

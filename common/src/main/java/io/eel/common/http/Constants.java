@@ -1,8 +1,15 @@
 package io.eel.common.http;
 
-import java.util.function.Supplier;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.util.Map;
 
 public class Constants {
+
+    private static final Gson gson = new GsonBuilder()
+            .setPrettyPrinting()
+            .create();
 
     public static void notFound(HttpResponse httpResponse) {
         httpResponse
@@ -14,6 +21,16 @@ public class Constants {
         httpResponse
                 .setStatusCode(400)
                 .setBody(null);
+    }
+
+    public static void clientError(HttpResponse httpResponse, String body) {
+        httpResponse
+                .setStatusCode(400)
+                .setBody(
+                        gson.toJson(
+                                Map.of("message", body)
+                        )
+                );
     }
 
     public static void internalServerError(HttpResponse httpResponse) {

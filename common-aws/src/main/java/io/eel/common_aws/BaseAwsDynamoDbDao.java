@@ -17,6 +17,7 @@ import java.util.function.Function;
 public abstract class BaseAwsDynamoDbDao<T, U> {
 
     public static final String OBJECT_KEY = "object";
+
     private static final Logger log = LoggerFactory.getLogger(BaseAwsDynamoDbDao.class);
 
     private String tableName;
@@ -25,7 +26,7 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
 
     protected DynamoDbClient dynamoDbClient;
 
-    private static final Gson gson = new GsonBuilder()
+    protected static final Gson gson = new GsonBuilder()
             .setPrettyPrinting()
             .create();
 
@@ -72,7 +73,7 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
                 OBJECT_KEY, AttributeValue.fromS(objJson) // todo:  make "object" a constant in the common library
         );
 
-        log.info("Saving item: " + itemMap);
+        log.info("Saving item: {}", itemMap);
         this.save(itemMap);
 
         return obj;
@@ -91,11 +92,6 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
         this.save(itemMap);
 
         return obj;
-    }
-
-    public boolean deleteManifest(U id) {
-        // todo:  fix this later.
-        return true;
     }
 
     private void save(Map<String, AttributeValue> itemMap) {

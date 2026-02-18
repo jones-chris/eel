@@ -1,6 +1,5 @@
 package io.eel.manifest_api_aws_lambda.dao;
 
-import io.eel.manifest_generator_core.ManifestController;
 import io.eel.manifest_generator_core.dao.WorkbookDao;
 import io.eel.model.proxy.WorkbookProxy;
 import software.amazon.awssdk.core.ResponseBytes;

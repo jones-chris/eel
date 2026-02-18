@@ -9,6 +9,8 @@ public class DataSource {
 
     private String name;
 
+    private String secretId;
+
     public DataSource() {}
 
     public DataSource(UUID id, String name) {
@@ -32,16 +34,24 @@ public class DataSource {
         this.name = name;
     }
 
+    public String getSecretId() {
+        return this.secretId;
+    }
+
+    public void setSecretId(String secretId) {
+        this.secretId = secretId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         DataSource that = (DataSource) o;
-        return Objects.equals(id, that.id) && Objects.equals(name, that.name);
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(secretId, that.secretId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name);
+        return Objects.hash(id, name, secretId);
     }
 
     @Override
@@ -49,6 +59,8 @@ public class DataSource {
         return "DataSource{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
+                ", secretId='" + secretId + '\'' +
                 '}';
     }
+
 }

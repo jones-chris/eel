@@ -7,14 +7,17 @@ import io.eel.common.http.HttpRequest;
 import io.eel.common.http.HttpResponse;
 import io.eel.common.mappers.RequestMapper;
 import io.eel.common.mappers.aws.ApiGatewayProxyRequestMapper;
-import io.eel.flow_api_aws_lambda.dao.AwsDynamoDbFlowDaoImpl;
+import io.eel.common_aws.AwsDynamoDbFlowDaoImpl;
+import io.eel.flow_api_aws_lambda.dao.AwsSqsFlowInfrastructureActionQueueDaoImpl;
 import io.eel.flow_api_core.FlowController;
-import io.eel.flow_api_core.dao.FlowDao;
+import io.eel.common.dao.FlowDao;
+import io.eel.flow_api_core.dao.FlowInfrastructureActionQueueDao;
 import io.eel.flow_api_core.service.FlowService;
 import io.eel.flow_api_core.service.FlowServiceImpl;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 public class StreamLambdaHandler implements RequestHandler<Map<String, Object>, HttpResponse> {
@@ -25,14 +28,19 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, Object>, 
 
     private final static FlowDao flowDao;
 
+    private final static FlowInfrastructureActionQueueDao flowInfrastructureActionQueueDao;
+
     private final static FlowService flowService;
 
     private final static BaseController flowController;
 
     static {
-        flowDao = new AwsDynamoDbFlowDaoImpl(DynamoDbClient.create(), System.getenv("S3_STAGING_BUCKET_NAME"));
-        flowService = new FlowServiceImpl(flowDao);
+        final String s3LandingBucketName = Optional.ofNullable(System.getenv("S3_STAGING_BUCKET_NAME")).orElseThrow();
+        final String infraActionSqsQueueUrl = Optional.ofNullable(System.getenv("INFRA_ACTION_SQS_QUEUE_URL")).orElseThrow();
 
+        flowDao = new AwsDynamoDbFlowDaoImpl(DynamoDbClient.create(), s3LandingBucketName);
+        flowInfrastructureActionQueueDao = new AwsSqsFlowInfrastructureActionQueueDaoImpl(infraActionSqsQueueUrl);
+        flowService = new FlowServiceImpl(flowDao, flowInfrastructureActionQueueDao);
         flowController = new FlowController(flowService);
     }
 

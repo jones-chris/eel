@@ -5,6 +5,8 @@ import com.google.gson.GsonBuilder;
 import io.eel.common.http.BaseController;
 import io.eel.common.http.HttpRequest;
 import io.eel.common.model.Flow;
+import io.eel.flow_api_core.exception.ImmutableFlowException;
+import io.eel.flow_api_core.exception.ResourceNotFoundException;
 import io.eel.flow_api_core.service.FlowService;
 
 import java.util.*;
@@ -55,6 +57,8 @@ public class FlowController extends BaseController {
                 // Get a flow by a flow ID.
                 GET, "/flow",
                 (request, response) -> {
+                    // There are 3 validation steps:
+                    // 1) Check that query parameters exist.
                     if (request.getQueryParameters().isEmpty()) {
                         log.severe("No query parameters");
 
@@ -62,33 +66,28 @@ public class FlowController extends BaseController {
                         return;
                     }
 
-                    final UUID id = request.getQueryParameters().get("id")
-                            .stream()
-                            .map(UUID::fromString)
-                            .toList()
-                            .getFirst();
-
-                    if (id == null) {
-                        log.severe("Empty or non-existent id query parameter");
+                    // 2) Get flow id from query parameters.
+                    final List<String> idValues = request.getQueryParameters().get("id");
+                    if (idValues == null || idValues.size() != 1) {
+                        log.severe("Empty, non-existent, or not exactly 1 'id' query parameter: " + idValues);
 
                         clientError(response);
                         return;
                     }
+                    final UUID id = UUID.fromString(idValues.getFirst());
 
-                    final Integer version = request.getQueryParameters().get("version")
-                            .stream()
-                            .map(Integer::parseInt)
-                            .toList()
-                            .getFirst();
-
-                    if (version == null) {
-                        log.severe("Empty or non-existent version query parameter");
+                    // 3) Get version from query parameters.
+                    final List<String> versionValues = request.getQueryParameters().get("version");
+                    if (versionValues == null || versionValues.size() != 1) {
+                        log.severe("Empty, non-existent, or not exactly 1 'version' query parameter: " + versionValues);
 
                         clientError(response);
                         return;
                     }
+                    final int versionInt = Integer.parseInt(versionValues.getFirst());
 
-                    final String canonicalId = Flow.Utils.getCanonicalId(id, version);
+                    // Get flow by canonical ID.
+                    final String canonicalId = Flow.Utils.getCanonicalId(id, versionInt);
                     this.flowService.getFlowByCanonicalId(canonicalId)
                             .ifPresentOrElse(
                                     flow -> ok(response).setBody(gson.toJson(flow)),
@@ -96,7 +95,8 @@ public class FlowController extends BaseController {
                             );
                 }
         ).addRouteHandler(
-                // Updates an existing flow.
+                // Updates an existing flow.  Note that this can only be done to un-finalized flows because finalized flows
+                // are immutable.
                 PUT, "/flow/update",
                 (request, response) -> {
                     if (request.getBody().isEmpty()) {
@@ -133,16 +133,16 @@ public class FlowController extends BaseController {
                     final String canonicalId = Flow.Utils.getCanonicalId(id, version);
                     Flow newFlow = gson.fromJson(request.getBody(), Flow.class);
 
-                    this.flowService.getFlowByCanonicalId(canonicalId)
-                            .ifPresentOrElse(
-                                    (originalFlow) -> {
-                                        // Performs a complete overwrite of the existing flow.
-                                        Flow persistedFlow = this.flowService.updateFlow(newFlow);
-
-                                        ok(response).setBody(gson.toJson(persistedFlow));
-                                    },
-                                    () -> notFound(response)
-                            );
+                    try {
+                        Flow persistedFlow = this.flowService.updateFlow(canonicalId, newFlow);
+                        ok(response).setBody(gson.toJson(persistedFlow));
+                    } catch (ResourceNotFoundException ex) {
+                        notFound(response);
+                    } catch (ImmutableFlowException ex) {
+                        clientError(response);
+                    } catch (Throwable t) {
+                        internalServerError(response);
+                    }
                 }
         ).addRouteHandler(
                 "POST", "/flow/new",
@@ -153,16 +153,25 @@ public class FlowController extends BaseController {
                     created(response).setBody(
                             gson.toJson(flow)
                     );
-
                 }
         ).addRouteHandler(
+                // Note that this can only be done to finalized flows because finalized flows are immutable.
                 "POST", "/flow/increment",
                 (request, response) -> {
                     deserializeRequestBody(request)
                             .ifPresentOrElse(
                                     f -> {
+                                        if (! f.isFinalized()) {
+                                            String message = "Flow with canonical id of " + f.getCanonicalId() + " is not finalized";
+
+                                            log.severe(message);
+                                            clientError(response, message);
+
+                                            return;
+                                        }
+
                                         final Flow newFlowVersion = f.increment();
-                                        final Flow persistedFlow = this.flowService.updateFlow(newFlowVersion);
+                                        final Flow persistedFlow = this.flowService.incrementFlow(newFlowVersion);
 
                                         created(response).setBody(gson.toJson(persistedFlow));
                                     },
@@ -196,6 +205,82 @@ public class FlowController extends BaseController {
                                     )
                             )
                     );
+                }
+        ).addRouteHandler(
+                "GET", "/flow/deploy",
+                (request, response) -> {
+                    // Request validation.  Make sure the required flow id a version are present.
+                    if (! request.getQueryParameters().containsKey("flowId") || ! request.getQueryParameters().containsKey("version")) {
+                        clientError(response);
+                        return;
+                    }
+
+                    final UUID flowId = UUID.fromString(request.getQueryParameters().get("flowId").getFirst());
+                    final int version = Integer.parseInt(request.getQueryParameters().get("version").getFirst());
+
+                    // Get the flow by the id and version.
+                    final String canonicalId = Flow.Utils.getCanonicalId(flowId, version);
+                    Optional<Flow> flowOptional = this.flowService.getFlowByCanonicalId(canonicalId);
+
+                    // If not found, return a 404.
+                    if (flowOptional.isEmpty()) {
+                        notFound(response);
+                        return;
+                    }
+
+                    // If found, but it is already finalized/deployed, then return a 400.
+                    Flow flow = flowOptional.get();
+                    if (flow.isFinalized()) {
+                        String message = "Flow with canonical id of " + flow.getCanonicalId() + " is already deployed";
+
+                        log.severe(message);
+                        clientError(response, message);
+
+                        return;
+                    }
+
+                    // Otherwise, finalize/deploy the flow and return a 201.
+                    final Flow persistedFlow = this.flowService.finalizeFlow(flow);
+
+                    created(response).setBody(gson.toJson(persistedFlow));
+                }
+        ).addRouteHandler(
+                "GET", "/flow/rollback",
+                (request, response) -> {
+                    // Request validation.  Make sure the required flow id a version are present.
+                    if (! request.getQueryParameters().containsKey("flowId") || ! request.getQueryParameters().containsKey("version")) {
+                        clientError(response);
+                        return;
+                    }
+
+                    final UUID flowId = UUID.fromString(request.getQueryParameters().get("flowId").getFirst());
+                    final int version = Integer.parseInt(request.getQueryParameters().get("version").getFirst());
+
+                    // Get the flow by the id and version.
+                    final String canonicalId = Flow.Utils.getCanonicalId(flowId, version);
+                    Optional<Flow> flowOptional = this.flowService.getFlowByCanonicalId(canonicalId);
+
+                    // If not found, return a 404.
+                    if (flowOptional.isEmpty()) {
+                        notFound(response);
+                        return;
+                    }
+
+                    // If found, but it is already finalized/deployed, then return a 400.
+                    Flow flow = flowOptional.get();
+                    if (! flow.isFinalized()) {
+                        String message = "Flow with canonical id of " + flow.getCanonicalId() + " is not finalized/deployed";
+
+                        log.severe(message);
+                        clientError(response, message);
+
+                        return;
+                    }
+
+                    // Otherwise, rollback/un-finalize the flow and return a 201.
+                    final Flow persistedFlow = this.flowService.unfinalizeFlow(flow);
+
+                    created(response).setBody(gson.toJson(persistedFlow));
                 }
         );
     }

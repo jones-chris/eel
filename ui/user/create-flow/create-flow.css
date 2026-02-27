@@ -1,0 +1,38 @@
+#fileInput {
+    display: block;
+    margin: 0 auto;
+}
+
+#xlsxTransformationUpload {
+    display: flex;
+    justify-content: center;  /* horizontal centering */
+    align-items: center;      /* vertical centering */
+}
+
+.tableHeader {
+    text-align: center;
+}
+
+/*
+Eggshell
+*/
+.flowTypeButton {
+    background-color: #f5f5dc;
+    color: #333;
+}
+
+/*
+Light Green
+*/
+.saveButton {
+    background-color: #d4edda;
+    color: #333
+}
+
+/*
+Light Blue
+*/
+.deployButton {
+    background-color: #d1ecf1;
+    color: #333;
+}

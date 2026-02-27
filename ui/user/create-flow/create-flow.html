@@ -26,21 +26,51 @@
 </head>
 <body>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <!-- todo:  might be able to remove this because it's a few lines below too. -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <!-- Necessary for the Dropdown animation to work. -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">AnyAuto</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="ml-auto">
+                <!-- Flow type drop down -->
+                <div class="dropdown d-inline-block mr-2">
+                    <button class="btn border flowTypeButton" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        ☰ Flow Type
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a id="xlsxFile" class="dropdown-item" href="#">XLSX File</a>
+                        <a id="sqlScript" class="dropdown-item" href="#">SQL Script</a>
+                        <a id="pythonScript" class="dropdown-item" href="#">Python Script</a>
+                        <a id="pythonZipFile" class="dropdown-item" href="#">Python Zip File</a>
+                    </div>
+                </div>
+                <!-- Save Button -->
+                <button class="btn border mr-2 saveButton" type="button">💾 Save</button>
+                <!-- Deploy Button -->
+                <button class="btn border deployButton" type="button">🚀 Deploy</button>
+            </div>
+        </div>
+    </nav>
 
     <table class="table table-striped-columns">
         <tr>
-            <th>1) Inputs </th>
-            <th>2) Transformation</th>
-            <th>3) SQL Post Processors (Optional)</th>
-            <th>4) Outputs</th>
+            <th class="tableHeader">Inputs </th>
+            <th class="tableHeader">Transformation</th>
+            <th class="tableHeader">Outputs</th>
         </tr>
         <tr>
             <!-- Input sources -->
             <td id="inputSources"></td>
 
             <!-- xlsx transformation upload -->
-            <td id="xlsxTransformationUpload">
+            <td id="xlsxTransformationUpload" hidden>
                 <div class="left-screen">
                     <form id="fileUploadForm" enctype="multipart/form-data">
                         <div class="mb-3">
@@ -54,9 +84,6 @@
                     </form>
                 </div>
             </td>
-
-            <!-- SQL post processor scripts -->
-            <td id="sqlTransformations"></td>
 
             <!-- Output destinations -->
             <td id="outputDestinations"></td>

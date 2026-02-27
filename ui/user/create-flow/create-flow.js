@@ -1,17 +1,23 @@
 let flowId = null;
 let flowVersion = null;
-let apiDomain = '';
-let manifestApiDomain = '';
+let apiBaseUrl = null;  // todo:  parameterize this.
+const userName = null;  // todo:  parameterize this.
+const password = null;  // todo:  paameterize this.
 const state = {
     inputSources: [],
-    sqlTransformations: [],
+//    sqlTransformations: [],
     outputDestinations: []
 }
-let destinationsService = new DestinationService(apiDomain);
+let flowType = null;
+let destinationsService = new DestinationService(apiBaseUrl);
+
 
 async function getPresignedUrl() {
-    let response = await fetch(`${apiDomain}/flow/transformationLandingUrl?id=${flowId}`, {
-         method: 'GET'
+    let response = await fetch(`${apiBaseUrl}/flow/transformationLandingUrl?id=${flowId}`, {
+         method: 'GET',
+         headers: {
+            Authorization: "Basic " + btoa(userName + ":" + password)
+         }
     });
 
     if (response.status !== 200) {
@@ -31,8 +37,11 @@ async function getPresignedUrl() {
 }
 
 async function getManifest() {
-    let response = await fetch(`${manifestApiDomain}/manifest?uuid=${flowId}&version=${flowVersion}`, {
-         method: 'GET'
+    let response = await fetch(`${apiBaseUrl}/manifest?uuid=${flowId}&version=${flowVersion}`, {
+         method: 'GET',
+         headers: {
+            Authorization: "Basic " + btoa(userName + ":" + password)
+         }
     });
 
     if (response.status === 404) {
@@ -54,8 +63,11 @@ async function getManifest() {
 
 // Get new flow's ID.
 window.onload = function() {
-    fetch(`${apiDomain}/flow/new`, {
-        method: 'POST'
+    fetch(`${apiBaseUrl}/flow/new`, {
+        method: 'POST',
+        headers: {
+           Authorization: "Basic " + btoa(userName + ":" + password)
+        }
     })
     .then(response => {
         if (response.status !== 201) {
@@ -138,6 +150,35 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
     toggleLoading();
 });
 
+// Add flow type event listener.
+document.querySelectorAll('.dropdown-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+        // Hide/unhide flow type input HTML elements.
+        toggleFlowUploadElements(this.id)
+    });
+});
+
+// Hide/unhide flow type input HTML elements based on which flow type id is chosen.
+function toggleFlowUploadElements(dropDownItemIdToShow) {
+    const dropDownItemIdToFlowUploadElementIds = {
+        "xlsxFile": "xlsxTransformationUpload",
+        "sqlScript": "sqlScriptTransformationUpload",
+        "pythonScript": "pythonScriptTransformationUpload",
+        "pythonZipFile": "pythonZipFileTransformationUpload"
+    };
+
+    flowUploadElementIdToShow = dropDownItemIdToFlowUploadElementIds[dropDownItemIdToShow];
+
+    Object.values(dropDownItemIdToFlowUploadElementIds).forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (elementId === flowUploadElementIdToShow) {
+            element.removeAttribute('hidden');
+        } else {
+            element.setAttribute('hidden', '');
+        }
+    });
+}
+
 function toggleLoading() {
     const uploadSpinnerElement = document.getElementById('uploadSpinner');
     uploadSpinnerElement.hidden = ! uploadSpinnerElement.hidden;
@@ -163,10 +204,10 @@ function renderManifest(manifest) {
     }
 
     // Render SQL transformations.
-    let sqlTransformationRootElement = document.getElementById('sqlTransformations');
-    let sqlTransformationScriptElement = new SqlTransformation();
-    state.sqlTransformations.push(sqlTransformationScriptElement);
-    sqlTransformationRootElement.appendChild(sqlTransformationScriptElement);
+//    let sqlTransformationRootElement = document.getElementById('sqlTransformations');
+//    let sqlTransformationScriptElement = new SqlTransformation();
+//    state.sqlTransformations.push(sqlTransformationScriptElement);
+//    sqlTransformationRootElement.appendChild(sqlTransformationScriptElement);
 
     // Render output destinations.
     let outputDestinationsRootElement = document.getElementById('outputDestinations');
@@ -179,36 +220,3 @@ function renderManifest(manifest) {
         outputDestinationsRootElement.appendChild(outputDestination);
     }
 }
-
-// Local testing code below.
-//fetch('./manifest-test.json')
-//    .then(response => response.json())
-//    .then(json => {
-//        // Render input sources.
-//        let inputSourceRootElement = document.getElementById('inputSources');
-//        for (let inputSheetId in Object.keys(json['inputSheetsMetadata'])) {
-//            let inputSheetMetadata = json['inputSheetsMetadata'][inputSheetId];
-//
-//            let inputSource = new InputSource(inputSheetMetadata);
-//            state.inputSources.push(inputSource);
-//
-//            inputSourceRootElement.appendChild(inputSource);
-//        }
-//
-//        // Render SQL transformations.
-//        let sqlTransformationRootElement = document.getElementById('sqlTransformations');
-//        let sqlTransformationScriptElement = new SqlTransformation();
-//        state.sqlTransformations.push(sqlTransformationScriptElement);
-//        sqlTransformationRootElement.appendChild(sqlTransformationScriptElement);
-//
-//        // Render output destinations.
-//        let outputDestinationsRootElement = document.getElementById('outputDestinations');
-//        for (let outputSheetId in Object.keys(json['outputSheetsMetadata'])) {
-//            let outputSheetMetadata = json['outputSheetsMetadata'][outputSheetId];
-//
-//            let outputDestination = new OutputDestination(outputSheetMetadata, destinationsService);
-//            state.outputDestinations.push(outputDestination);
-//
-//            outputDestinationsRootElement.appendChild(outputDestination);
-//        }
-//    });

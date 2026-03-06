@@ -2,10 +2,9 @@ let flowId = null;
 let flowVersion = null;
 let apiBaseUrl = null;  // todo:  parameterize this.
 const userName = null;  // todo:  parameterize this.
-const password = null;  // todo:  paameterize this.
+const password = null;  // todo:  parameterize this.
 const state = {
     inputSources: [],
-//    sqlTransformations: [],
     outputDestinations: []
 }
 let flowType = null;
@@ -150,6 +149,53 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
     toggleLoading();
 });
 
+// Save Flow button listener.
+document.getElementById('saveFlow').addEventListener('click', async function() {
+    // Prepare the data.
+    let sheetQueries = Object.fromEntries(
+        state.inputSources.map(inputSource => [
+            inputSource.name,
+            {
+                sql: inputSource.sql,
+                dataSource: inputSource.dataSource
+            }
+        ])
+    );
+
+    const flow = {
+        id: flowId,
+        version: flowVersion,
+        author: null, // todo:  fix this.
+        inputType: 'SCHEDULED_BATCH',
+        scheduledBatchConfiguration: {
+            cronExpression: '',
+            sheetQueries: sheetQueries
+        }
+    };
+
+    // Send the data.
+    const response = await fetch(`${apiBaseUrl}/flow/update`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: "Basic " + btoa(userName + ":" + password)
+        },
+        body: JSON.stringify(flow)
+    })
+
+    // Check if response is successful
+    if (! response.ok) {
+        alert('There was an error when saving your flow.  Please try again later or contact your administrator.')
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Parse and handle the response
+    const result = await response.json();
+    console.log('Success:', result);
+    alert('Flow saved successfully!');
+});
+
+
 // Add flow type event listener.
 document.querySelectorAll('.dropdown-item').forEach(item => {
     item.addEventListener('click', function(e) {
@@ -202,12 +248,6 @@ function renderManifest(manifest) {
 
         inputSourceRootElement.appendChild(inputSource);
     }
-
-    // Render SQL transformations.
-//    let sqlTransformationRootElement = document.getElementById('sqlTransformations');
-//    let sqlTransformationScriptElement = new SqlTransformation();
-//    state.sqlTransformations.push(sqlTransformationScriptElement);
-//    sqlTransformationRootElement.appendChild(sqlTransformationScriptElement);
 
     // Render output destinations.
     let outputDestinationsRootElement = document.getElementById('outputDestinations');

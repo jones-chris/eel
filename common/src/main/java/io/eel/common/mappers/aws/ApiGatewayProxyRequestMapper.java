@@ -3,6 +3,7 @@ package io.eel.common.mappers.aws;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import io.eel.common.http.HttpRequest;
 import io.eel.common.mappers.RequestMapper;
@@ -48,7 +49,9 @@ public class ApiGatewayProxyRequestMapper implements RequestMapper<Map<String, O
 
         HttpRequest httpRequest = new HttpRequest();
         if (bodyJson.get("body") != null) {
-            httpRequest.setBody(bodyJson.get("body").getAsJsonObject());
+            String payloadString = bodyJson.get("body").getAsString();
+            JsonObject payload = JsonParser.parseString(payloadString).getAsJsonObject();
+            httpRequest.setBody(payload);
         }
         httpRequest.setHttpMethod(bodyJson.getAsJsonObject("requestContext").getAsJsonObject("http").get("method").getAsString());
         httpRequest.setPath(bodyJson.getAsJsonObject("requestContext").getAsJsonObject("http").get("path").getAsString());

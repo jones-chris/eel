@@ -95,43 +95,28 @@ public class FlowController extends BaseController {
                             );
                 }
         ).addRouteHandler(
-                // Updates an existing flow.  Note that this can only be done to un-finalized flows because finalized flows
+                // Updates the existing flow.  Note that this can only be done to un-finalized flows because finalized flows
                 // are immutable.
                 PUT, "/flow/update",
                 (request, response) -> {
-                    if (request.getBody().isEmpty()) {
+                    // Check that request body is not null or empty.
+                    if (request.getBody() == null || request.getBody().isEmpty()) {
                         log.severe("No request body");
 
                         clientError(response);
                         return;
                     }
-
-                    if (! request.getQueryParameters().containsKey("id")) {
-                        log.severe("No 'id' query parameter");
-
-                        if (request.getQueryParameters().get("id").isEmpty()) {
-                            log.severe("'id' query parameter value is an empty list");
-                        }
-
-                        clientError(response);
-                        return;
-                    }
-
-                    if (! request.getQueryParameters().containsKey("version")) {
-                        log.severe("No 'version' query parameter");
-
-                        if (request.getQueryParameters().get("version").isEmpty()) {
-                            log.severe("'version' query parameter is an empty list");
-                        }
-
-                        clientError(response);
-                        return;
-                    }
-
-                    final UUID id = UUID.fromString(request.getQueryParameters().get("id").getFirst());
-                    final int version = Integer.parseInt(request.getQueryParameters().get("version").getFirst());
-                    final String canonicalId = Flow.Utils.getCanonicalId(id, version);
                     Flow newFlow = gson.fromJson(request.getBody(), Flow.class);
+
+                    // Check that new flow has an id.
+                    if (newFlow.getId() == null) {
+                        log.severe("Flow id cannot be null");
+
+                        clientError(response);
+                        return;
+                    }
+
+                    final String canonicalId = Flow.Utils.getCanonicalId(newFlow.getId(), newFlow.getVersion());
 
                     try {
                         Flow persistedFlow = this.flowService.updateFlow(canonicalId, newFlow);

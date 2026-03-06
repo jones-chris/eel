@@ -71,7 +71,7 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
             Query query = flow.getScheduledBatchConfiguration().sheetQueries().get(inputSheet);
 
             // Retrieve the data source secret.
-            final String secretId = query.sqlDatabaseDataSource().getSecretId();
+            final String secretId = query.dataSource().getSecretId();
             log.info("Retrieving secret id of " + secretId);
             SqlDataSourceSecret secret = sqlDataSourceSecretDao.getById(secretId);
 

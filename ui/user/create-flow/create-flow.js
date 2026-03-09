@@ -2,10 +2,11 @@ let flowId = null;
 let flowVersion = null;
 let apiBaseUrl = null;  // todo:  parameterize this.
 const userName = null;  // todo:  parameterize this.
-const password = null;  // todo:  parameterize this.
+const password = null;  // todo:  paameterize this.
 const state = {
     inputSources: [],
-    outputDestinations: []
+    outputDestinations: [],
+    manifest: null
 }
 let flowType = null;
 let destinationsService = new DestinationService(apiBaseUrl);
@@ -118,13 +119,13 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
     alert('Workbook successfully uploaded.  Inspecting workbook.')
 
     // Attempts to get the manifest with backoff.
-    let manifest = null;
+    let newManifest = null;
     const maxAttempts = 5;
     let attemptNumber = 0;
     let sleepInSeconds = 4;
     do {
-        manifest = await getManifest();
-        if (manifest === null) {
+        newManifest = await getManifest();
+        if (newManifest === null) {
             attemptNumber++;
             sleepInSeconds = sleepInSeconds * attemptNumber;
         } else {
@@ -140,9 +141,10 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
         await sleep(sleepInSeconds)
     } while (attemptNumber < maxAttempts)
 
-    if (manifest !== null) {
-        console.log('Visualizing manifest...');
+    if (newManifest !== null) {
+        state.manifest = newManifest;
 
+        console.log('Visualizing manifest...');
         renderManifest(manifest);
     }
 
@@ -239,24 +241,32 @@ function toggleLoading() {
 
 function renderManifest(manifest) {
     // Render input sources.
+    let newInputSources = [];
     let inputSourceRootElement = document.getElementById('inputSources');
     for (let inputSheetId in Object.keys(manifest['inputSheetsMetadata'])) {
         let inputSheetMetadata = manifest['inputSheetsMetadata'][inputSheetId];
 
-        let inputSource = new InputSource(inputSheetMetadata);
-        state.inputSources.push(inputSource);
+        // Try to find the existing input source and keep it if it exists.
+        let existingInputSource = state.inputSources.find(inputSource => inputSource.name === inputSheetMetadata.name);
+        if (existingInputSource) {
+            newInputSources.push(existingInputSource);
+        } else {
+            let inputSource = new InputSource(inputSheetMetadata);
+            newInputSources.push(inputSource);
+        }
 
         inputSourceRootElement.appendChild(inputSource);
     }
+    state.inputSources = newInputSources;
 
     // Render output destinations.
-    let outputDestinationsRootElement = document.getElementById('outputDestinations');
-    for (let outputSheetId in Object.keys(manifest['outputSheetsMetadata'])) {
-        let outputSheetMetadata = manifest['outputSheetsMetadata'][outputSheetId];
-
-        let outputDestination = new OutputDestination(outputSheetMetadata, destinationsService);
-        state.outputDestinations.push(outputDestination);
-
-        outputDestinationsRootElement.appendChild(outputDestination);
-    }
+//    let outputDestinationsRootElement = document.getElementById('outputDestinations');
+//    for (let outputSheetId in Object.keys(manifest['outputSheetsMetadata'])) {
+//        let outputSheetMetadata = manifest['outputSheetsMetadata'][outputSheetId];
+//
+//        let outputDestination = new OutputDestination(outputSheetMetadata, destinationsService);
+//        state.outputDestinations.push(outputDestination);
+//
+//        outputDestinationsRootElement.appendChild(outputDestination);
+//    }
 }

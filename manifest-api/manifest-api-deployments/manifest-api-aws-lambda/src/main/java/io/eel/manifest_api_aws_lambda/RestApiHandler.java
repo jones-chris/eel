@@ -8,7 +8,7 @@ import io.eel.common.http.HttpResponse;
 import io.eel.common.mappers.RequestMapper;
 import io.eel.common.mappers.aws.ApiGatewayProxyRequestMapper;
 import io.eel.manifest_api_aws_lambda.dao.AwsDynamoDbManifestDaoImpl;
-import io.eel.manifest_api_aws_lambda.dao.AwsS3WorkbookDaoImpl;
+import io.eel.common_aws.AwsS3WorkbookDaoImpl;
 import io.eel.manifest_generator_core.ManifestController;
 import io.eel.manifest_generator_core.service.ManifestServiceImpl;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;

@@ -1,4 +1,4 @@
-package io.eel.model;
+package io.eel.common.model;
 
 import java.util.Map;
 

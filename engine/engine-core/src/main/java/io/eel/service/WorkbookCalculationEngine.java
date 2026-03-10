@@ -1,8 +1,8 @@
 package io.eel.service;
 
 import com.opencsv.CSVReader;
-import io.eel.model.WorkbookOutput;
-import io.eel.model.proxy.WorkbookProxy;
+import io.eel.common.model.WorkbookOutput;
+import io.eel.common.model.WorkbookProxy;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -94,14 +94,9 @@ public class WorkbookCalculationEngine {
         }
     }
 
-//    public WorkbookCalculationEngine withInput(String worksheetName, Object[][] data) {
-//        if (this.workbookInputs.get(worksheetName) != null) {
-//            throw new IllegalArgumentException("Input data for worksheet " + worksheetName + " already exists");
-//        }
-//
-//        this.workbookInputs.put(worksheetName, data);
-//        return this;
-//    }
+    public WorkbookProxy getWorkbookProxy() {
+        return this.workbookProxy;
+    }
 
     public WorkbookOutput runWorkbook() throws Exception {
         try {

@@ -1,8 +1,9 @@
+import { apiBaseUrl, userName, password } from '../../constants/constants.js';
+import { DestinationService } from '../../shared/services/DestinationService.js';
+import { OutputDestination } from '../../shared/output-destination.js';
+
 let flowId = null;
 let flowVersion = null;
-let apiBaseUrl = null;  // todo:  parameterize this.
-const userName = null;  // todo:  parameterize this.
-const password = null;  // todo:  paameterize this.
 const state = {
     inputSources: [],
     outputDestinations: [],
@@ -90,6 +91,17 @@ window.onload = function() {
     })
 }
 
+// Add output destination.
+document.getElementById('addOutputDestination').addEventListener('click', async function() {
+    console.log('Inside add destination event listener');
+
+    let outputDestination = new OutputDestination(destinationsService);
+    state.outputDestinations.push(outputDestination);
+
+    let outputDestinationsRootElement = document.getElementById('outputDestinations');
+    outputDestinationsRootElement.appendChild(outputDestination);
+});
+
 // Upload the transformation xlsx file.
 document.getElementById('fileUploadForm').addEventListener('submit', async function(event) {
     console.log("Inside file upload submit event listener")
@@ -145,7 +157,7 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
         state.manifest = newManifest;
 
         console.log('Visualizing manifest...');
-        renderManifest(manifest);
+        renderManifest(state.manifest);
     }
 
     toggleLoading();
@@ -153,6 +165,45 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
 
 // Save Flow button listener.
 document.getElementById('saveFlow').addEventListener('click', async function() {
+    saveFlow(true);
+});
+
+// Deploy Flow button listener.
+document.getElementById('deployFlow').addEventListener('click', async function() {
+    saveFlow(false);
+
+    // Prepare the data.
+
+    // Send the data.
+    const response = await fetch(`${apiBaseUrl}/flow/deploy?flowId={flowId}&version={version}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: "Basic " + btoa(userName + ":" + password)
+        }
+    })
+
+    // Check if response is successful
+    if (! response.ok) {
+        alert('There was an error when deploying your flow.  Please try again later or contact your administrator.')
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Parse and handle the response
+    const result = await response.json();
+    console.log('Success:', result);
+    alert('Submitted your flow for deployment!');
+});
+
+// Add flow type event listener.
+document.querySelectorAll('.dropdown-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+        // Hide/unhide flow type input HTML elements.
+        toggleFlowUploadElements(this.id)
+    });
+});
+
+async function saveFlow(showAlert) {
     // Prepare the data.
     let sheetQueries = Object.fromEntries(
         state.inputSources.map(inputSource => [
@@ -167,7 +218,7 @@ document.getElementById('saveFlow').addEventListener('click', async function() {
     const flow = {
         id: flowId,
         version: flowVersion,
-        author: null, // todo:  fix this.
+        author: userName,
         inputType: 'SCHEDULED_BATCH',
         scheduledBatchConfiguration: {
             cronExpression: '',
@@ -194,17 +245,12 @@ document.getElementById('saveFlow').addEventListener('click', async function() {
     // Parse and handle the response
     const result = await response.json();
     console.log('Success:', result);
-    alert('Flow saved successfully!');
-});
 
-
-// Add flow type event listener.
-document.querySelectorAll('.dropdown-item').forEach(item => {
-    item.addEventListener('click', function(e) {
-        // Hide/unhide flow type input HTML elements.
-        toggleFlowUploadElements(this.id)
-    });
-});
+    // Because this function is called when saving a flow and when deploying a flow, we don't always want to display an alert.
+    if (showAlert) {
+        alert('Flow saved successfully!');
+    }
+}
 
 // Hide/unhide flow type input HTML elements based on which flow type id is chosen.
 function toggleFlowUploadElements(dropDownItemIdToShow) {
@@ -215,7 +261,7 @@ function toggleFlowUploadElements(dropDownItemIdToShow) {
         "pythonZipFile": "pythonZipFileTransformationUpload"
     };
 
-    flowUploadElementIdToShow = dropDownItemIdToFlowUploadElementIds[dropDownItemIdToShow];
+    let flowUploadElementIdToShow = dropDownItemIdToFlowUploadElementIds[dropDownItemIdToShow];
 
     Object.values(dropDownItemIdToFlowUploadElementIds).forEach(elementId => {
         const element = document.getElementById(elementId);
@@ -247,11 +293,11 @@ function renderManifest(manifest) {
         let inputSheetMetadata = manifest['inputSheetsMetadata'][inputSheetId];
 
         // Try to find the existing input source and keep it if it exists.
-        let existingInputSource = state.inputSources.find(inputSource => inputSource.name === inputSheetMetadata.name);
-        if (existingInputSource) {
-            newInputSources.push(existingInputSource);
+        let inputSource = state.inputSources.find(inputSource => inputSource.name === inputSheetMetadata.name);
+        if (inputSource) {
+            newInputSources.push(inputSource);
         } else {
-            let inputSource = new InputSource(inputSheetMetadata);
+            inputSource = new InputSource(inputSheetMetadata);
             newInputSources.push(inputSource);
         }
 

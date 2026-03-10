@@ -7,7 +7,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.eel.common.model.WorkbookMetadata;
 import io.eel.manifest_api_aws_lambda.dao.AwsDynamoDbManifestDaoImpl;
-import io.eel.manifest_api_aws_lambda.dao.AwsS3WorkbookDaoImpl;
+import io.eel.common_aws.AwsS3WorkbookDaoImpl;
 import io.eel.manifest_generator_core.service.ManifestService;
 import io.eel.manifest_generator_core.service.ManifestServiceImpl;
 import org.slf4j.Logger;

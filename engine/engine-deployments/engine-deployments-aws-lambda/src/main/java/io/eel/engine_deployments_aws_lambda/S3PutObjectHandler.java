@@ -7,7 +7,9 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.opencsv.CSVReader;
 import io.eel.common.dao.QueryResultCsvDao;
+import io.eel.common.dao.WorkbookDao;
 import io.eel.common.model.StorageLocation;
+import io.eel.common_aws.AwsS3WorkbookDaoImpl;
 import io.eel.common_aws.S3QueryResultCsvDaoImpl;
 import io.eel.service.WorkbookCalculationEngine;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -15,6 +17,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 
@@ -23,14 +26,22 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
 
     private static final Logger log = Logger.getLogger(S3PutObjectHandler.class.getName());
 
-    Type storageLocationListType = new TypeToken<List<StorageLocation>>(){}.getType();
+    private static final Type storageLocationListType = new TypeToken<List<StorageLocation>>(){}.getType();
+
+    private static final String flowExecutionBucketName;
 
     private static final QueryResultCsvDao queryResultCsvDao;
+
+    private static final WorkbookDao workbookDao;
 
     private static final Gson gson = new Gson();
 
     static {
+        flowExecutionBucketName = Optional.ofNullable(System.getenv("FLOW_EXECUTION_BUCKET_NAME"))
+                .orElseThrow(() -> new RuntimeException("Could not find FLOW_EXECUTION_BUCKET_NAME env variable"));
+
         queryResultCsvDao = new S3QueryResultCsvDaoImpl(S3Client.create());
+        workbookDao = new AwsS3WorkbookDaoImpl(S3Client.create());
     }
 
     @Override
@@ -43,6 +54,8 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
             if (sqsEvent.getRecords().isEmpty()) {
                 throw new RuntimeException("Expected at least 1 record, but received SQS message with 0 records");
             }
+
+            String lambdaFunctionFlowId = context.getFunctionName();
 
             WorkbookCalculationEngine engine = new WorkbookCalculationEngine();
 
@@ -58,7 +71,6 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
                             log.info("storageLocation is: " + gson.toJson(storageLocation));
 
                             String messageFlowId = storageLocation.flowId();
-                            String lambdaFunctionFlowId = context.getFunctionName();
 
                             if (! messageFlowId.equalsIgnoreCase(lambdaFunctionFlowId)) {
                                 throw new RuntimeException("SQS message included a record with a flow id of " + messageFlowId + " but expected a flow id of " + lambdaFunctionFlowId);
@@ -78,7 +90,11 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
                     });
 
             log.info("Running workbook"); // todo:  make this a debug statement.
-            engine.runWorkbook().logOutput();
+
+            // Write workbook to S3 for debugging.
+            // todo:  get the step function execution id.  That will be the trace id.
+            String key = this.buildS3FlowExecutionKey(lambdaFunctionFlowId, );
+            workbookDao.save(engine.getWorkbookProxy(), flowExecutionBucketName, key);
 
             return "Success";
         } catch (Throwable t) {
@@ -88,6 +104,10 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
 
             throw new RuntimeException(t);
         }
+    }
+
+    private String buildS3FlowExecutionKey(String lambdaFunctionFlowId, String executionId) {
+        return "/" + lambdaFunctionFlowId + "/" + executionId + ".xlsx";
     }
 
 }

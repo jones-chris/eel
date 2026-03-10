@@ -192,7 +192,7 @@ public class FlowController extends BaseController {
                     );
                 }
         ).addRouteHandler(
-                "GET", "/flow/deploy",
+                "POST", "/flow/deploy",
                 (request, response) -> {
                     // Request validation.  Make sure the required flow id a version are present.
                     if (! request.getQueryParameters().containsKey("flowId") || ! request.getQueryParameters().containsKey("version")) {

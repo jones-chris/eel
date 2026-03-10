@@ -18,15 +18,16 @@
 
     <script src="../../utils/utils.js"></script>
     <script src="../../shared/input-source.js"></script>
-    <script src="../../shared/sql-transformation.js"></script>
-    <script src="../../shared/output-destination.js"></script>
-    <script src="./DestinationService.js"></script>
+<!--    <script src="../../shared/sql-transformation.js"></script>-->
+    <script type="module" src="../../shared/output-destination.js"></script>
+    <script type="module" src="../../shared/services/DestinationService.js"></script>
     <script src="../../shared/email-destination.js"></script>
     <script src="../../shared/sms-destination.js"></script>
-    <script src="../../shared/file-storage-destination.js"></script>
-    <script src="../../shared/database-write-destination.js"></script>
-    <script src="../../shared/queue-write-destination.js"></script>
+<!--    <script src="../../shared/file-storage-destination.js"></script>-->
+<!--    <script src="../../shared/database-write-destination.js"></script>-->
+<!--    <script src="../../shared/queue-write-destination.js"></script>-->
     <script src="../../shared/trigger-flow-destination.js"></script>
+    <script type="module" src="../../constants/constants.js"></script>
     <title>AnyEasel</title>
 </head>
 <body>
@@ -70,7 +71,7 @@
             <th class="tableHeader yourPaintBrushHeader">Your Paint Brush (The Transformation)</th>
             <th class="tableHeader shareYourMasterpieceHeader">Share Your Masterpiece (The Outputs)
                 <br>
-                <button id="addOutputDestination" class="btn border addOutputDestination" type="button">➕ Add Destination</button>
+                <button id="addOutputDestination" class="btn border addOutputDestination" type="button">➕</button>
             </th>
         </tr>
         <tr>
@@ -99,5 +100,5 @@
     </table>
 </body>
 
-<script src="create-flow.js"></script>
+<script type="module" src="create-flow.js"></script>
 </html>

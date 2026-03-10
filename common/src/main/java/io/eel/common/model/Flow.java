@@ -74,6 +74,7 @@ public class Flow{
     }
 
     public static Flow create(String author) {
+        // todo:  replace the nulls here.
         return new Flow(author, null, null, null, null, false);
     }
 

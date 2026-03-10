@@ -1,4 +1,4 @@
-class OutputDestination extends HTMLElement {
+export class OutputDestination extends HTMLElement {
 
     name;
 
@@ -34,7 +34,7 @@ class OutputDestination extends HTMLElement {
             </div>
             <ol class="list-group list-group-flush">
                 ${
-                    this.columnNames.map(columnName => {
+                    this.columnNames?.map(columnName => {
                         let columnDataType = this.columnDataTypes[columnName];
                         return `<li class="list-group-item">${columnName} (${columnDataType})</li>`
                     }).join('')
@@ -80,12 +80,9 @@ class OutputDestination extends HTMLElement {
         selectElement.addEventListener('change', this.handleDestinationDataSourceNameChange.bind(this));  
     }
 
-    constructor(outputSheetMetadata, destinationService) {
+    constructor(destinationService) {
         super();
 
-        this.name = outputSheetMetadata?.name;
-        this.columnNames = outputSheetMetadata?.columnNames;
-        this.columnDataTypes = outputSheetMetadata?.columnDataTypes
         this.#destinationService = destinationService;
     }
 
@@ -112,38 +109,27 @@ class OutputDestination extends HTMLElement {
                 this.parameterElement = destination;
 
                 return destination;
-            } else if (this.destinationDataSourceName === 'sms') {
+            }
+            else if (this.destinationDataSourceName === 'sms') {
                 let destination = new SmsDestination(this);
                 this.parameterElement = destination;
 
                 return destination;
-            } else if (this.destinationDataSourceName === 'file-storage') {
-                let destination = new FileStorageDestination(this);
-                this.parameterElement = destination;
-
-                return destination;
-            } else if (this.destinationDataSourceName === 'db-write') {
-                let destination = new DatabaseWriteDestination(this);
-                this.parameterElement = destination;
-
-                return destination;
-            } else if (this.destinationDataSourceName === 'queue-write') {
-                let destination = new QueueWriteDestination(this);
-                this.parameterElement = destination;
-
-                return destination;
-            } else if (this.destinationDataSourceName === 'trigger-flow') {
+            }
+            else if (this.destinationDataSourceName === 'trigger-flow') {
                 let destination = new TriggerFlowDestination(this);
                 this.parameterElement = destination;
 
                 return destination;
-            } else {
+            }
+            else {
                 const message = `Did not recognize destination data source name of ${this.destinationDataSourceName}`;
                 console.error(message);
 
                 throw new Error(message);
             }
-        } else {
+        }
+        else {
             return null;
         }
     }

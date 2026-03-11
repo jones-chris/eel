@@ -55,11 +55,6 @@ public class AwsS3LandingBucketFlowComponentStackImpl extends FlowComponentStack
         }
     }
 
-    @Override
-    public boolean delete(String flowId, int version) {
-        return false;
-    }
-
     private void provisionBucketLifeCyclePolicy(String bucketName) {
         // Define the expiration action (60 days ~ 2 months)
         LifecycleExpiration expiration = LifecycleExpiration.builder()

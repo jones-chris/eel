@@ -8,16 +8,21 @@ import com.google.gson.reflect.TypeToken;
 import com.opencsv.CSVReader;
 import io.eel.common.dao.QueryResultCsvDao;
 import io.eel.common.dao.WorkbookDao;
+import io.eel.common.model.FlowExecution;
 import io.eel.common.model.StorageLocation;
 import io.eel.common_aws.AwsS3WorkbookDaoImpl;
+import io.eel.common_aws.BaseAwsDynamoDbDao;
 import io.eel.common_aws.S3QueryResultCsvDaoImpl;
+import io.eel.engine_deployments_aws_lambda.dao.AwsDynamoDbFlowExecutionDaoImpl;
 import io.eel.service.WorkbookCalculationEngine;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 
@@ -34,14 +39,19 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
 
     private static final WorkbookDao workbookDao;
 
+    private static final AwsDynamoDbFlowExecutionDaoImpl flowExecutionDao;
+
     private static final Gson gson = new Gson();
 
     static {
         flowExecutionBucketName = Optional.ofNullable(System.getenv("FLOW_EXECUTION_BUCKET_NAME"))
                 .orElseThrow(() -> new RuntimeException("Could not find FLOW_EXECUTION_BUCKET_NAME env variable"));
 
-        queryResultCsvDao = new S3QueryResultCsvDaoImpl(S3Client.create());
-        workbookDao = new AwsS3WorkbookDaoImpl(S3Client.create());
+        S3Client s3Client = S3Client.create();
+        queryResultCsvDao = new S3QueryResultCsvDaoImpl(s3Client);
+        workbookDao = new AwsS3WorkbookDaoImpl(s3Client);
+
+        flowExecutionDao = new AwsDynamoDbFlowExecutionDaoImpl(DynamoDbClient.create());
     }
 
     @Override
@@ -56,6 +66,8 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
             }
 
             String lambdaFunctionFlowId = context.getFunctionName();
+            UUID executionId = UUID.randomUUID();
+            log.info("Running flow " + lambdaFunctionFlowId + " and execution " + executionId);
 
             WorkbookCalculationEngine engine = new WorkbookCalculationEngine();
 
@@ -90,11 +102,22 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
                     });
 
             log.info("Running workbook"); // todo:  make this a debug statement.
+            engine.runWorkbook();
 
             // Write workbook to S3 for debugging.
-            // todo:  get the step function execution id.  That will be the trace id.
-            String key = this.buildS3FlowExecutionKey(lambdaFunctionFlowId, );
+            log.info("Saving workbook and flow execution metadata");
+
+            String key = this.buildS3FlowExecutionKey(lambdaFunctionFlowId, executionId.toString());
             workbookDao.save(engine.getWorkbookProxy(), flowExecutionBucketName, key);
+
+            // Write execution metadata and location of workbook to dynamo DB.
+            FlowExecution flowExecution = new FlowExecution(
+                    UUID.fromString(lambdaFunctionFlowId),
+                    executionId,
+                    flowExecutionBucketName,
+                    key
+            );
+            flowExecutionDao.save(flowExecution);
 
             return "Success";
         } catch (Throwable t) {

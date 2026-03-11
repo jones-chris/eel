@@ -137,11 +137,6 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         }
     }
 
-    @Override
-    public boolean delete(String flowId, int version) {
-        return false;
-    }
-
     private InputStream getS3ObjectAsInputStream(String bucket, String key) {
         GetObjectRequest request = GetObjectRequest.builder()
                 .bucket(bucket)

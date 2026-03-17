@@ -20,6 +20,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,8 +68,8 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
             }
 
             String lambdaFunctionFlowId = context.getFunctionName();
-            UUID executionId = UUID.randomUUID();
-            log.info("Running flow " + lambdaFunctionFlowId + " and execution " + executionId);
+            OffsetDateTime executionTimeStamp = OffsetDateTime.now(ZoneId.of("UTC"));
+            log.info("Running flow " + lambdaFunctionFlowId + " and execution " + executionTimeStamp.toEpochSecond());
 
             WorkbookCalculationEngine engine = new WorkbookCalculationEngine();
 
@@ -105,15 +107,17 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
             engine.runWorkbook();
 
             // Write workbook to S3 for debugging.
-            log.info("Saving workbook and flow execution metadata");
+            log.info("Saving workbook");
 
-            String key = this.buildS3FlowExecutionKey(lambdaFunctionFlowId, executionId.toString());
+            String key = this.buildS3FlowExecutionKey(lambdaFunctionFlowId, executionTimeStamp.toEpochSecond());
             workbookDao.save(engine.getWorkbookProxy(), flowExecutionBucketName, key);
 
             // Write execution metadata and location of workbook to dynamo DB.
+            log.info("Saving flow execution metadata");
+
             FlowExecution flowExecution = new FlowExecution(
                     UUID.fromString(lambdaFunctionFlowId),
-                    executionId,
+                    executionTimeStamp,
                     flowExecutionBucketName,
                     key
             );
@@ -129,8 +133,8 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
         }
     }
 
-    private String buildS3FlowExecutionKey(String lambdaFunctionFlowId, String executionId) {
-        return "/" + lambdaFunctionFlowId + "/" + executionId + ".xlsx";
+    private String buildS3FlowExecutionKey(String lambdaFunctionFlowId, long executionTimeStampEpochSeconds) {
+        return "/" + lambdaFunctionFlowId + "/" + executionTimeStampEpochSeconds + ".xlsx";
     }
 
 }

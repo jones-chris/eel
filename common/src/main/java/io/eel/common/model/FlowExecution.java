@@ -1,10 +1,11 @@
 package io.eel.common.model;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record FlowExecution(
         UUID flowId,
-        UUID executionId,
+        OffsetDateTime executionTimeStamp, // This should always be in UTC.
         String workbookBucket,
         String workbookKey
 ) {}

@@ -1,31 +1,36 @@
 package io.eel.engine_deployments_aws_lambda.dao;
 
+import com.google.gson.*;
 import io.eel.common.model.FlowExecution;
 import io.eel.common_aws.BaseAwsDynamoDbDao;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.lang.reflect.Type;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 
 public class AwsDynamoDbFlowExecutionDaoImpl extends BaseAwsDynamoDbDao<FlowExecution, String> {
 
     private static final String TABLE_NAME = "eel-flow-executions";
 
-    private static final String PARTITION_KEY = "flowIdAndExecutionId";
+    private static final String PARTITION_KEY = "flowId";
 
-    private static final Function<
-            Map<String, AttributeValue>,
-            FlowExecution
-            > DYNAMO_DB_ITEM_MAPPER = (item) ->
+    private static final String SORT_KEY = "executionTimeStamp";
+
+    private static final Function<Map<String, AttributeValue>, FlowExecution> DYNAMO_DB_ITEM_MAPPER = (item) ->
             gson.fromJson(
                     item.get("object").s(),
                     FlowExecution.class
             );
 
     public AwsDynamoDbFlowExecutionDaoImpl(DynamoDbClient dynamoDbClient) {
-        super(dynamoDbClient, TABLE_NAME, PARTITION_KEY);
+        super(dynamoDbClient, TABLE_NAME, PARTITION_KEY, SORT_KEY);
     }
 
     public Optional<FlowExecution> getById(String flowIdAndExecutionId) {
@@ -33,16 +38,11 @@ public class AwsDynamoDbFlowExecutionDaoImpl extends BaseAwsDynamoDbDao<FlowExec
     }
 
     public FlowExecution save(FlowExecution flowExecution) {
-        String flowIdAndExecutionId = getFlowIdAndExecutionId(flowExecution);
-
-        return super.save(
+        return super.saveWithSortKey(
                 flowExecution,
-                f -> AttributeValue.fromS(flowIdAndExecutionId)
+                f -> AttributeValue.fromS(flowExecution.flowId().toString()),
+                f -> AttributeValue.fromN(String.valueOf(flowExecution.executionTimeStamp().toEpochSecond()))
         );
-    }
-
-    private static String getFlowIdAndExecutionId(FlowExecution flowExecution) {
-        return flowExecution.flowId().toString() + "#" + flowExecution.version() + "#" + flowExecution.executionId();
     }
 
 }

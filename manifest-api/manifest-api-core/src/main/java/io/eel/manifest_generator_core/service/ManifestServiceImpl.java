@@ -6,9 +6,9 @@ import io.eel.common.WorkbookValidator;
 import io.eel.common.dao.WorkbookDao;
 import io.eel.common.model.Flow;
 import io.eel.common.model.WorkbookMetadata;
+import io.eel.common.model.WorkbookProxy;
 import io.eel.manifest_generator_core.dao.ManifestDao;
 import io.eel.manifest_generator_core.exception.ManifestGenerationException;
-import io.eel.model.proxy.WorkbookProxy;
 
 import java.util.Optional;
 import java.util.UUID;

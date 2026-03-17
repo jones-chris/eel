@@ -1,7 +1,6 @@
 package io.eel.common_aws;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -10,6 +9,10 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 
+import java.lang.reflect.Type;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -24,10 +27,13 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
 
     private String partitionKey;
 
+    private String sortKey;
+
     protected DynamoDbClient dynamoDbClient;
 
     protected static final Gson gson = new GsonBuilder()
             .setPrettyPrinting()
+            .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeEpochAdapter())
             .create();
 
     private BaseAwsDynamoDbDao() {}
@@ -40,6 +46,18 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
         this.dynamoDbClient = dynamoDbClient;
         this.tableName = tableName;
         this.partitionKey = partitionKey;
+    }
+
+    public BaseAwsDynamoDbDao(
+            DynamoDbClient dynamoDbClient,
+            String tableName,
+            String partitionKey,
+            String sortKey
+    ) {
+        this.dynamoDbClient = dynamoDbClient;
+        this.tableName = tableName;
+        this.partitionKey = partitionKey;
+        this.sortKey = sortKey;
     }
 
     public Optional<T> getById(
@@ -94,6 +112,25 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
         return obj;
     }
 
+    public T saveWithSortKey(
+            T obj,
+            Function<T, AttributeValue> partitionKeyMapper,
+            Function<T, AttributeValue> sortKeyMapper
+    ) {
+        final String objJson = gson.toJson(obj);
+
+        Map<String, AttributeValue> itemMap = Map.of(
+                this.partitionKey, partitionKeyMapper.apply(obj),
+                this.sortKey, sortKeyMapper.apply(obj),
+                OBJECT_KEY, AttributeValue.fromS(objJson)
+        );
+
+        log.info("Saving item: {}", itemMap);
+        this.save(itemMap);
+
+        return obj;
+    }
+
     private void save(Map<String, AttributeValue> itemMap) {
         PutItemRequest putItemRequest = PutItemRequest.builder()
                 .tableName(this.tableName)
@@ -101,6 +138,31 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
                 .build();
 
         this.dynamoDbClient.putItem(putItemRequest);
+    }
+
+    private static class OffsetDateTimeEpochAdapter implements
+            JsonSerializer<OffsetDateTime>,
+            JsonDeserializer<OffsetDateTime> {
+
+        @Override
+        public JsonElement serialize(OffsetDateTime src, Type typeOfSrc, JsonSerializationContext context) {
+            long epochSeconds = src.toEpochSecond();
+            return new JsonPrimitive(epochSeconds);
+        }
+
+        @Override
+        public OffsetDateTime deserialize(
+                JsonElement json,
+                Type typeOfT,
+                JsonDeserializationContext context
+        ) throws JsonParseException {
+            long epochSeconds = json.getAsLong();
+
+            return OffsetDateTime.ofInstant(
+                    Instant.ofEpochSecond(epochSeconds),
+                    ZoneId.systemDefault()
+            );
+        }
     }
 
 }

@@ -12,7 +12,7 @@ import io.eel.common.model.FlowExecution;
 import io.eel.common.model.StorageLocation;
 import io.eel.common_aws.AwsS3WorkbookDaoImpl;
 import io.eel.common_aws.S3QueryResultCsvDaoImpl;
-import io.eel.engine_deployments_aws_lambda.dao.AwsDynamoDbFlowExecutionDaoImpl;
+import io.eel.common_aws.AwsDynamoDbFlowExecutionDaoImpl;
 import io.eel.service.WorkbookCalculationEngine;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;

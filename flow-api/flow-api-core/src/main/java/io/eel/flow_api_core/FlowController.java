@@ -7,6 +7,7 @@ import io.eel.common.http.HttpRequest;
 import io.eel.common.model.Flow;
 import io.eel.flow_api_core.exception.ImmutableFlowException;
 import io.eel.flow_api_core.exception.ResourceNotFoundException;
+import io.eel.flow_api_core.service.FlowExecutionService;
 import io.eel.flow_api_core.service.FlowService;
 
 import java.util.*;
@@ -22,12 +23,15 @@ public class FlowController extends BaseController {
 
     private FlowService flowService;
 
+    private FlowExecutionService flowExecutionService;
+
     private FlowController() {
         super();
     }
 
-    public FlowController(FlowService flowService) {
+    public FlowController(FlowService flowService, FlowExecutionService flowExecutionService) {
         this.flowService = flowService;
+        this.flowExecutionService = flowExecutionService;
 
         this.addRouteHandler(
                 // Get all flows for a user.
@@ -266,6 +270,24 @@ public class FlowController extends BaseController {
                     final Flow persistedFlow = this.flowService.unfinalizeFlow(flow);
 
                     created(response).setBody(gson.toJson(persistedFlow));
+                }
+        ).addRouteHandler(
+                "GET", "/flow/execution/status",
+                (request, response) -> {
+                    if (! request.getQueryParameters().containsKey("flowId") || ! request.getQueryParameters().containsKey("executionTimestamp")) {
+                        clientError(response);
+                        return;
+                    }
+
+                    final UUID flowId = UUID.fromString(request.getQueryParameters().get("flowId").getFirst());
+                    final long executionTimeStamp = Long.parseLong(request.getQueryParameters().get("executionTimestamp").getFirst());
+
+                    // Get flow execution status.
+                    this.flowExecutionService.getById(flowId, executionTimeStamp)
+                            .ifPresentOrElse(
+                                    flowExecution -> ok(response).setBody(gson.toJson(flowExecution)),
+                                    () -> notFound(response)
+                            );
                 }
         );
     }

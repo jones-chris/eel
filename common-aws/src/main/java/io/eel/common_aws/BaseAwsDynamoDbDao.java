@@ -66,12 +66,38 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
     ) {
         GetItemRequest request = GetItemRequest.builder()
                 .tableName(tableName)
-                .key(Map.of(partitionKey, AttributeValue.fromS(id.toString())))
+                .key(
+                        Map.of(partitionKey, AttributeValue.fromS(id.toString()))
+                )
                 .build();
 
         GetItemResponse response = this.dynamoDbClient.getItem(request);
 
         if (! response.hasItem()) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(
+                mapper.apply(response.item())
+        );
+    }
+
+    public Optional<T> getById(
+            U id,
+            AttributeValue sortKeyValue,
+            Function<Map<String, AttributeValue>, T> mapper
+    ) {
+        GetItemRequest request = GetItemRequest.builder()
+                .tableName(tableName)
+                .key(Map.of(
+                        partitionKey, AttributeValue.fromS(id.toString()),
+                        sortKey, sortKeyValue
+                ))
+                .build();
+
+        GetItemResponse response = this.dynamoDbClient.getItem(request);
+
+        if (!response.hasItem()) {
             return Optional.empty();
         }
 

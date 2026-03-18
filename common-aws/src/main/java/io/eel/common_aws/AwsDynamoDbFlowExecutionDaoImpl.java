@@ -1,7 +1,7 @@
-package io.eel.engine_deployments_aws_lambda.dao;
+package io.eel.common_aws;
 
+import io.eel.common.dao.FlowExecutionDao;
 import io.eel.common.model.FlowExecution;
-import io.eel.common_aws.BaseAwsDynamoDbDao;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-public class AwsDynamoDbFlowExecutionDaoImpl extends BaseAwsDynamoDbDao<FlowExecution, String> {
+public class AwsDynamoDbFlowExecutionDaoImpl extends BaseAwsDynamoDbDao<FlowExecution, String> implements FlowExecutionDao {
 
     private static final String TABLE_NAME = "eel-flow-executions";
 
@@ -27,8 +27,9 @@ public class AwsDynamoDbFlowExecutionDaoImpl extends BaseAwsDynamoDbDao<FlowExec
         super(dynamoDbClient, TABLE_NAME, PARTITION_KEY, SORT_KEY);
     }
 
-    public Optional<FlowExecution> getById(String flowIdAndExecutionId) {
-        return super.getById(flowIdAndExecutionId, DYNAMO_DB_ITEM_MAPPER);
+    public Optional<FlowExecution> getById(String flowId, long executionTimestamp) {
+        AttributeValue executionTimestampAttributeValue = AttributeValue.fromN(String.valueOf(executionTimestamp));
+        return super.getById(flowId, executionTimestampAttributeValue, DYNAMO_DB_ITEM_MAPPER);
     }
 
     public FlowExecution save(FlowExecution flowExecution) {

@@ -1,18 +1,12 @@
 package io.eel.engine_deployments_aws_lambda.dao;
 
-import com.google.gson.*;
 import io.eel.common.model.FlowExecution;
 import io.eel.common_aws.BaseAwsDynamoDbDao;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.lang.reflect.Type;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 
 public class AwsDynamoDbFlowExecutionDaoImpl extends BaseAwsDynamoDbDao<FlowExecution, String> {

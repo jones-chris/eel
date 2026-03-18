@@ -11,7 +11,6 @@ import io.eel.common.dao.WorkbookDao;
 import io.eel.common.model.FlowExecution;
 import io.eel.common.model.StorageLocation;
 import io.eel.common_aws.AwsS3WorkbookDaoImpl;
-import io.eel.common_aws.BaseAwsDynamoDbDao;
 import io.eel.common_aws.S3QueryResultCsvDaoImpl;
 import io.eel.engine_deployments_aws_lambda.dao.AwsDynamoDbFlowExecutionDaoImpl;
 import io.eel.service.WorkbookCalculationEngine;
@@ -61,16 +60,26 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
         log.info("sqsEvent: " + sqsEvent);
         log.info("context: " + context);
 
+        FlowExecution flowExecution = null;
+
         try {
-            // Check that every record is from this flow id.
             if (sqsEvent.getRecords().isEmpty()) {
                 throw new RuntimeException("Expected at least 1 record, but received SQS message with 0 records");
             }
 
             String lambdaFunctionFlowId = context.getFunctionName();
             OffsetDateTime executionTimeStamp = OffsetDateTime.now(ZoneId.of("UTC"));
-            log.info("Running flow " + lambdaFunctionFlowId + " and execution " + executionTimeStamp.toEpochSecond());
+            String key = this.buildS3FlowExecutionKey(lambdaFunctionFlowId, executionTimeStamp.toEpochSecond());
+            flowExecution = new FlowExecution(
+                    UUID.fromString(lambdaFunctionFlowId),
+                    executionTimeStamp,
+                    flowExecutionBucketName,
+                    key,
+                    FlowExecution.FlowExecutionStatus.RUNNING
+            );
+            flowExecutionDao.save(flowExecution);
 
+            log.info("Running flow " + lambdaFunctionFlowId + " and execution " + executionTimeStamp.toEpochSecond());
             WorkbookCalculationEngine engine = new WorkbookCalculationEngine();
 
             sqsEvent.getRecords()
@@ -81,6 +90,7 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
 
                         log.info("storageLocations is: " + gson.toJson(storageLocations));
 
+                        // Check that every record is from this flow id.
                         for (StorageLocation storageLocation : storageLocations) {
                             log.info("storageLocation is: " + gson.toJson(storageLocation));
 
@@ -108,26 +118,21 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
 
             // Write workbook to S3 for debugging.
             log.info("Saving workbook");
-
-            String key = this.buildS3FlowExecutionKey(lambdaFunctionFlowId, executionTimeStamp.toEpochSecond());
             workbookDao.save(engine.getWorkbookProxy(), flowExecutionBucketName, key);
 
             // Write execution metadata and location of workbook to dynamo DB.
             log.info("Saving flow execution metadata");
-
-            FlowExecution flowExecution = new FlowExecution(
-                    UUID.fromString(lambdaFunctionFlowId),
-                    executionTimeStamp,
-                    flowExecutionBucketName,
-                    key
-            );
-            flowExecutionDao.save(flowExecution);
+            flowExecutionDao.save(FlowExecution.completedFlowExecution(flowExecution));
 
             return "Success";
         } catch (Throwable t) {
             log.severe(t.getMessage());
 
             t.printStackTrace();
+
+            if (flowExecution != null) {
+                flowExecutionDao.save(FlowExecution.failedFlowExecution(flowExecution));
+            }
 
             throw new RuntimeException(t);
         }

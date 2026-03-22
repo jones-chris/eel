@@ -172,8 +172,6 @@ document.getElementById('saveFlow').addEventListener('click', async function() {
 document.getElementById('deployFlow').addEventListener('click', async function() {
     saveFlow(false);
 
-    // Prepare the data.
-
     // Send the data.
     const response = await fetch(`${apiBaseUrl}/flow/deploy?flowId={flowId}&version={version}`, {
         method: 'POST',
@@ -192,7 +190,9 @@ document.getElementById('deployFlow').addEventListener('click', async function()
     // Parse and handle the response
     const result = await response.json();
     console.log('Success:', result);
-    alert('Submitted your flow for deployment!');
+
+    // Redirect to the flow details page
+    window.location.href = `../flow/flow.html?id=${flowId}&version=${flowVersion}`;
 });
 
 // Add flow type event listener.

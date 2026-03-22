@@ -37,8 +37,11 @@ public class FlowServiceImpl implements FlowService {
     }
 
     @Override
-    public Flow updateFlow(String canonicalId, Flow newFlow) throws ImmutableFlowException, ResourceNotFoundException {
-        Optional<Flow> originalFlow = this.getFlowByCanonicalId(canonicalId);
+    public Flow updateFlow(Flow newFlow) throws ImmutableFlowException, ResourceNotFoundException {
+        String canonicalId = newFlow.getCanonicalId();
+
+        log.info("Attempting to update flow with canonical id of " + canonicalId);
+        Optional<Flow> originalFlow = this.getFlowByIdAndVersion(newFlow.getId().toString(), newFlow.getVersion());
 
         if (originalFlow.isEmpty()) {
             throw new ResourceNotFoundException(canonicalId);
@@ -66,13 +69,18 @@ public class FlowServiceImpl implements FlowService {
     }
 
     @Override
-    public Optional<Flow> getFlowByCanonicalId(String canonicalId) {
-        return this.flowDao.getFlowByCanonicalId(canonicalId);
+    public Optional<Flow> getFlowByIdAndVersion(String flowId, int version) {
+        return this.flowDao.getFlowByIdAndVersion(flowId, version);
     }
 
     @Override
     public Set<UUID> getFlowsByUser(String userName) {
         return this.flowDao.getFlowsByUser(userName);
+    }
+
+    @Override
+    public Set<Integer> getFlowVersionsByFlowId(UUID flowId) {
+        return this.flowDao.getFlowVersions(flowId);
     }
 
     @Override
@@ -100,7 +108,7 @@ public class FlowServiceImpl implements FlowService {
         flow.setFinalized(false);
         this.flowDao.updateFlow(flow);
 
-        // Send message to infra provisioner queue for the infra to be deleted.
+        // Send a message to infra provisioner queue for the infra to be deleted.
         this.flowInfrastructureActionQueueDao.sendDeleteMessage(
                 FlowInfrastructureActionRequestDto.newDeletionRequest(flow)
         );

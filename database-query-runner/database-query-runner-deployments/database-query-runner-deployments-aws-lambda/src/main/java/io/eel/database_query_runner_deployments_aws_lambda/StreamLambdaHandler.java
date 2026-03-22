@@ -64,7 +64,7 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
 
             log.info("Getting flow with canonical id of " + canonicalId + " and input sheet of " + inputSheet + ".  Will write result to bucket " + storageLocation.bucket() + " and key " + storageLocation.key());
 
-            Flow flow = flowDao.getFlowByCanonicalId(canonicalId)
+            Flow flow = flowDao.getFlowByIdAndVersion(flowId.toString(), version)
                     .orElseThrow(() -> new RuntimeException("Could not find flow with canonical id of " + canonicalId));
 
             // Get the flow's configured query for the given input sheet.

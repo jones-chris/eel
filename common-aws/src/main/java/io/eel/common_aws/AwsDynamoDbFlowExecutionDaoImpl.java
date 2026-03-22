@@ -5,6 +5,7 @@ import io.eel.common.model.FlowExecution;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -29,7 +30,7 @@ public class AwsDynamoDbFlowExecutionDaoImpl extends BaseAwsDynamoDbDao<FlowExec
 
     public Optional<FlowExecution> getById(String flowId, long executionTimestamp) {
         AttributeValue executionTimestampAttributeValue = AttributeValue.fromN(String.valueOf(executionTimestamp));
-        return super.getById(flowId, executionTimestampAttributeValue, DYNAMO_DB_ITEM_MAPPER);
+        return super.getOneById(flowId, executionTimestampAttributeValue, DYNAMO_DB_ITEM_MAPPER);
     }
 
     public FlowExecution save(FlowExecution flowExecution) {
@@ -38,6 +39,10 @@ public class AwsDynamoDbFlowExecutionDaoImpl extends BaseAwsDynamoDbDao<FlowExec
                 f -> AttributeValue.fromS(flowExecution.flowId().toString()),
                 f -> AttributeValue.fromN(String.valueOf(flowExecution.executionTimeStamp().toEpochSecond()))
         );
+    }
+
+    public List<FlowExecution> getPageByFlowId(String flowId) {
+        return super.getPageById(flowId, DYNAMO_DB_ITEM_MAPPER);
     }
 
 }

@@ -4,15 +4,13 @@ import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.*;
 
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -60,7 +58,7 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
         this.sortKey = sortKey;
     }
 
-    public Optional<T> getById(
+    public Optional<T> getOneById(
             U id,
             Function<Map<String, AttributeValue>, T> mapper
     ) {
@@ -82,16 +80,16 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
         );
     }
 
-    public Optional<T> getById(
+    public Optional<T> getOneById(
             U id,
-            AttributeValue sortKeyValue,
+            AttributeValue sortKeyAttributeValue,
             Function<Map<String, AttributeValue>, T> mapper
     ) {
         GetItemRequest request = GetItemRequest.builder()
                 .tableName(tableName)
                 .key(Map.of(
                         partitionKey, AttributeValue.fromS(id.toString()),
-                        sortKey, sortKeyValue
+                        this.sortKey, sortKeyAttributeValue
                 ))
                 .build();
 
@@ -155,6 +153,25 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
         this.save(itemMap);
 
         return obj;
+    }
+
+    public List<T> getPageById(
+            U id,
+            Function<Map<String, AttributeValue>, T> mapper
+    ) {
+        QueryRequest queryRequest = QueryRequest.builder()
+                .tableName(this.tableName)
+                .keyConditionExpression("#pk = :val")
+                .expressionAttributeNames(
+                        Map.of("#pk", this.partitionKey)
+                ).expressionAttributeValues(
+                        Map.of(":val", AttributeValue.builder().s(id.toString()).build())
+                ).build();
+
+        return this.dynamoDbClient.query(queryRequest)
+                .items().stream()
+                .map(mapper)
+                .toList();
     }
 
     private void save(Map<String, AttributeValue> itemMap) {

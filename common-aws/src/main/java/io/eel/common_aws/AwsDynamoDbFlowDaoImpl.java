@@ -19,9 +19,11 @@ import java.util.function.Function;
 
 public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> implements FlowDao {
 
-    private static final String TABLE_NAME = "eel-flows";
+    private static final String TABLE_NAME = "eel-flows2"; // todo:  change this later when we know this new table schema works.
 
     private static final String PARTITION_KEY = "id";
+
+    private static final String SORT_KEY = "version";
 
     private static final Gson gson = new Gson();
 
@@ -39,7 +41,7 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
      * @param dynamoDbClient {@link DynamoDbClient}
      */
     public AwsDynamoDbFlowDaoImpl(DynamoDbClient dynamoDbClient) {
-        super(dynamoDbClient, TABLE_NAME, PARTITION_KEY);
+        super(dynamoDbClient, TABLE_NAME, PARTITION_KEY, SORT_KEY);
     }
 
     public AwsDynamoDbFlowDaoImpl(
@@ -61,13 +63,26 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
     }
 
     /**
-     * This is a thin wrapper around {@link BaseAwsDynamoDbDao#getById(Object, Function)}
-     * @param canonicalId {@link String}
+     * This is a thin wrapper around {@link BaseAwsDynamoDbDao#getOneById(Object, AttributeValue, Function)}}
+     * @param flowId {@link String}
+     * @param version {@link int}
      * @return {@link Optional<Flow>}
      */
     @Override
-    public Optional<Flow> getFlowByCanonicalId(String canonicalId) {
-        return super.getById(canonicalId, DYNAMO_DB_ITEM_MAPPER);
+    public Optional<Flow> getFlowByIdAndVersion(String flowId, int version) {
+        return super.getOneById(
+                flowId,
+                AttributeValue.fromN(Integer.toString(version)),
+                DYNAMO_DB_ITEM_MAPPER
+        );
+    }
+
+    @Override
+    public Set<Integer> getFlowVersions(UUID flowId) {
+        return super.getPageById(flowId.toString(), DYNAMO_DB_ITEM_MAPPER)
+                .stream()
+                .map(Flow::getVersion)
+                .collect(java.util.stream.Collectors.toSet());
     }
 
     @Override

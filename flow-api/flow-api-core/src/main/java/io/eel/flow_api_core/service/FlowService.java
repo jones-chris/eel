@@ -12,13 +12,15 @@ public interface FlowService {
 
     Flow createNewFlow();
 
-    Flow updateFlow(String canonicalId, Flow newFlow) throws ImmutableFlowException, ResourceNotFoundException;
+    Flow updateFlow(Flow newFlow) throws ImmutableFlowException, ResourceNotFoundException;
 
     Flow incrementFlow(Flow flow);
 
-    Optional<Flow> getFlowByCanonicalId(String canonicalId);
+    Optional<Flow> getFlowByIdAndVersion(String flowId, int version);
 
     Set<UUID> getFlowsByUser(String userName);
+
+    Set<Integer> getFlowVersionsByFlowId(UUID flowId);
 
     String generateTransformationStagingPresignedUrl(UUID flowId);
 

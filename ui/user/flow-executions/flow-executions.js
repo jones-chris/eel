@@ -1,4 +1,4 @@
-import { apiBaseUrl, userName, password } from '../../constants/constants.js';
+import { apiBaseUrl } from '../../constants/constants.js';
 import { getAuthHeader } from '../../utils/auth.js';
 
 let flowId = null;

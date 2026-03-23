@@ -1,6 +1,7 @@
-import { apiBaseUrl, userName, password } from '../../constants/constants.js';
+import { apiBaseUrl } from '../../constants/constants.js';
 import { DestinationService } from '../../shared/services/DestinationService.js';
 import { OutputDestination } from '../../shared/output-destination.js';
+import { getAuthHeader } from '../../utils/auth.js';
 
 let flowId = null;
 let flowVersion = null;
@@ -17,7 +18,7 @@ async function getPresignedUrl() {
     let response = await fetch(`${apiBaseUrl}/flow/transformationLandingUrl?id=${flowId}`, {
          method: 'GET',
          headers: {
-            Authorization: "Basic " + btoa(userName + ":" + password)
+            Authorization: getAuthHeader()
          }
     });
 
@@ -41,7 +42,7 @@ async function getManifest() {
     let response = await fetch(`${apiBaseUrl}/manifest?uuid=${flowId}&version=${flowVersion}`, {
          method: 'GET',
          headers: {
-            Authorization: "Basic " + btoa(userName + ":" + password)
+            Authorization: getAuthHeader()
          }
     });
 
@@ -67,7 +68,7 @@ window.onload = function() {
     fetch(`${apiBaseUrl}/flow/new`, {
         method: 'POST',
         headers: {
-           Authorization: "Basic " + btoa(userName + ":" + password)
+           Authorization: getAuthHeader()
         }
     })
     .then(response => {
@@ -177,7 +178,7 @@ document.getElementById('deployFlow').addEventListener('click', async function()
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            Authorization: "Basic " + btoa(userName + ":" + password)
+            Authorization: getAuthHeader()
         }
     })
 
@@ -231,7 +232,7 @@ async function saveFlow(showAlert) {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
-            Authorization: "Basic " + btoa(userName + ":" + password)
+            Authorization: getAuthHeader()
         },
         body: JSON.stringify(flow)
     })

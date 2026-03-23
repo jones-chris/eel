@@ -153,8 +153,6 @@ public class FlowController extends BaseController {
                         return;
                     }
 
-                    final String canonicalId = Flow.Utils.getCanonicalId(newFlow.getId(), newFlow.getVersion());
-
                     try {
                         Flow persistedFlow = this.flowService.updateFlow(newFlow);
                         ok(response).setBody(gson.toJson(persistedFlow));

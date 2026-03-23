@@ -1,4 +1,5 @@
 import { apiBaseUrl, userName, password } from '../../constants/constants.js';
+import { getAuthHeader } from '../../utils/auth.js';
 
 let flowId = null;
 const state = {
@@ -33,7 +34,7 @@ async function fetchFlowExecutions() {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: "Basic " + btoa(userName + ":" + password)
+                    'Authorization': getAuthHeader()
                 }
             }
         );
@@ -183,4 +184,3 @@ window.onload = function() {
     console.log('Page loaded, fetching flow executions...');
     fetchFlowExecutions();
 }
-

@@ -7,3 +7,4 @@ function removeAllChildNodes(target) {
         target.removeChild(target.firstChild);
     }
 }
+

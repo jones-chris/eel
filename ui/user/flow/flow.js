@@ -1,4 +1,5 @@
-import { apiBaseUrl, userName, password } from '../../constants/constants.js';
+import { apiBaseUrl } from '../../constants/constants.js';
+import { getAuthHeader } from '../../utils/auth.js';
 
 let flowId = null;
 let flowVersion = null;
@@ -35,7 +36,7 @@ async function fetchFlowDetails() {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: "Basic " + btoa(userName + ":" + password)
+                    Authorization: getAuthHeader()
                 }
             }
         );
@@ -196,4 +197,3 @@ window.onload = function() {
     console.log('Page loaded, fetching flow details...');
     fetchFlowDetails();
 }
-

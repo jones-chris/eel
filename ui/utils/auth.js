@@ -1,3 +1,5 @@
+import { userNameJwtKey } from '../constants/constants.js';
+
 // JWT storage key
 const JWT_STORAGE_KEY = 'anyeasel_jwt';
 
@@ -27,4 +29,16 @@ export function getAuthHeader() {
     const username = null; // todo: parameterize this
     const password = null; // todo: parameterize this
     return "Basic " + btoa(username + ":" + password);
+}
+
+export function getUserName() {
+    const jwt = getStoredJWT();
+    if (! jwt) {
+        return null;
+    }
+
+    const base64EncodedPayload = token.split('.')[1];
+    const decodedPayload = JSON.parse(atob(base64EncodedPayload));
+
+    return decodedPayload[userNameJwtKey] || new Error(`JWT does not contain expected claim for username: ${userNameJwtKey}`);
 }

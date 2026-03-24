@@ -1,7 +1,7 @@
 import { apiBaseUrl } from '../../constants/constants.js';
 import { DestinationService } from '../../shared/services/DestinationService.js';
 import { OutputDestination } from '../../shared/output-destination.js';
-import { getAuthHeader } from '../../utils/auth.js';
+import { getAuthHeader, getUserName } from '../../utils/auth.js';
 
 let flowId = null;
 let flowVersion = null;
@@ -219,7 +219,7 @@ async function saveFlow(showAlert) {
     const flow = {
         id: flowId,
         version: flowVersion,
-        author: userName,
+        author: getUserName(),
         inputType: 'SCHEDULED_BATCH',
         scheduledBatchConfiguration: {
             cronExpression: '',

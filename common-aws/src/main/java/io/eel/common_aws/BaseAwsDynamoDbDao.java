@@ -159,8 +159,23 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
             U id,
             Function<Map<String, AttributeValue>, T> mapper
     ) {
-        QueryRequest queryRequest = QueryRequest.builder()
-                .tableName(this.tableName)
+        return this.getPageById(id, null, mapper);
+    }
+
+    public List<T> getPageById(
+            U id,
+            String indexName,
+            Function<Map<String, AttributeValue>, T> mapper
+    ) {
+        QueryRequest.Builder queryRequestBuilder = QueryRequest.builder()
+                .tableName(this.tableName);
+
+        // Add the GSI/LSI to the query request if it is provided.
+        if (indexName != null && ! indexName.isBlank()) {
+            queryRequestBuilder.indexName(indexName);
+        }
+
+        QueryRequest queryRequest = queryRequestBuilder
                 .keyConditionExpression("#pk = :val")
                 .expressionAttributeNames(
                         Map.of("#pk", this.partitionKey)

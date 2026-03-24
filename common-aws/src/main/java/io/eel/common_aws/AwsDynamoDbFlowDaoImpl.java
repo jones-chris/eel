@@ -16,10 +16,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> implements FlowDao {
 
     private static final String TABLE_NAME = "eel-flows2"; // todo:  change this later when we know this new table schema works.
+
+    private static final String USERNAME_INDEX = "userNameIndex";
 
     private static final String PARTITION_KEY = "id";
 
@@ -53,13 +56,16 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
     }
 
     /**
-     * This is a custom DAO method to retrieve all flows IDs for a given username.
+     * Retrieves all flows IDs for a given username/author.
      * @param userName {@link String}
      * @return {@link Set<UUID>}
      */
     @Override
     public Set<UUID> getFlowsByUser(String userName) {
-        return Set.of(); // todo:  add logic for this custom method.
+        return this.getPageById(userName, USERNAME_INDEX, DYNAMO_DB_ITEM_MAPPER)
+                .stream()
+                .map(Flow::getId)
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -87,9 +93,10 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
 
     @Override
     public Flow updateFlow(Flow flow) {
-        return super.save(
+        return super.saveWithSortKey(
                 flow,
-                f -> AttributeValue.fromS(f.getCanonicalId())
+                f -> AttributeValue.fromS(f.getId().toString()),
+                f -> AttributeValue.fromN(Integer.toString(f.getVersion()))
         );
     }
 
@@ -97,17 +104,19 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
     public Flow createNewFlow(String author) {
         final Flow flow = Flow.create(author);
 
-        return super.save(
+        return super.saveWithSortKey(
                 flow,
-                f -> AttributeValue.fromS(f.getCanonicalId())
+                f -> AttributeValue.fromS(f.getId().toString()),
+                f -> AttributeValue.fromN(Integer.toString(f.getVersion()))
         );
     }
 
     @Override
     public Flow incrementFlow(Flow flow) {
-        return super.save(
+        return super.saveWithSortKey(
                 flow,
-                f -> AttributeValue.fromS(f.getCanonicalId())
+                f -> AttributeValue.fromS(f.getId().toString()),
+                f -> AttributeValue.fromN(Integer.toString(f.getVersion()))
         );
     }
 
@@ -116,7 +125,7 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
         try (S3Presigner preSigner = S3Presigner.create()) {
             PutObjectRequest objectRequest = PutObjectRequest.builder()
                     .bucket(STAGING_BUCKET_NAME)
-                    .key(flowId.toString()) // todo:  make this the canonical id instead??
+                    .key(flowId.toString())
                     .contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                     .build();
 

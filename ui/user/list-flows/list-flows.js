@@ -1,5 +1,5 @@
 import { apiBaseUrl } from '../../constants/constants.js';
-import { getAuthHeader } from '../../utils/auth.js';
+import { getAuthHeader, getUserName } from '../../utils/auth.js';
 
 const state = {
     flowIds: [],
@@ -14,7 +14,7 @@ async function fetchFlows() {
 
         // Make the API call to fetch flows
         const response = await fetch(
-            `${apiBaseUrl}/flow/list?userName=${encodeURIComponent(userName)}`,
+            `${apiBaseUrl}/flow/list?userName=${getUserName()}`,
             {
                 method: 'GET',
                 headers: {
@@ -150,7 +150,7 @@ async function fetchFlowVersions(flowId) {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: "Basic " + btoa(userName + ":" + password)
+                    Authorization: getAuthHeader()
                 }
             }
         );

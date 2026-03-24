@@ -51,7 +51,7 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
             DynamoDbClient dynamoDbClient,
             String stagingBucketName
     ) {
-        super(dynamoDbClient, TABLE_NAME, PARTITION_KEY);
+        super(dynamoDbClient, TABLE_NAME, PARTITION_KEY, SORT_KEY);
         STAGING_BUCKET_NAME = stagingBucketName;
     }
 
@@ -93,10 +93,14 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
 
     @Override
     public Flow updateFlow(Flow flow) {
-        return super.saveWithSortKey(
+        return super.save(
                 flow,
                 f -> AttributeValue.fromS(f.getId().toString()),
-                f -> AttributeValue.fromN(Integer.toString(f.getVersion()))
+                f -> Map.of(
+                        SORT_KEY, AttributeValue.fromN(Integer.toString(f.getVersion())),
+                        OBJECT_KEY, AttributeValue.fromS(gson.toJson(f)),
+                        "userName", AttributeValue.fromS(f.getAuthor())
+                )
         );
     }
 
@@ -104,19 +108,27 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
     public Flow createNewFlow(String author) {
         final Flow flow = Flow.create(author);
 
-        return super.saveWithSortKey(
+        return super.save(
                 flow,
                 f -> AttributeValue.fromS(f.getId().toString()),
-                f -> AttributeValue.fromN(Integer.toString(f.getVersion()))
+                f -> Map.of(
+                        SORT_KEY, AttributeValue.fromN(Integer.toString(f.getVersion())),
+                        OBJECT_KEY, AttributeValue.fromS(gson.toJson(f)),
+                        "userName", AttributeValue.fromS(f.getAuthor())
+                )
         );
     }
 
     @Override
     public Flow incrementFlow(Flow flow) {
-        return super.saveWithSortKey(
+        return super.save(
                 flow,
                 f -> AttributeValue.fromS(f.getId().toString()),
-                f -> AttributeValue.fromN(Integer.toString(f.getVersion()))
+                f -> Map.of(
+                        SORT_KEY, AttributeValue.fromN(Integer.toString(f.getVersion())),
+                        OBJECT_KEY, AttributeValue.fromS(gson.toJson(f)),
+                        "userName", AttributeValue.fromS(f.getAuthor())
+                )
         );
     }
 

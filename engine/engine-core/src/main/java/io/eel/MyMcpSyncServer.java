@@ -14,20 +14,24 @@ import java.util.Map;
 
 public class MyMcpSyncServer {
 
-    public static void main(String[] args) {
-        // 1. Initialize the JSON mapper for the transport
+    private static McpSyncServer syncServer;
+
+    public static void main(String[] args) throws Exception {
         McpJsonMapper jsonMapper = new JacksonMcpJsonMapper(new JsonMapper());
 
-        // 2. Initialize the transport (using STDIO for local inter-process comms)
+        // 1. Setup Transport (Keep it simple)
+//        HttpServletSseServerTransportProvider transport = HttpServletSseServerTransportProvider.builder()
+//                .jsonMapper(jsonMapper)
+//                .sseEndpoint("/sse")      // Will be http://localhost:8080/sse
+//                .messageEndpoint("/messages") // Will be http://localhost:8080/messages
+//                .build();
         StdioServerTransportProvider transport = new StdioServerTransportProvider(jsonMapper);
 
-        // 3. Build the Synchronous Server with the transport
-        McpSyncServer syncServer = McpServer.sync(transport)
+
+        // 2. Build the Server (No start() needed after this)
+        syncServer = McpServer.sync(transport)
                 .serverInfo("EEL-MCP-Server", "1.0.0")
-                .capabilities(McpSchema.ServerCapabilities.builder()
-                        .tools(true) // Enable tool capability
-                        .logging()   // Enable logging support
-                        .build())
+                .capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
                 .build();
 
         // 4. Register a Tool
@@ -36,22 +40,37 @@ public class MyMcpSyncServer {
                 "Basic calculator",
                 "Performs basic arithmetic operations",
                 new McpSchema.JsonSchema(
-                        "",
-                        Map.of(),
-                        List.of(),
+                        "object",
+                        Map.of(
+                                "operation", Map.of(
+                                        "type", "string",
+                                        "description", "The operation to perform: add, subtract, multiply, divide"
+                                ),
+                                "a", Map.of(
+                                        "type", "number",
+                                        "description", "The first operand"
+                                ),
+                                "b", Map.of(
+                                        "type", "number",
+                                        "description", "The second operand"
+                                )
+                        ),
+                        List.of("operation", "a", "b"),
                         false,
                         Map.of(),
                         Map.of()
                 ),
-                Map.of(),
-                new McpSchema.ToolAnnotations(
-                        "",
-                        false,
-                        false,
-                        false,
-                        false,
-                        false
-                ),
+                null,
+//                Map.of(),
+                null,
+//                new McpSchema.ToolAnnotations(
+//                        "",
+//                        false,
+//                        false,
+//                        false,
+//                        false,
+//                        false
+//                ),
                 Map.of(
                         "operation", "string",
                         "a", "number",
@@ -97,17 +116,5 @@ public class MyMcpSyncServer {
 
         // Register the handler
         syncServer.addTool(syncToolRegistration);
-
-        // 5. Start the server (this blocks the thread)
-        System.err.println("Starting EEL MCP Sync Server on STDIO...");
-//        try {
-//            transport.runLoop(syncServer);
-//        } catch (Exception e) {
-//            System.err.println("Server error: " + e.getMessage());
-//            e.printStackTrace();
-//        }
-
-        // Keep the application running
-        Runtime.getRuntime().addShutdownHook(new Thread(syncServer::close));
     }
 }

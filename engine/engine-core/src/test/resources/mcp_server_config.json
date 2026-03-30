@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "eel": {
+      "command": "java",
+        "args": [
+            "-jar",
+            "/home/pc/repos/eel/engine/engine-core/target/engine-core-1.0-SNAPSHOT.jar"
+        ]
+    }
+  }
+}

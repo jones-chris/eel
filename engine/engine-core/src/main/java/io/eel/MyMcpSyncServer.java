@@ -1,5 +1,9 @@
 package io.eel;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import io.eel.common.WorkbookValidator;
+import io.eel.service.WorkbookCalculationEngine;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
@@ -11,20 +15,22 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class MyMcpSyncServer {
 
     private static McpSyncServer syncServer;
 
+    private static final WorkbookCalculationEngine engine;
+
+    static {
+        engine = new WorkbookCalculationEngine();
+    }
+
     public static void main(String[] args) throws Exception {
         McpJsonMapper jsonMapper = new JacksonMcpJsonMapper(new JsonMapper());
 
         // 1. Setup Transport (Keep it simple)
-//        HttpServletSseServerTransportProvider transport = HttpServletSseServerTransportProvider.builder()
-//                .jsonMapper(jsonMapper)
-//                .sseEndpoint("/sse")      // Will be http://localhost:8080/sse
-//                .messageEndpoint("/messages") // Will be http://localhost:8080/messages
-//                .build();
         StdioServerTransportProvider transport = new StdioServerTransportProvider(jsonMapper);
 
 
@@ -34,17 +40,22 @@ public class MyMcpSyncServer {
                 .capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
                 .build();
 
+        WorkbookValidator.Manifest manifest = engine.getManifest();
+        List<WorkbookValidator.SheetMetadata> inputMetadata = manifest.inputSheetsMetadata();
+        String sheetName = inputMetadata.getFirst().name();
+
         // 4. Register a Tool
         McpSchema.Tool calculatorTool = new McpSchema.Tool(
                 "calculator",
                 "Basic calculator",
-                "Performs basic arithmetic operations",
+                "Performs basic arithmetic " + sheetName,
+                new MCpSchema.
                 new McpSchema.JsonSchema(
                         "object",
                         Map.of(
-                                "operation", Map.of(
+                                sheetName, Map.of(
                                         "type", "string",
-                                        "description", "The operation to perform: add, subtract, multiply, divide"
+                                        "description", "The " + sheetName + " to perform: add, subtract, multiply, divide"
                                 ),
                                 "a", Map.of(
                                         "type", "number",
@@ -55,7 +66,7 @@ public class MyMcpSyncServer {
                                         "description", "The second operand"
                                 )
                         ),
-                        List.of("operation", "a", "b"),
+                        List.of(sheetName, "a", "b"),
                         false,
                         Map.of(),
                         Map.of()
@@ -72,7 +83,7 @@ public class MyMcpSyncServer {
 //                        false
 //                ),
                 Map.of(
-                        "operation", "string",
+                        sheetName, "string",
                         "a", "number",
                         "b", "number"
                 )

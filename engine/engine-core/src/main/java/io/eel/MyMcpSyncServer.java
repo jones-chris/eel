@@ -1,5 +1,6 @@
 package io.eel;
 
+import com.github.victools.jsonschema.generator.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.eel.common.WorkbookValidator;
@@ -11,7 +12,9 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.List;
 import java.util.Map;
@@ -23,8 +26,19 @@ public class MyMcpSyncServer {
 
     private static final WorkbookCalculationEngine engine;
 
+    private static final ObjectNode manifestJsonSchema;
+
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
     static {
+        // Instantiate the workbook calculation engine (which will load the workbook and manifest)
         engine = new WorkbookCalculationEngine();
+
+        // Generate JSON Schema for the Manifest class.
+        SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2019_09, OptionPreset.PLAIN_JSON);
+        SchemaGeneratorConfig config = configBuilder.build();
+        SchemaGenerator generator = new SchemaGenerator(config);
+        manifestJsonSchema = generator.generateSchema(WorkbookValidator.Manifest.class);
     }
 
     public static void main(String[] args) throws Exception {
@@ -49,7 +63,6 @@ public class MyMcpSyncServer {
                 "calculator",
                 "Basic calculator",
                 "Performs basic arithmetic " + sheetName,
-                new MCpSchema.
                 new McpSchema.JsonSchema(
                         "object",
                         Map.of(
@@ -127,5 +140,49 @@ public class MyMcpSyncServer {
 
         // Register the handler
         syncServer.addTool(syncToolRegistration);
+        syncServer.addTool(buildManifestTool());
+    }
+
+    private static McpServerFeatures.SyncToolSpecification buildManifestTool() {
+        McpSchema.Tool manifestTool = McpSchema.Tool.builder()
+                .name("Get MicroTransformer Manifest for " + engine.getManifest().name())
+                .title("Get the manifest of the MicroTransformer " + engine.getManifest().name())
+                .description(
+                        String.format(
+                                """
+                                Gets the manifest of the MicroTransformer %s, which includes metadata about the input
+                                sheets and output sheets
+                                """,
+                                engine.getManifest().name()
+                        )
+                )
+                .inputSchema(new McpSchema.JsonSchema(
+                        "object",
+                        Map.of(),
+                        List.of(),
+                        false,
+                        Map.of(),
+                        Map.of()
+                ))
+                .outputSchema(
+                        Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                        "manifest", Map.of("type", "object")
+                                )
+                        )
+                )
+                .meta(
+                        Map.of("manifest", "object")
+                )
+                .build();
+
+        return new McpServerFeatures.SyncToolSpecification(
+                manifestTool,
+                (mcpSyncServerExchange, callToRequest) -> McpSchema.CallToolResult.builder()
+                        .isError(false)
+                        .structuredContent(engine.getManifest())
+                        .build()
+        );
     }
 }

@@ -129,6 +129,42 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
         throw Error(`Received status of ${response.status}`)
     }
 
+    // If the upload was successful, but the "Build Artifact Only" checkbox is checked, then we attempt to download the artifact and skip rendering the manifest.
+    if (document.getElementById('uploadCheckbox').checked) {
+        try {
+            // Call the /artifact/build endpoint
+            let buildResponse = await fetch(`${apiBaseUrl}/artifact/build?uuid=${flowId}&version=${flowVersion}`, {
+                method: 'POST',
+                headers: {
+                    Authorization: getAuthHeader()
+                }
+            });
+
+            if (buildResponse.status !== 200) {
+                throw new Error(`Failed to build artifact: ${buildResponse.status}`);
+            }
+
+            let buildData = await buildResponse.json();
+            let presignedUrl = buildData.url;
+
+            // Download the artifact
+            let downloadLink = document.createElement('a');
+            downloadLink.href = presignedUrl;
+            downloadLink.download = 'artifact.jar'; // or whatever filename
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+
+            alert('Artifact built and download initiated.');
+        } catch (error) {
+            console.error('Error building or downloading artifact:', error);
+            alert('There was an error building the artifact. Please contact your administrator.');
+        }
+
+        toggleLoading();
+        return; // Skip manifest rendering
+    }
+
     alert('Workbook successfully uploaded.  Inspecting workbook.')
 
     // Attempts to get the manifest with backoff.

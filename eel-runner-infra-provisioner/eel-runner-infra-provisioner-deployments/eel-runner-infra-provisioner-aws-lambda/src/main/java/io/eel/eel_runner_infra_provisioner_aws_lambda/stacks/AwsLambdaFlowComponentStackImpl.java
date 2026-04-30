@@ -2,6 +2,7 @@ package io.eel.eel_runner_infra_provisioner_aws_lambda.stacks;
 
 import io.eel.common.EelPackager;
 import io.eel.common.model.Flow;
+import io.eel.common_aws.util.S3Utils;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
@@ -61,7 +62,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
     private final Collection<Tag> iamResourceTags;
 
-    private final S3Client s3Client;
+    private final S3Utils s3Utils;
 
     private final IamClient iamClient;
 
@@ -80,7 +81,7 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
 
         // Instantiate clients.
         this.iamResourceTags = this.buildTags();
-        this.s3Client = s3Client;
+        this.s3Utils = new S3Utils(s3Client);
         this.iamClient = iamClient;
         this.lambdaClient = lambdaClient;
         this.cloudWatchLogsClient = cloudWatchLogsClient;
@@ -89,15 +90,11 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         this.addExpectedProvisionedResources(
                 AWS_LAMBDA_EVENT_SOURCE_MAPPING_UUID,
                 AWS_LAMBDA_FUNCTION_IAM_ROLE_NAME,
-//                AWS_LAMBDA_IAM_ROLE_POLICY_NAME,
-//                AWS_LAMBDA_FUNCTION_IAM_POLICY_ARN,
-//                AWS_LAMBDA_FUNCTION_IAM_POLICY_NAME,
                 AWS_LAMBDA_FUNCTION_NAME
         );
 
         // Add rollback actions.
         super.addRollbackAction(RollbackActions.deleteRole(AWS_LAMBDA_FUNCTION_IAM_ROLE_NAME, this.iamClient))
-//                .addRollbackAction(RollbackActions.deleteRolePolicy(AWS_LAMBDA_IAM_ROLE_POLICY_NAME, this.iamClient))
                 .addRollbackAction(RollbackActions.deleteLambdaFunction(this.lambdaClient))
                 .addRollbackAction(RollbackActions.deleteLambdaEventSourceMapping(this.lambdaClient));
     }
@@ -106,8 +103,8 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
     public boolean deploy(Flow flow) {
         try {
             // Build the Lambda EEL jar artifact.
-            InputStream originalJarInputStream = this.getS3ObjectAsInputStream(ORIGINAL_EEL_JAR_BUCKET, ORIGINAL_EEL_JAR_KEY);
-            InputStream excelInputStream = this.getS3ObjectAsInputStream(EEL_TRANSFORMATIONS_BUCKET_NAME, flow.getCanonicalId());
+            InputStream originalJarInputStream = this.s3Utils.getS3ObjectAsInputStream(ORIGINAL_EEL_JAR_BUCKET, ORIGINAL_EEL_JAR_KEY);
+            InputStream excelInputStream = this.s3Utils.getS3ObjectAsInputStream(EEL_TRANSFORMATIONS_BUCKET_NAME, flow.getCanonicalId());
 
             final File eelJar = EelPackager.build(originalJarInputStream, excelInputStream);
 
@@ -137,16 +134,16 @@ public class AwsLambdaFlowComponentStackImpl extends FlowComponentStack {
         }
     }
 
-    private InputStream getS3ObjectAsInputStream(String bucket, String key) {
-        GetObjectRequest request = GetObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
-                .build();
-
-        ResponseBytes<GetObjectResponse> s3Object = this.s3Client.getObject(request, ResponseTransformer.toBytes());
-
-        return s3Object.asInputStream();
-    }
+//    private InputStream getS3ObjectAsInputStream(String bucket, String key) {
+//        GetObjectRequest request = GetObjectRequest.builder()
+//                .bucket(bucket)
+//                .key(key)
+//                .build();
+//
+//        ResponseBytes<GetObjectResponse> s3Object = this.s3Client.getObject(request, ResponseTransformer.toBytes());
+//
+//        return s3Object.asInputStream();
+//    }
 
     private void provisionEventSourceMapping(String lambdaFunctionName) {
         String inputQueueArn = this.getDependentResource(AWS_SQS_INPUT_QUEUE_ARN).orElseThrow();

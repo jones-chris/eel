@@ -26,15 +26,15 @@ export function getAuthHeader() {
     }
 
     // Fallback to basic auth for development/testing
-    const username = null; // todo: parameterize this
-    const password = null; // todo: parameterize this
+    const username = ''; // todo: parameterize this
+    const password = ''; // todo: parameterize this
     return "Basic " + btoa(username + ":" + password);
 }
 
 export function getUserName() {
     const jwt = getStoredJWT();
     if (! jwt) {
-        return null;
+        return 'eel-tester';
     }
 
     const base64EncodedPayload = token.split('.')[1];

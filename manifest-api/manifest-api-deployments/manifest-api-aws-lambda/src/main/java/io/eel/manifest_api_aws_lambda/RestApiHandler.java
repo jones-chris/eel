@@ -11,6 +11,7 @@ import io.eel.manifest_api_aws_lambda.dao.AwsDynamoDbManifestDaoImpl;
 import io.eel.common_aws.AwsS3WorkbookDaoImpl;
 import io.eel.manifest_generator_core.ManifestController;
 import io.eel.manifest_generator_core.service.ManifestServiceImpl;
+import io.eel.manifest_generator_core.service.TransformationJarServiceImpl;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -26,11 +27,14 @@ public class RestApiHandler implements RequestHandler<Map<String, Object>, HttpR
     private final static BaseController manifestController;
 
     static {
+        S3Client s3Client = S3Client.create();
+
         manifestController = new ManifestController(
                 new ManifestServiceImpl(
-                        new AwsS3WorkbookDaoImpl(S3Client.builder().build()),
+                        new AwsS3WorkbookDaoImpl(s3Client),
                         new AwsDynamoDbManifestDaoImpl(DynamoDbClient.create())
-                )
+                ),
+                new TransformationJarServiceImpl(s3Client)
         );
     }
 

@@ -1,6 +1,7 @@
 package io.eel.flow_api_core.service;
 
 import io.eel.common.model.Flow;
+import io.eel.common.model.TransformationExtractionType;
 import io.eel.flow_api_core.exception.ImmutableFlowException;
 import io.eel.flow_api_core.exception.ResourceNotFoundException;
 
@@ -22,7 +23,7 @@ public interface FlowService {
 
     Set<Integer> getFlowVersionsByFlowId(UUID flowId);
 
-    String generateTransformationStagingPresignedUrl(UUID flowId);
+    String generateTransformationStagingPresignedUrl(UUID flowId, TransformationExtractionType extractionType);
 
     Flow finalizeFlow(Flow flow);
 

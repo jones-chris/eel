@@ -5,9 +5,8 @@ import io.eel.common.http.BaseController;
 import io.eel.common.model.Flow;
 import io.eel.common.model.WorkbookMetadata;
 import io.eel.manifest_generator_core.service.ManifestService;
-import io.eel.manifest_generator_core.service.TransformationJarService;
+import io.eel.manifest_generator_core.service.ArtifactService;
 
-import java.io.File;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,17 +17,17 @@ public class ManifestController extends BaseController {
 
     private ManifestService manifestService;
 
-    private TransformationJarService transformationJarService;
+    private ArtifactService artifactService;
 
     private ManifestController() {
         super();
     }
 
-    public ManifestController(ManifestService manifestService, TransformationJarService transformationJarService) {
+    public ManifestController(ManifestService manifestService, ArtifactService artifactService) {
         super();
 
         this.manifestService = manifestService;
-        this.transformationJarService = transformationJarService;
+        this.artifactService = artifactService;
 
         this.addRouteHandler(
                 GET, "/manifest",
@@ -73,29 +72,28 @@ public class ManifestController extends BaseController {
                     created(response).setBody(gson.toJson(manifest));
                 }
         ).addRouteHandler(
-                POST, "/artifact/build",
+                GET, "/artifact",
                 (request, response) -> {
                     Optional<UUID> manifestUuid = Optional.ofNullable(request.getQueryParameters().get("uuid").getFirst())
                             .map(UUID::fromString);
 
-                    Optional<Integer> manifestVersion = Optional.ofNullable(request.getQueryParameters().get("version").getFirst())
-                            .map(Integer::parseInt);
-
-                    if (manifestUuid.isEmpty() || manifestVersion.isEmpty()) {
+                    if (manifestUuid.isEmpty()) {
                         clientError(response);
                         return;
                     }
 
-                    String flowCanonicalId = Flow.Utils.getCanonicalId(manifestUuid.get(), manifestVersion.get());
+                    String flowCanonicalId = Flow.Utils.getCanonicalId(manifestUuid.get(), 0);
 
-                    final String presignedUrl = this.transformationJarService.buildJar(flowCanonicalId);
-                    log.info("Generated presigned URL: " + presignedUrl);
-
-                    ok(response)
-                            .setBody(
-                                    gson.toJson(
-                                            Map.of("url", presignedUrl)
-                                    )
+                    // Look item up in DDB.
+                    this.artifactService.getArtifactBuild(flowCanonicalId)
+                            .ifPresentOrElse(
+                                    artifactBuild -> ok(response)
+                                            .setBody(
+                                                    gson.toJson(
+                                                            Map.of("url", artifactService.getPresignedUrl(flowCanonicalId))
+                                                    )
+                                            ),
+                                    () -> notFound(response)
                             );
                 }
         );

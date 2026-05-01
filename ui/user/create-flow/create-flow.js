@@ -15,7 +15,9 @@ let destinationsService = new DestinationService(apiBaseUrl);
 
 
 async function getPresignedUrl() {
-    let response = await fetch(`${apiBaseUrl}/flow/transformationLandingUrl?id=${flowId}`, {
+    const extractionType = document.getElementById('uploadCheckbox').checked ? 'artifact' : 'manifest';
+
+    let response = await fetch(`${apiBaseUrl}/flow/transformationLandingUrl?id=${flowId}&type=${extractionType}`, {
          method: 'GET',
          headers: {
             Authorization: getAuthHeader()

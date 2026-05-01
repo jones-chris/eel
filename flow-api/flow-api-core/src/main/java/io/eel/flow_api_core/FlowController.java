@@ -6,6 +6,7 @@ import io.eel.common.http.BaseController;
 import io.eel.common.http.HttpRequest;
 import io.eel.common.model.Flow;
 import io.eel.common.model.FlowExecution;
+import io.eel.common.model.TransformationExtractionType;
 import io.eel.flow_api_core.exception.ImmutableFlowException;
 import io.eel.flow_api_core.exception.ResourceNotFoundException;
 import io.eel.flow_api_core.service.FlowExecutionService;
@@ -213,8 +214,19 @@ public class FlowController extends BaseController {
                         return;
                     }
 
+                    TransformationExtractionType extractionType = Optional.ofNullable(request.getQueryParameters().get("type"))
+                            .filter(list -> ! list.isEmpty())
+                            .map(List::getFirst)
+                            .map(TransformationExtractionType::valueOf)
+                            .orElseThrow(() -> {;
+                                String message = "No 'type' query parameter or empty 'type' query parameter value.  'type' query parameter is required and must be one of: " + Arrays.toString(TransformationExtractionType.values());
+
+                                log.severe(message);
+                                return new IllegalArgumentException(message);
+                            });
+
                     final UUID flowId = UUID.fromString(request.getQueryParameters().get("id").getFirst());
-                    final String transformationLandingUrl = this.flowService.generateTransformationStagingPresignedUrl(flowId);
+                    final String transformationLandingUrl = this.flowService.generateTransformationStagingPresignedUrl(flowId, extractionType);
 
                     ok(response).setBody(
                             gson.toJson(

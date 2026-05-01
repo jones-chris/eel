@@ -2,6 +2,7 @@ package io.eel.flow_api_core.service;
 
 import io.eel.common.model.Flow;
 import io.eel.common.dao.FlowDao;
+import io.eel.common.model.TransformationExtractionType;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowInfrastructureActionRequestDto;
 import io.eel.flow_api_core.dao.FlowInfrastructureActionQueueDao;
 import io.eel.flow_api_core.exception.ImmutableFlowException;
@@ -84,8 +85,8 @@ public class FlowServiceImpl implements FlowService {
     }
 
     @Override
-    public String generateTransformationStagingPresignedUrl(UUID flowId) {
-        return this.flowDao.generateTransformationStagingPresignedUrl(flowId);
+    public String generateTransformationStagingPresignedUrl(UUID flowId, TransformationExtractionType extractionType) {
+        return this.flowDao.generateTransformationStagingPresignedUrl(flowId, extractionType);
     }
 
     @Override

@@ -7,11 +7,12 @@ import io.eel.common.http.HttpRequest;
 import io.eel.common.http.HttpResponse;
 import io.eel.common.mappers.RequestMapper;
 import io.eel.common.mappers.aws.ApiGatewayProxyRequestMapper;
+import io.eel.manifest_api_aws_lambda.dao.AwsDynamoDbArtifactDaoImpl;
 import io.eel.manifest_api_aws_lambda.dao.AwsDynamoDbManifestDaoImpl;
 import io.eel.common_aws.AwsS3WorkbookDaoImpl;
 import io.eel.manifest_generator_core.ManifestController;
 import io.eel.manifest_generator_core.service.ManifestServiceImpl;
-import io.eel.manifest_generator_core.service.TransformationJarServiceImpl;
+import io.eel.manifest_generator_core.service.ArtifactServiceImpl;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -28,13 +29,17 @@ public class RestApiHandler implements RequestHandler<Map<String, Object>, HttpR
 
     static {
         S3Client s3Client = S3Client.create();
+        DynamoDbClient dynamoDbClient = DynamoDbClient.create();
 
         manifestController = new ManifestController(
                 new ManifestServiceImpl(
                         new AwsS3WorkbookDaoImpl(s3Client),
-                        new AwsDynamoDbManifestDaoImpl(DynamoDbClient.create())
+                        new AwsDynamoDbManifestDaoImpl(dynamoDbClient)
                 ),
-                new TransformationJarServiceImpl(s3Client)
+                new ArtifactServiceImpl(
+                        s3Client,
+                        new AwsDynamoDbArtifactDaoImpl(dynamoDbClient)
+                )
         );
     }
 

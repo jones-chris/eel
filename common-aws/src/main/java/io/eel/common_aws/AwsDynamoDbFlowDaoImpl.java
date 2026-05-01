@@ -133,11 +133,11 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
     }
 
     @Override
-    public String generateTransformationStagingPresignedUrl(UUID flowId) {
+    public String generateTransformationStagingPresignedUrl(UUID flowId, TransformationExtractionType extractionType) {
         try (S3Presigner preSigner = S3Presigner.create()) {
             PutObjectRequest objectRequest = PutObjectRequest.builder()
                     .bucket(STAGING_BUCKET_NAME)
-                    .key(flowId.toString())
+                    .key(extractionType.getPrefix() + flowId.toString())
                     .contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                     .build();
 

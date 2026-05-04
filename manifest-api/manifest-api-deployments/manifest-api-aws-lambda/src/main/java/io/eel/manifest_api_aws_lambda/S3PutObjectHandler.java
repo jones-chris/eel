@@ -61,21 +61,20 @@ public class S3PutObjectHandler implements RequestHandler<S3Event, String> {
                         String bucket = record.getS3().getBucket().getName();
                         String key = record.getS3().getObject().getUrlDecodedKey();
 
-                        if (key.startsWith(TransformationExtractionType.MANIFEST.getPrefix())) {
-                            log.info("Getting workbook at bucket {} and key {} to build manifest", bucket, key);
-
-                            // todo: get the workbook metadata somehow.  Get it from the flow??
-                            final WorkbookMetadata workbookMetadata = new WorkbookMetadata("me", "myEelTransformation", 0);
-
-                            manifestService.createManifest(bucket, key, workbookMetadata);
-                        } else if (key.startsWith(TransformationExtractionType.ARTIFACT.getPrefix())) {
+                        // todo:  Add this back when we're ready to generate manifests for use in flows.
+//                        if (key.startsWith(TransformationExtractionType.MANIFEST.getPrefix())) {
+//                            log.info("Getting workbook at bucket {} and key {} to build manifest", bucket, key);
+//
+//                            // todo: get the workbook metadata somehow.  Get it from the flow?  No, get it from wo
+//                            final WorkbookMetadata workbookMetadata = new WorkbookMetadata("me", "myEelTransformation", 0);
+//
+//                            manifestService.createManifest(bucket, key, workbookMetadata);
+//                        }
+//                        else
+                        if (key.startsWith(TransformationExtractionType.ARTIFACT.getPrefix())) {
                             log.info("Getting workbook at bucket {} and key {} to build artifact", bucket, key);
 
-                            String strippedKey = key.replace(TransformationExtractionType.ARTIFACT.getPrefix(), "");
-
-                            String canonicalId = Flow.Utils.getCanonicalId(UUID.fromString(strippedKey), 0);
-
-                            transformationJarService.buildJar(canonicalId);
+                            transformationJarService.buildJar(bucket, key);
                         } else {
                             log.warn("Received S3 event for object with key {} which does not match expected prefixes", key);
                             throw new RuntimeException("Unexpected S3 object key prefix");

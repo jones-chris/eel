@@ -1,6 +1,7 @@
 package io.eel.manifest_generator_core.service;
 
 import io.eel.common.EelPackager;
+import io.eel.common.model.Flow;
 import io.eel.common.model.TransformationExtractionType;
 import io.eel.common_aws.util.S3Utils;
 import io.eel.manifest_generator_core.model.ArtifactBuild;
@@ -16,6 +17,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.UUID;
 
 public class ArtifactServiceImpl implements ArtifactService {
 
@@ -23,7 +25,7 @@ public class ArtifactServiceImpl implements ArtifactService {
 
     private static final String ORIGINAL_EEL_JAR_KEY;
 
-    private static final String EEL_TRANSFORMATIONS_BUCKET_NAME;
+//    private static final String EEL_TRANSFORMATIONS_BUCKET_NAME;
 
     private static final String JAR_BUCKET_NAME;
 
@@ -40,8 +42,8 @@ public class ArtifactServiceImpl implements ArtifactService {
         ORIGINAL_EEL_JAR_KEY = Optional.ofNullable(System.getenv("ORIGINAL_EEL_JAR_KEY"))
                 .orElseThrow(() -> new RuntimeException("Environment variable ORIGINAL_EEL_JAR_KEY is not set"));
 
-        EEL_TRANSFORMATIONS_BUCKET_NAME = Optional.ofNullable(System.getenv("EEL_TRANSFORMATIONS_BUCKET_NAME"))
-                .orElseThrow(() -> new RuntimeException("Environment variable EEL_TRANSFORMATIONS_BUCKET_NAME is not set"));
+//        EEL_TRANSFORMATIONS_BUCKET_NAME = Optional.ofNullable(System.getenv("EEL_TRANSFORMATIONS_BUCKET_NAME"))
+//                .orElseThrow(() -> new RuntimeException("Environment variable EEL_TRANSFORMATIONS_BUCKET_NAME is not set"));
 
         JAR_BUCKET_NAME = Optional.ofNullable(System.getenv("JAR_BUCKET_NAME"))
                 .orElseThrow(() -> new RuntimeException("Environment variable JAR_BUCKET_NAME is not set"));
@@ -80,15 +82,30 @@ public class ArtifactServiceImpl implements ArtifactService {
     }
 
     @Override
-    public void buildJar(String flowCanonicalId) {
-        InputStream originalJarInputStream = this.s3Utils.getS3ObjectAsInputStream(ORIGINAL_EEL_JAR_BUCKET, ORIGINAL_EEL_JAR_KEY);
-        InputStream excelInputStream = this.s3Utils.getS3ObjectAsInputStream(EEL_TRANSFORMATIONS_BUCKET_NAME, flowCanonicalId);
+    public void buildJar(String bucket, String key) {
+        String canonicalId = null;
+        ArtifactBuild artifactBuild = null;
 
-        final File eelJar = EelPackager.build(originalJarInputStream, excelInputStream);
+        try {
+            InputStream originalJarInputStream = this.s3Utils.getS3ObjectAsInputStream(ORIGINAL_EEL_JAR_BUCKET, ORIGINAL_EEL_JAR_KEY);
+            InputStream excelInputStream = this.s3Utils.getS3ObjectAsInputStream(bucket, key);
 
-        this.uploadJarToS3(eelJar, flowCanonicalId);
+            final File eelJar = EelPackager.build(originalJarInputStream, excelInputStream);
 
-        // todo:  Write entry to DDB with error (if failure) or link (if successful)
+            String strippedKey = key.replace(TransformationExtractionType.ARTIFACT.getPrefix(), "");
+            canonicalId = Flow.Utils.getCanonicalId(UUID.fromString(strippedKey), 0);
+
+            this.uploadJarToS3(eelJar, canonicalId);
+
+            // Write entry to DDB with error (if failure) or link (if successful)
+            artifactBuild = new ArtifactBuild(canonicalId, JAR_BUCKET_NAME, canonicalId, null);
+        } catch (Throwable t) {
+            // todo:  fix this logging later.
+            t.printStackTrace();
+            artifactBuild = new ArtifactBuild(canonicalId, JAR_BUCKET_NAME, canonicalId, t.getMessage());
+        } finally {
+            this.artifactDao.saveArtifactBuild(artifactBuild);
+        }
     }
 
     @Override
@@ -96,6 +113,7 @@ public class ArtifactServiceImpl implements ArtifactService {
         return this.artifactDao.getArtifactBuild(flowCanonicalId);
     }
 
+    // todo: This should be in a DAO class.
     private void uploadJarToS3(File jarFile, String flowId) {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(JAR_BUCKET_NAME)

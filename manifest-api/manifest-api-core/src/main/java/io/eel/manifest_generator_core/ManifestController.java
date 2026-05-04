@@ -72,17 +72,18 @@ public class ManifestController extends BaseController {
                     created(response).setBody(gson.toJson(manifest));
                 }
         ).addRouteHandler(
-                GET, "/artifact",
+                // todo: Fix this route later.  For some reason API GW only works with the `/manifest` path.
+                PUT, "/manifest",
                 (request, response) -> {
-                    Optional<UUID> manifestUuid = Optional.ofNullable(request.getQueryParameters().get("uuid").getFirst())
+                    Optional<UUID> uuid = Optional.ofNullable(request.getQueryParameters().get("uuid").getFirst())
                             .map(UUID::fromString);
 
-                    if (manifestUuid.isEmpty()) {
+                    if (uuid.isEmpty()) {
                         clientError(response);
                         return;
                     }
 
-                    String flowCanonicalId = Flow.Utils.getCanonicalId(manifestUuid.get(), 0);
+                    String flowCanonicalId = Flow.Utils.getCanonicalId(uuid.get(), 0);
 
                     // Look item up in DDB.
                     this.artifactService.getArtifactBuild(flowCanonicalId)

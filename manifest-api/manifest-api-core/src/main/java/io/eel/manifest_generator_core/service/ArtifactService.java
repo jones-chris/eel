@@ -8,7 +8,7 @@ public interface ArtifactService {
 
     String getPresignedUrl(String flowCanonicalId);
 
-    void buildJar(String flowCanonicalId);
+    void buildJar(String bucket, String key);
 
     Optional<ArtifactBuild> getArtifactBuild(String flowCanonicalId);
 

@@ -15,7 +15,8 @@ let destinationsService = new DestinationService(apiBaseUrl);
 
 
 async function getPresignedUrl() {
-    const extractionType = document.getElementById('uploadCheckbox').checked ? 'artifact' : 'manifest';
+//    const extractionType = document.getElementById('uploadCheckbox').checked ? 'artifact' : 'manifest';
+    const extractionType = 'artifact';  // todo:  only allow artifact extraction types for now.
 
     let response = await fetch(`${apiBaseUrl}/flow/transformationLandingUrl?id=${flowId}&type=${extractionType}`, {
          method: 'GET',
@@ -61,6 +62,29 @@ async function getManifest() {
         console.error(errorMessage);
         alert('There was an error retrieving the xlsx manifest.  Please contact your administrator');
 
+        throw Error(errorMessage);
+    }
+}
+
+async function buildArtifact() {
+    let response = await fetch(`${apiBaseUrl}/manifest?uuid=${flowId}`, {
+         method: 'PUT',
+         headers: {
+            Authorization: getAuthHeader()
+         }
+    });
+
+    if (response.status === 404) {
+        return null;
+    } else if (response.status === 200) {
+        let data = await response.json();
+        console.log(`artifact data is ${JSON.stringify(data)}`);
+
+        return data;
+    } else {
+        const errorMessage = `Received status of ${response.status} when building the artifact`;
+
+        console.error(errorMessage);
         throw Error(errorMessage);
     }
 }
@@ -134,30 +158,42 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
     // If the upload was successful, but the "Build Artifact Only" checkbox is checked, then we attempt to download the artifact and skip rendering the manifest.
     if (document.getElementById('uploadCheckbox').checked) {
         try {
-            // Call the /artifact/build endpoint
-            let buildResponse = await fetch(`${apiBaseUrl}/artifact/build?uuid=${flowId}&version=${flowVersion}`, {
-                method: 'POST',
-                headers: {
-                    Authorization: getAuthHeader()
+            // Attempts to build the artifact with backoff.
+            let buildData = null;
+            const maxAttempts = 5;
+            let attemptNumber = 0;
+            let sleepInSeconds = 4;
+            do {
+                buildData = await buildArtifact();
+                if (buildData === null) {
+                    attemptNumber++;
+                    sleepInSeconds = sleepInSeconds * attemptNumber;
+                } else {
+                    break;
                 }
-            });
 
-            if (buildResponse.status !== 200) {
-                throw new Error(`Failed to build artifact: ${buildResponse.status}`);
+                if (attemptNumber >= maxAttempts) {
+                    alert('There was an error building the artifact.  Please contact your administrator');
+                    break;
+                }
+
+                console.log(`Sleeping for ${sleepInSeconds} seconds`)
+                await sleep(sleepInSeconds)
+            } while (attemptNumber < maxAttempts)
+
+            if (buildData !== null) {
+                let presignedUrl = buildData.url;
+
+                // Download the artifact
+                let downloadLink = document.createElement('a');
+                downloadLink.href = presignedUrl;
+                downloadLink.download = 'artifact.jar'; // or whatever filename
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                alert('Artifact built and download initiated.');
             }
-
-            let buildData = await buildResponse.json();
-            let presignedUrl = buildData.url;
-
-            // Download the artifact
-            let downloadLink = document.createElement('a');
-            downloadLink.href = presignedUrl;
-            downloadLink.download = 'artifact.jar'; // or whatever filename
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-
-            alert('Artifact built and download initiated.');
         } catch (error) {
             console.error('Error building or downloading artifact:', error);
             alert('There was an error building the artifact. Please contact your administrator.');
@@ -295,9 +331,9 @@ async function saveFlow(showAlert) {
 function toggleFlowUploadElements(dropDownItemIdToShow) {
     const dropDownItemIdToFlowUploadElementIds = {
         "xlsxFile": "xlsxTransformationUpload",
-        "sqlScript": "sqlScriptTransformationUpload",
-        "pythonScript": "pythonScriptTransformationUpload",
-        "pythonZipFile": "pythonZipFileTransformationUpload"
+//        "sqlScript": "sqlScriptTransformationUpload",
+//        "pythonScript": "pythonScriptTransformationUpload",
+//        "pythonZipFile": "pythonZipFileTransformationUpload"
     };
 
     let flowUploadElementIdToShow = dropDownItemIdToFlowUploadElementIds[dropDownItemIdToShow];

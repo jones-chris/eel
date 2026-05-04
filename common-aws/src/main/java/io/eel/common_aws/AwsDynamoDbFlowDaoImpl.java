@@ -11,10 +11,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -96,10 +93,14 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
         return super.save(
                 flow,
                 f -> AttributeValue.fromS(f.getId().toString()),
-                f -> Map.of(
-                        SORT_KEY, AttributeValue.fromN(Integer.toString(f.getVersion())),
-                        OBJECT_KEY, AttributeValue.fromS(gson.toJson(f)),
-                        "userName", AttributeValue.fromS(f.getAuthor())
+                // Need to wrap Map#of with a new HashMap because Map.of returns an immutable map, and DynamoDbClient's
+                // putItem requires a mutable map since it modifies the map to add some additional metadata fields.
+                f -> new HashMap<>(
+                        Map.of(
+                                SORT_KEY, AttributeValue.fromN(Integer.toString(f.getVersion())),
+                                OBJECT_KEY, AttributeValue.fromS(gson.toJson(f)),
+                                "userName", AttributeValue.fromS(f.getAuthor())
+                        )
                 )
         );
     }
@@ -111,10 +112,12 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
         return super.save(
                 flow,
                 f -> AttributeValue.fromS(f.getId().toString()),
-                f -> Map.of(
-                        SORT_KEY, AttributeValue.fromN(Integer.toString(f.getVersion())),
-                        OBJECT_KEY, AttributeValue.fromS(gson.toJson(f)),
-                        "userName", AttributeValue.fromS(f.getAuthor())
+                f -> new HashMap<>(
+                        Map.of(
+                                SORT_KEY, AttributeValue.fromN(Integer.toString(f.getVersion())),
+                                OBJECT_KEY, AttributeValue.fromS(gson.toJson(f)),
+                                "userName", AttributeValue.fromS(f.getAuthor())
+                        )
                 )
         );
     }
@@ -124,10 +127,12 @@ public class AwsDynamoDbFlowDaoImpl extends BaseAwsDynamoDbDao<Flow, String> imp
         return super.save(
                 flow,
                 f -> AttributeValue.fromS(f.getId().toString()),
-                f -> Map.of(
-                        SORT_KEY, AttributeValue.fromN(Integer.toString(f.getVersion())),
-                        OBJECT_KEY, AttributeValue.fromS(gson.toJson(f)),
-                        "userName", AttributeValue.fromS(f.getAuthor())
+                f -> new HashMap<>(
+                        Map.of(
+                                SORT_KEY, AttributeValue.fromN(Integer.toString(f.getVersion())),
+                                OBJECT_KEY, AttributeValue.fromS(gson.toJson(f)),
+                                "userName", AttributeValue.fromS(f.getAuthor())
+                        )
                 )
         );
     }

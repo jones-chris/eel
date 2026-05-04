@@ -217,7 +217,7 @@ public class FlowController extends BaseController {
                     TransformationExtractionType extractionType = Optional.ofNullable(request.getQueryParameters().get("type"))
                             .filter(list -> ! list.isEmpty())
                             .map(List::getFirst)
-                            .map(TransformationExtractionType::valueOf)
+                            .map(type -> TransformationExtractionType.valueOf(type.toUpperCase()))
                             .orElseThrow(() -> {;
                                 String message = "No 'type' query parameter or empty 'type' query parameter value.  'type' query parameter is required and must be one of: " + Arrays.toString(TransformationExtractionType.values());
 

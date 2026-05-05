@@ -62,7 +62,7 @@ public class ArtifactServiceImpl implements ArtifactService {
         try (S3Presigner preSigner = S3Presigner.create()) {
             GetObjectRequest objectRequest = GetObjectRequest.builder()
                     .bucket(JAR_BUCKET_NAME)
-                    .key(TransformationExtractionType.ARTIFACT.getPrefix() + flowCanonicalId)
+                    .key(flowCanonicalId)
                     .build();
 
             GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()

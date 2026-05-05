@@ -163,12 +163,15 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
 
     // If the upload was successful, but the "Build Artifact Only" checkbox is checked, then we attempt to download the artifact and skip rendering the manifest.
     if (document.getElementById('uploadCheckbox').checked) {
+        await sleep(30);
+        alert("Building Artifact.  This may take a couple minutes. Please be patient and stay on this page.")
+
         try {
             // Attempts to build the artifact with backoff.
             let buildData = null;
             const maxAttempts = 5;
             let attemptNumber = 0;
-            let sleepInSeconds = 4;
+            let sleepInSeconds = 10;
             do {
                 buildData = await buildArtifact();
                 if (buildData === null) {

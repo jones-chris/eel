@@ -4,7 +4,7 @@
       "command": "java",
         "args": [
             "-jar",
-            "/home/pc/repos/eel/engine/engine-core/target/engine-core-1.0-SNAPSHOT.jar"
+            "\"/home/pc/Downloads/297ad7ad-fe93-4d35-a674-c0ce9b64654c#0\""
         ]
     }
   }

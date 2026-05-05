@@ -71,14 +71,14 @@ public class S3PutObjectHandler implements RequestHandler<S3Event, String> {
 //                            manifestService.createManifest(bucket, key, workbookMetadata);
 //                        }
 //                        else
-                        if (key.startsWith(TransformationExtractionType.ARTIFACT.getPrefix())) {
+//                        if (key.startsWith(TransformationExtractionType.ARTIFACT.getPrefix())) {
                             log.info("Getting workbook at bucket {} and key {} to build artifact", bucket, key);
 
                             transformationJarService.buildJar(bucket, key);
-                        } else {
-                            log.warn("Received S3 event for object with key {} which does not match expected prefixes", key);
-                            throw new RuntimeException("Unexpected S3 object key prefix");
-                        }
+//                        } else {
+//                            log.warn("Received S3 event for object with key {} which does not match expected prefixes", key);
+//                            throw new RuntimeException("Unexpected S3 object key prefix");
+//                        }
                     });
 
             return "Success";

@@ -137,7 +137,13 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
 
     event.preventDefault(); // Prevent the default form submission
 
-    const formData = new FormData(this); // Create a FormData object from the form
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput.files.length !== 1) {
+        alert('Please select one file to upload.');
+        toggleLoading();
+        return;
+    }
+    const file = fileInput.files[0];
 
     let presignedUrl = await getPresignedUrl(flowId);
 
@@ -146,7 +152,7 @@ document.getElementById('fileUploadForm').addEventListener('submit', async funct
         headers: {
             'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         },
-        body: formData
+        body: file
     });
     if (response.status !== 200) {
         console.error('Error:', error);

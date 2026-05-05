@@ -89,6 +89,7 @@ public class ArtifactServiceImpl implements ArtifactService {
         try {
             InputStream originalJarInputStream = this.s3Utils.getS3ObjectAsInputStream(ORIGINAL_EEL_JAR_BUCKET, ORIGINAL_EEL_JAR_KEY);
             InputStream excelInputStream = this.s3Utils.getS3ObjectAsInputStream(bucket, key);
+//            InputStream excelInputStream = this.getClass().getResourceAsStream("/eel.xlsx");
 
             final File eelJar = EelPackager.build(originalJarInputStream, excelInputStream);
 

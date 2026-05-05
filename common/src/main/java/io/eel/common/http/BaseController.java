@@ -65,7 +65,7 @@ public abstract class BaseController {
                     }
             );
         } catch (Throwable t) {
-            log.severe(t.getMessage());
+            t.printStackTrace();
 
             // All responses will be a 500 response by default if a route handler throws an exception.
             internalServerError(response);

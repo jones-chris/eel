@@ -1,7 +1,5 @@
 package io.eel.common.model;
 
-import io.eel.common.WorkbookValidator;
-
 import java.util.Map;
 
 public record ScheduledBatchConfiguration(
@@ -14,20 +12,5 @@ public record ScheduledBatchConfiguration(
         /*
          * The queries that are executed for each of the manifest's input sheets.
          */
-        Map<String, Query> sheetQueries,
-
-        /*
-         * The input bucket/directory where the query results land.
-         */
-        String inputBucketIdentifier,
-
-        /*
-         * The associated EEL transformation's manifest.
-         */
-        WorkbookValidator.Manifest transformationManifest,
-
-        /*
-         * The output bucket/directory where the transformation's output is sent.
-         */
-        String outputBucketIdentifier
+        Map<String, Query> sheetQueries
 ) { }

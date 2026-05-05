@@ -6,7 +6,6 @@ import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.scheduler.SchedulerClient;
 import software.amazon.awssdk.services.scheduler.model.*;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -50,7 +49,6 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
         this.addExpectedProvisionedResources(AWS_SCHEDULER_IAM_ROLE_NAME, AWS_SCHEDULER_NAME);
 
         super.addRollbackAction(RollbackActions.deleteRole(AWS_SCHEDULER_IAM_ROLE_NAME, iamClient))
-//                .addRollbackAction(RollbackActions.deleteRolePolicy(AWS_SCHEDULER_IAM_ROLE_POLICY_NAME, iamClient))
                 .addRollbackAction(RollbackActions.deleteScheduler(schedulerClient));
     }
 
@@ -77,16 +75,9 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
                              .policyDocument(this.buildPermissionsPolicy())
                              .build()
             );
-//            this.provisionedResources.put(AWS_SCHEDULER_IAM_ROLE_POLICY_NAME, role.roleName());
 
             // Wait another 10 seconds while this policy change propagates throughout AWS.
             sleep(TEN_SECONDS);
-
-            // todo:  consider putting unique UUID in input for the trace id?
-            // Create the Scheduler instance.
-//            final String input = gson.toJson(
-//                    Map.of("canonicalId", canonicalId)
-//            );
 
             String schedulerName = flow.getId().toString();
             String stepFunctionArn = this.getDependentResource(AWS_STEP_FUNCTION_ARN).orElseThrow();
@@ -116,11 +107,6 @@ public class AwsSchedulerFlowComponentStackImpl extends FlowComponentStack {
 
             return false;
         }
-    }
-
-    @Override
-    public boolean delete(String flowId, int version) {
-        return false;  // todo:  implement this.
     }
 
     private String buildPermissionsPolicy() {

@@ -34,6 +34,11 @@ public class HttpResponse {
         return this;
     }
 
+    public HttpResponse withHeaders(Map<String, String> headers) {
+        this.headers.putAll(headers);
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;

@@ -64,14 +64,14 @@ public class StreamLambdaHandler implements RequestHandler<Map<String, String>, 
 
             log.info("Getting flow with canonical id of " + canonicalId + " and input sheet of " + inputSheet + ".  Will write result to bucket " + storageLocation.bucket() + " and key " + storageLocation.key());
 
-            Flow flow = flowDao.getFlowByCanonicalId(canonicalId)
+            Flow flow = flowDao.getFlowByIdAndVersion(flowId.toString(), version)
                     .orElseThrow(() -> new RuntimeException("Could not find flow with canonical id of " + canonicalId));
 
             // Get the flow's configured query for the given input sheet.
             Query query = flow.getScheduledBatchConfiguration().sheetQueries().get(inputSheet);
 
             // Retrieve the data source secret.
-            final String secretId = query.sqlDatabaseDataSource().getSecretId();
+            final String secretId = query.dataSource().getSecretId();
             log.info("Retrieving secret id of " + secretId);
             SqlDataSourceSecret secret = sqlDataSourceSecretDao.getById(secretId);
 

@@ -1,8 +1,10 @@
 package io.eel.service;
 
+import com.google.gson.Gson;
 import com.opencsv.CSVReader;
-import io.eel.model.WorkbookOutput;
-import io.eel.model.proxy.WorkbookProxy;
+import io.eel.common.WorkbookValidator;
+import io.eel.common.model.WorkbookOutput;
+import io.eel.common.model.WorkbookProxy;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -10,6 +12,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -22,9 +25,27 @@ public class WorkbookCalculationEngine {
 
     private static final String EXCEL_TL_XLSX_RESOURCE_FILE_PATH = "/eel.xlsx";
 
+    private static final String MANIFEST_RESOURCE_FILE_PATH = "/manifest.json";
+
+    private static final WorkbookValidator.Manifest manifest;
+
     private final Map<String, Object[][]> workbookInputs = new HashMap<>();
 
     private final WorkbookProxy workbookProxy;
+
+    static {
+        try (InputStream manifestInputStream = WorkbookCalculationEngine.class.getResourceAsStream(MANIFEST_RESOURCE_FILE_PATH)) {
+            assert manifestInputStream != null;
+
+            String manifestJson = new String(manifestInputStream.readAllBytes(), StandardCharsets.UTF_8);
+
+            manifest = new Gson().fromJson(manifestJson, WorkbookValidator.Manifest.class);
+        } catch (Throwable e) {
+            e.printStackTrace();
+
+            throw new RuntimeException(e);
+        }
+    }
 
     public WorkbookCalculationEngine() {
         try (InputStream inputStream = this.getClass().getResourceAsStream(EXCEL_TL_XLSX_RESOURCE_FILE_PATH)) {
@@ -94,14 +115,13 @@ public class WorkbookCalculationEngine {
         }
     }
 
-//    public WorkbookCalculationEngine withInput(String worksheetName, Object[][] data) {
-//        if (this.workbookInputs.get(worksheetName) != null) {
-//            throw new IllegalArgumentException("Input data for worksheet " + worksheetName + " already exists");
-//        }
-//
-//        this.workbookInputs.put(worksheetName, data);
-//        return this;
-//    }
+    public WorkbookProxy getWorkbookProxy() {
+        return this.workbookProxy;
+    }
+
+    public WorkbookValidator.Manifest getManifest() {
+        return manifest;
+    }
 
     public WorkbookOutput runWorkbook() throws Exception {
         try {

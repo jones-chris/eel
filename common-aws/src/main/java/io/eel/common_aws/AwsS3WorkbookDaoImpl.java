@@ -1,14 +1,17 @@
-package io.eel.manifest_api_aws_lambda.dao;
+package io.eel.common_aws;
 
-import io.eel.manifest_generator_core.dao.WorkbookDao;
-import io.eel.model.proxy.WorkbookProxy;
+import io.eel.common.dao.WorkbookDao;
+import io.eel.common.model.WorkbookProxy;
+import org.apache.poi.ss.usermodel.Workbook;
 import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.io.InputStream;
+import java.io.*;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -42,4 +45,36 @@ public class AwsS3WorkbookDaoImpl implements WorkbookDao {
             return Optional.empty();
         }
     }
+
+    @Override
+    public void save(WorkbookProxy workbookProxy, String bucket, String key) {
+        log.info("Saving workbook to bucket " + bucket + " and key " + key);
+
+        Workbook workbook = workbookProxy.getWorkbook();
+
+        File tempFile = null;
+        try {
+            tempFile = File.createTempFile("workbook", ".xlsx");
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                workbook.write(fos);
+            }
+
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket("your-bucket-name")
+                    .key("your-object-key")
+                    .build();
+
+            this.s3Client.putObject(putObjectRequest, RequestBody.fromFile(tempFile));
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+            e.printStackTrace();  // todo: fix this.
+
+            throw new RuntimeException(e);
+        } finally {
+            if (tempFile != null) {
+                tempFile.delete();
+            }
+        }
+    }
+
 }

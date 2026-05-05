@@ -5,14 +5,13 @@ import io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.eel.eel_runner_infra_provisioner_aws_lambda.stacks.RollbackActions.ResourceDeletionAttempt.tryToDeleteResource;
 
 public abstract class FlowComponentStack {
 
-    private static Logger log = Logger.getLogger(FlowComponentStack.class.getName());
+    private static final Logger log = Logger.getLogger(FlowComponentStack.class.getName());
 
     protected Map<String, String> tags = new HashMap<>();
 
@@ -67,13 +66,6 @@ public abstract class FlowComponentStack {
      * @return true if deployment was successful.  Otherwise, false.
      */
     public abstract boolean deploy(Flow flow);
-
-    /**
-     * Deletes/rolls back the necessary resources in the target platform.
-     *
-     * @return true if the rollback was successful.  Otherwise, false.
-     */
-    public abstract boolean delete(String flowId, int version);
 
     public final boolean rollback(Flow flow) {
         // If the stack did not provision any resources (ex:  it failed on it's first resource), then just return true.

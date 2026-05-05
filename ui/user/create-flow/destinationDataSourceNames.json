@@ -2,27 +2,136 @@
     "dataSources": {
         "email": {
             "displayText": "Email",
-            "help": "Send as an email attachment"
+            "help": "Send as an email attachment",
+            "inputs": [
+                {
+                    "name": "to",
+                    "type": "stringList",
+                    "isRequired": true
+                },
+                {
+                    "name": "from",
+                    "type": "string",
+                    "isRequired": true
+                },
+                {
+                    "name": "subject",
+                    "type": "string",
+                    "isRequired": true
+                },
+                {
+                    "name": "body",
+                    "type": "string",
+                    "isRequired": true
+                },
+                {
+                    "name": "attachments",
+                    "type": "stringList",
+                    "isRequired": false
+                }
+            ]
         },
         "sms": {
             "displayText": "SMS",
-            "help": "Text the result to someone"
+            "help": "Text the result to someone",
+            "inputs": [
+                {
+                    "name": "to",
+                    "type": "stringList",
+                    "isRequired": true
+                },
+                {
+                    "name": "from",
+                    "type": "string",
+                    "isRequired": true
+                },
+                {
+                    "name": "body",
+                    "type": "string",
+                    "isRequired": true
+                }
+            ]
         },
-        "file-storage": {
-            "displayText": "File Storage",
-            "help": "Write to file storage"
-        },
-        "db-write": {
-            "displayText": "Database Write",
-            "help": "Write to a SQL database for storage"
-        },
-        "queue-write": {
-            "displayText": "Queue Write",
-            "help": "Write to a queue for another system to process"
+        "s3-file-storage": {
+            "displayText": "S3 File Storage",
+            "help": "Store all or part of file in S3",
+            "inputs": [
+                {
+                    "name": "bucketName",
+                    "type": "string",
+                    "isRequired": true
+                },
+                {
+                    "name": "key",
+                    "type": "string",
+                    "isRequired": false
+                },
+                {
+                    "name": "file",
+                    "type": "string",
+                    "isRequired": true
+                }
+            ]
         },
         "trigger-flow": {
             "displayText": "Trigger Flow",
-            "help": "Trigger another EEL flow for further processing"
+            "help": "Trigger another flow for further processing",
+            "inputs": [
+                {
+                    "name": "name",
+                    "type": "string",
+                    "isRequired": true
+                },
+                {
+                    "name": "inputMapping",
+                    "metadata": [
+                        {
+                            "name": "input_customer",
+                            "numberOfColumns": 7,
+                            "columnNames": [
+                                "id",
+                                "first_name",
+                                "middle_name",
+                                "last_name",
+                                "birth_day",
+                                "birth_month",
+                                "birth_year"
+                            ],
+                            "columnDataTypes": {
+                                "id": "Integer",
+                                "first_name": "String",
+                                "middle_name": "String",
+                                "last_name": "String",
+                                "birth_day": "Integer",
+                                "birth_month": "Integer",
+                                "birth_year": "Integer"
+                            }
+                        },
+                        {
+                            "name": "input_customer_address",
+                            "numberOfColumns": 7,
+                            "columnNames": [
+                                "id",
+                                "address_number",
+                                "address_street",
+                                "city",
+                                "state",
+                                "zip",
+                                "country_code"
+                            ],
+                            "columnDataTypes": {
+                                "id": "Integer",
+                                "address_number": "String",
+                                "address_street": "String",
+                                "city": "String",
+                                "state": "String",
+                                "zip": "String",
+                                "country_code": "String"
+                            }
+                        }
+                    ]
+                }
+            ]
         }
     }
 }

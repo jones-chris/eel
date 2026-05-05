@@ -139,7 +139,7 @@ public class EelPackager {
             final String manifestJson = gson.toJson(manifest);
             log.info(manifestJson);
 
-            File tmpManifestFile = new File(TMP_PATH + "/eel_manifest.json");
+            File tmpManifestFile = new File(TMP_PATH + "/manifest.json");
             Files.write(tmpManifestFile.toPath(), manifestJson.getBytes());
             log.info("Wrote manifest JSON to " + tmpManifestFile.getAbsolutePath());
 

@@ -11,7 +11,7 @@ import static io.eel.eel_runner_infra_provisioner_core.stacks.model.ResourceType
 
 public class AwsSqsDeadLetterQueueFlowComponentStackImpl extends FlowComponentStack {
 
-    private static Logger log = Logger.getLogger(AwsSqsDeadLetterQueueFlowComponentStackImpl.class.getName());
+    private static final Logger log = Logger.getLogger(AwsSqsDeadLetterQueueFlowComponentStackImpl.class.getName());
 
     private SqsClient sqsClient;
 
@@ -64,8 +64,4 @@ public class AwsSqsDeadLetterQueueFlowComponentStackImpl extends FlowComponentSt
         }
     }
 
-    @Override
-    public boolean delete(String flowId, int version) {
-        return false;
-    }
 }

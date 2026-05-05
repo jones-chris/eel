@@ -1,4 +1,4 @@
-class DestinationService {
+export class DestinationService {
 
     constructor(apiDomain) {
         this.apiDomain = apiDomain;

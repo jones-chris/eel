@@ -89,11 +89,6 @@ public class AwsSqsInputQueueFlowComponentStackImpl extends FlowComponentStack {
         }
     }
 
-    @Override
-    public boolean delete(String flowId, int version) {
-        return false;
-    }
-
     private String buildSqsQueuePolicy(String inputQueueArn) {
         return String.format("""
                 {

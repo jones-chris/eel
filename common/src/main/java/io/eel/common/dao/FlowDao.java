@@ -1,6 +1,7 @@
 package io.eel.common.dao;
 
 import io.eel.common.model.Flow;
+import io.eel.common.model.TransformationExtractionType;
 
 import java.util.Optional;
 import java.util.Set;
@@ -10,7 +11,9 @@ public interface FlowDao {
 
     Set<UUID> getFlowsByUser(String userName);
 
-    Optional<Flow> getFlowByCanonicalId(String canonicalId);
+    Optional<Flow> getFlowByIdAndVersion(String flowId, int version);
+
+    Set<Integer> getFlowVersions(UUID flowId);
 
     Flow updateFlow(Flow flow);
 
@@ -18,6 +21,6 @@ public interface FlowDao {
 
     Flow incrementFlow(Flow flow);
 
-    String generateTransformationStagingPresignedUrl(UUID flowId);
+    String generateTransformationStagingPresignedUrl(UUID flowId, TransformationExtractionType extractionType);
 
 }

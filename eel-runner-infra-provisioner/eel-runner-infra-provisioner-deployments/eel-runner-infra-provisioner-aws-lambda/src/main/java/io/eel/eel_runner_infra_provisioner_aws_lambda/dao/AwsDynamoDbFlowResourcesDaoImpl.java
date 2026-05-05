@@ -29,7 +29,7 @@ public class AwsDynamoDbFlowResourcesDaoImpl extends BaseAwsDynamoDbDao<FlowReso
     }
 
     public Optional<FlowResources> getById(String flowId) {
-        return super.getById(flowId, DYNAMO_DB_ITEM_MAPPER);
+        return super.getOneById(flowId, DYNAMO_DB_ITEM_MAPPER);
     }
 
     public FlowResources save(FlowResources flowResources) {

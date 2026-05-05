@@ -60,12 +60,10 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
         this.addExpectedProvisionedResources(
                 AWS_STEP_FUNCTION_IAM_ROLE_ARN,
                 AWS_STEP_FUNCTION_IAM_ROLE_NAME,
-//                AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME,
                 AWS_STEP_FUNCTION_ARN
         );
 
         this.addRollbackAction(RollbackActions.deleteStepFunction(stepFunctionsClient))
-//                .addRollbackAction(RollbackActions.deleteRolePolicy(AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME, iamClient))
                 .addRollbackAction(RollbackActions.deleteRole(AWS_STEP_FUNCTION_IAM_ROLE_NAME, iamClient));
     }
 
@@ -119,7 +117,6 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
                     .policyName(role.roleName())
                     .policyDocument(this.buildStepFunctionRolePolicy())
                     .build());
-//            this.provisionedResources.put(AWS_STEP_FUNCTION_IAM_ROLE_POLICY_NAME, role.roleName());
 
             CreateStateMachineRequest machineRequest = CreateStateMachineRequest.builder()
                     .definition(stateMachine.toPrettyJson())
@@ -144,14 +141,8 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
         }
     }
 
-    @Override
-    public boolean delete(String flowId, int version) {
-        return false;
-    }
-
     private State.Builder buildQueryRunnerState(Flow flow, String sheetName) {
         String landingBucketName = this.getDependentResource(AWS_S3_BUCKET_NAME).orElseThrow();
-//        String landingBucketArn = "arn:aws:s3:::%s".formatted(landingBucketName);
 
         return TaskState.builder()
                 .resource("arn:aws:states:::lambda:invoke")
@@ -162,7 +153,8 @@ public class AwsQueriesStepFunctionFlowComponentStackImpl extends FlowComponentS
                                         "flowId", flow.getId().toString(),
                                         "version", flow.getVersion(),
                                         "inputSheet", sheetName,
-                                        "destinationBucket", landingBucketName
+                                        "destinationBucket", landingBucketName,
+                                        "executionId.$", "$$.Execution.Id"
                                 )
                         )
                 ).transition(end());

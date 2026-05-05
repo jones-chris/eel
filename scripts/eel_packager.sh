@@ -10,6 +10,6 @@ java -cp ./core/target/core-1.0-SNAPSHOT.jar io.eel.packager.EelPackager "$EXCEL
 
 # copy excel file and manifest into jar resources directory.
 jar uf core-1.0-SNAPSHOT.jar "$EXCEL_FILE_NAME"
-jar uf core-1.0-SNAPSHOT.jar ./eel_manifest.json
+jar uf core-1.0-SNAPSHOT.jar ./manifest.json
 
 # copy jar with resources.

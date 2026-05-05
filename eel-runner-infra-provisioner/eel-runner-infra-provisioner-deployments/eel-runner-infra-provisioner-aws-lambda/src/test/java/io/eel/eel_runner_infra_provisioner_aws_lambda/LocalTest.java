@@ -18,7 +18,7 @@ public class LocalTest {
         final String flowId = "b6ec0a10-ef89-4c0f-9ce9-4e516b942a18";
         final int version = 0;
         final FlowDao flowDao = new AwsDynamoDbFlowDaoImpl(DynamoDbClient.create());
-        Flow flow = flowDao.getFlowByCanonicalId(Flow.Utils.getCanonicalId(UUID.fromString(flowId), version))
+        Flow flow = flowDao.getFlowByIdAndVersion(flowId, version)
                 .orElseThrow();
 
 //        stackOrchestrator.deploy(flow);

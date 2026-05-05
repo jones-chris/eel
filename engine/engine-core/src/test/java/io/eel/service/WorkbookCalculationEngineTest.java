@@ -1,7 +1,7 @@
 package io.eel.service;
 
 import com.opencsv.CSVReader;
-import io.eel.model.WorkbookOutput;
+import io.eel.common.model.WorkbookOutput;
 
 import java.io.InputStreamReader;
 

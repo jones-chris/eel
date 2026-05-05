@@ -1,6 +1,7 @@
 package io.eel.flow_api_core.service;
 
 import io.eel.common.model.Flow;
+import io.eel.common.model.TransformationExtractionType;
 import io.eel.flow_api_core.exception.ImmutableFlowException;
 import io.eel.flow_api_core.exception.ResourceNotFoundException;
 
@@ -12,15 +13,17 @@ public interface FlowService {
 
     Flow createNewFlow();
 
-    Flow updateFlow(String canonicalId, Flow newFlow) throws ImmutableFlowException, ResourceNotFoundException;
+    Flow updateFlow(Flow newFlow) throws ImmutableFlowException, ResourceNotFoundException;
 
     Flow incrementFlow(Flow flow);
 
-    Optional<Flow> getFlowByCanonicalId(String canonicalId);
+    Optional<Flow> getFlowByIdAndVersion(String flowId, int version);
 
     Set<UUID> getFlowsByUser(String userName);
 
-    String generateTransformationStagingPresignedUrl(UUID flowId);
+    Set<Integer> getFlowVersionsByFlowId(UUID flowId);
+
+    String generateTransformationStagingPresignedUrl(UUID flowId, TransformationExtractionType extractionType);
 
     Flow finalizeFlow(Flow flow);
 

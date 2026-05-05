@@ -1,15 +1,16 @@
 package io.eel.common_aws;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.*;
 
+import java.lang.reflect.Type;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -24,10 +25,13 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
 
     private String partitionKey;
 
+    private String sortKey;
+
     protected DynamoDbClient dynamoDbClient;
 
     protected static final Gson gson = new GsonBuilder()
             .setPrettyPrinting()
+            .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeEpochAdapter())
             .create();
 
     private BaseAwsDynamoDbDao() {}
@@ -42,18 +46,56 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
         this.partitionKey = partitionKey;
     }
 
-    public Optional<T> getById(
+    public BaseAwsDynamoDbDao(
+            DynamoDbClient dynamoDbClient,
+            String tableName,
+            String partitionKey,
+            String sortKey
+    ) {
+        this.dynamoDbClient = dynamoDbClient;
+        this.tableName = tableName;
+        this.partitionKey = partitionKey;
+        this.sortKey = sortKey;
+    }
+
+    public Optional<T> getOneById(
             U id,
             Function<Map<String, AttributeValue>, T> mapper
     ) {
         GetItemRequest request = GetItemRequest.builder()
                 .tableName(tableName)
-                .key(Map.of(partitionKey, AttributeValue.fromS(id.toString())))
+                .key(
+                        Map.of(partitionKey, AttributeValue.fromS(id.toString()))
+                )
                 .build();
 
         GetItemResponse response = this.dynamoDbClient.getItem(request);
 
         if (! response.hasItem()) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(
+                mapper.apply(response.item())
+        );
+    }
+
+    public Optional<T> getOneById(
+            U id,
+            AttributeValue sortKeyAttributeValue,
+            Function<Map<String, AttributeValue>, T> mapper
+    ) {
+        GetItemRequest request = GetItemRequest.builder()
+                .tableName(tableName)
+                .key(Map.of(
+                        partitionKey, AttributeValue.fromS(id.toString()),
+                        this.sortKey, sortKeyAttributeValue
+                ))
+                .build();
+
+        GetItemResponse response = this.dynamoDbClient.getItem(request);
+
+        if (!response.hasItem()) {
             return Optional.empty();
         }
 
@@ -94,6 +136,59 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
         return obj;
     }
 
+    public T saveWithSortKey(
+            T obj,
+            Function<T, AttributeValue> partitionKeyMapper,
+            Function<T, AttributeValue> sortKeyMapper
+    ) {
+        final String objJson = gson.toJson(obj);
+
+        Map<String, AttributeValue> itemMap = Map.of(
+                this.partitionKey, partitionKeyMapper.apply(obj),
+                this.sortKey, sortKeyMapper.apply(obj),
+                OBJECT_KEY, AttributeValue.fromS(objJson)
+        );
+
+        log.info("Saving item: {}", itemMap);
+        this.save(itemMap);
+
+        return obj;
+    }
+
+    public List<T> getPageById(
+            U id,
+            Function<Map<String, AttributeValue>, T> mapper
+    ) {
+        return this.getPageById(id, null, mapper);
+    }
+
+    public List<T> getPageById(
+            U id,
+            String indexName,
+            Function<Map<String, AttributeValue>, T> mapper
+    ) {
+        QueryRequest.Builder queryRequestBuilder = QueryRequest.builder()
+                .tableName(this.tableName);
+
+        // Add the GSI/LSI to the query request if it is provided.
+        if (indexName != null && ! indexName.isBlank()) {
+            queryRequestBuilder.indexName(indexName);
+        }
+
+        QueryRequest queryRequest = queryRequestBuilder
+                .keyConditionExpression("#pk = :val")
+                .expressionAttributeNames(
+                        Map.of("#pk", this.partitionKey)
+                ).expressionAttributeValues(
+                        Map.of(":val", AttributeValue.builder().s(id.toString()).build())
+                ).build();
+
+        return this.dynamoDbClient.query(queryRequest)
+                .items().stream()
+                .map(mapper)
+                .toList();
+    }
+
     private void save(Map<String, AttributeValue> itemMap) {
         PutItemRequest putItemRequest = PutItemRequest.builder()
                 .tableName(this.tableName)
@@ -101,6 +196,31 @@ public abstract class BaseAwsDynamoDbDao<T, U> {
                 .build();
 
         this.dynamoDbClient.putItem(putItemRequest);
+    }
+
+    private static class OffsetDateTimeEpochAdapter implements
+            JsonSerializer<OffsetDateTime>,
+            JsonDeserializer<OffsetDateTime> {
+
+        @Override
+        public JsonElement serialize(OffsetDateTime src, Type typeOfSrc, JsonSerializationContext context) {
+            long epochSeconds = src.toEpochSecond();
+            return new JsonPrimitive(epochSeconds);
+        }
+
+        @Override
+        public OffsetDateTime deserialize(
+                JsonElement json,
+                Type typeOfT,
+                JsonDeserializationContext context
+        ) throws JsonParseException {
+            long epochSeconds = json.getAsLong();
+
+            return OffsetDateTime.ofInstant(
+                    Instant.ofEpochSecond(epochSeconds),
+                    ZoneId.systemDefault()
+            );
+        }
     }
 
 }

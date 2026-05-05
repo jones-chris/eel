@@ -2,6 +2,7 @@ package io.eel.flow_api_core.service;
 
 import io.eel.common.model.Flow;
 import io.eel.common.dao.FlowDao;
+import io.eel.common.model.TransformationExtractionType;
 import io.eel.eel_runner_infra_provisioner_core.stacks.model.FlowInfrastructureActionRequestDto;
 import io.eel.flow_api_core.dao.FlowInfrastructureActionQueueDao;
 import io.eel.flow_api_core.exception.ImmutableFlowException;
@@ -37,8 +38,11 @@ public class FlowServiceImpl implements FlowService {
     }
 
     @Override
-    public Flow updateFlow(String canonicalId, Flow newFlow) throws ImmutableFlowException, ResourceNotFoundException {
-        Optional<Flow> originalFlow = this.getFlowByCanonicalId(canonicalId);
+    public Flow updateFlow(Flow newFlow) throws ImmutableFlowException, ResourceNotFoundException {
+        String canonicalId = newFlow.getCanonicalId();
+
+        log.info("Attempting to update flow with canonical id of " + canonicalId);
+        Optional<Flow> originalFlow = this.getFlowByIdAndVersion(newFlow.getId().toString(), newFlow.getVersion());
 
         if (originalFlow.isEmpty()) {
             throw new ResourceNotFoundException(canonicalId);
@@ -66,8 +70,8 @@ public class FlowServiceImpl implements FlowService {
     }
 
     @Override
-    public Optional<Flow> getFlowByCanonicalId(String canonicalId) {
-        return this.flowDao.getFlowByCanonicalId(canonicalId);
+    public Optional<Flow> getFlowByIdAndVersion(String flowId, int version) {
+        return this.flowDao.getFlowByIdAndVersion(flowId, version);
     }
 
     @Override
@@ -76,8 +80,13 @@ public class FlowServiceImpl implements FlowService {
     }
 
     @Override
-    public String generateTransformationStagingPresignedUrl(UUID flowId) {
-        return this.flowDao.generateTransformationStagingPresignedUrl(flowId);
+    public Set<Integer> getFlowVersionsByFlowId(UUID flowId) {
+        return this.flowDao.getFlowVersions(flowId);
+    }
+
+    @Override
+    public String generateTransformationStagingPresignedUrl(UUID flowId, TransformationExtractionType extractionType) {
+        return this.flowDao.generateTransformationStagingPresignedUrl(flowId, extractionType);
     }
 
     @Override
@@ -100,7 +109,7 @@ public class FlowServiceImpl implements FlowService {
         flow.setFinalized(false);
         this.flowDao.updateFlow(flow);
 
-        // Send message to infra provisioner queue for the infra to be deleted.
+        // Send a message to infra provisioner queue for the infra to be deleted.
         this.flowInfrastructureActionQueueDao.sendDeleteMessage(
                 FlowInfrastructureActionRequestDto.newDeletionRequest(flow)
         );

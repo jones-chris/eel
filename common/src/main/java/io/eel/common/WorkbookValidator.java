@@ -216,7 +216,7 @@ public class WorkbookValidator {
             List<SheetMetadata> outputSheetsMetadata
     ) {}
 
-    record SheetMetadata(
+    public record SheetMetadata(
             String name,
             int numberOfColumns,
             List<String> columnNames,

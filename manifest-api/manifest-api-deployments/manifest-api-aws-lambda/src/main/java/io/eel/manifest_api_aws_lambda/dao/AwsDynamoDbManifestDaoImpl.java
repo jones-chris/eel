@@ -32,29 +32,16 @@ public class AwsDynamoDbManifestDaoImpl extends BaseAwsDynamoDbDao<Manifest, Str
 
     @Override
     public Optional<Manifest> getManifest(String canonicalId) {
-        return super.getById(canonicalId, DYNAMO_DB_ITEM_MAPPER);
+        return super.getOneById(canonicalId, DYNAMO_DB_ITEM_MAPPER);
     }
 
     @Override
     public Manifest saveManifest(Manifest manifest) {
-//        final String manifestJsonString = gson.toJson(manifest);
-
         super.save(
                 manifest,
                 m -> AttributeValue.fromS(manifest.flowCanonicalId())
         );
-//
-//        PutItemRequest putItemRequest = PutItemRequest.builder()
-//                .tableName(TABLE_NAME)
-//                .item(
-//                        Map.of(
-//                            "transformationId", AttributeValue.fromS(manifest.flowId().toString()),
-//                            "manifest", AttributeValue.fromS(manifestJsonString)
-//                        )
-//                ).build();
-//
-//        this.dynamoDbClient.putItem(putItemRequest);
-//
+
         return manifest;
     }
 

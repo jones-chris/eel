@@ -6,7 +6,10 @@ class InputSource extends HTMLElement {
 
     columnDataTypes = {};
 
-    dataSource;
+    dataSource = {
+        id: null,
+        name: null
+    };
 
     sql = "";
 
@@ -34,9 +37,9 @@ class InputSource extends HTMLElement {
                         <label class="input-group-text">Data Sources</label>
                     </div>
                     <select id="dataSource-${this.name}" class="form-select">
-                        <option value="1">One</option>
-                        <option value="2">Two</option>
-                        <option value="3">Three</option>
+                        <option value="e70516d6-1246-4e65-b710-e653c00f10fa">Finance DB</option>
+                        <option value="fe559887-0791-49e8-a3f8-56d8c717d333">HR DB</option>
+                        <option value="836c2d22-c109-438a-a4b5-6c9935be578f">Customer DB</option>
                     </select>
                 </div>
 
@@ -75,8 +78,13 @@ class InputSource extends HTMLElement {
     }
 
     handleDataSourceChange(event) {
-        const newDataSource = event.target.value;
-        this.dataSource = newDataSource;
+        const dataSourceUuid = event.target.value;
+        const dataSourceName = event.target.options[event.target.selectedIndex].label;
+
+        this.dataSource = {
+            id: dataSourceUuid,
+            name: dataSourceName
+        };
     }
 
     handleSqlChange(event) {

@@ -12,7 +12,6 @@ import io.eel.common.http.HttpResponse;
 import java.lang.reflect.Type;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 class StreamLambdaHandlerTest {
 

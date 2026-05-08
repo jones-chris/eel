@@ -29,8 +29,6 @@ public class MyMcpSyncServer {
 
     private static final WorkbookCalculationEngine engine;
 
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
     static {
         // Instantiate the workbook calculation engine (which will load the workbook and manifest)
         engine = new WorkbookCalculationEngine();
@@ -141,8 +139,8 @@ public class MyMcpSyncServer {
 
     private static McpServerFeatures.SyncToolSpecification buildManifestTool() {
         McpSchema.Tool manifestTool = McpSchema.Tool.builder()
-                .name("Get MicroTransformer Manifest for " + engine.getManifest().name())
-                .title("Get the manifest of the MicroTransformer " + engine.getManifest().name())
+                .name("get_manifest_of_" + engine.getManifest().name())
+                .title("Get the manifest of " + engine.getManifest().name())
                 .description(
                         String.format(
                                 """
@@ -208,7 +206,7 @@ public class MyMcpSyncServer {
 
         // Build the tool.
         McpSchema.Tool runWorkbookTool = McpSchema.Tool.builder()
-                .name("Run Workbook Engine for " + engine.getManifest().name())
+                .name("run_workbook_engine_for_" + engine.getManifest().name())
                 .title("Run the XLSX workbook engine for " + engine.getManifest().name())
                 .description(
                         String.format(

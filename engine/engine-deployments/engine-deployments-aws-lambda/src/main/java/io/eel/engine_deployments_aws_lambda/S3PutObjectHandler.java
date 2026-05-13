@@ -13,6 +13,8 @@ import io.eel.common.model.StorageLocation;
 import io.eel.common_aws.AwsS3WorkbookDaoImpl;
 import io.eel.common_aws.S3QueryResultCsvDaoImpl;
 import io.eel.common_aws.AwsDynamoDbFlowExecutionDaoImpl;
+import io.eel.dao.WorkbookLoggerDao;
+import io.eel.engine_deployments_aws_lambda.dao.S3WorkbookLoggerDaoImpl;
 import io.eel.service.WorkbookCalculationEngine;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -42,6 +44,8 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
 
     private static final AwsDynamoDbFlowExecutionDaoImpl flowExecutionDao;
 
+    private static final WorkbookLoggerDao workbookLoggerDao;
+
     private static final Gson gson = new Gson();
 
     static {
@@ -53,6 +57,10 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
         workbookDao = new AwsS3WorkbookDaoImpl(s3Client);
 
         flowExecutionDao = new AwsDynamoDbFlowExecutionDaoImpl(DynamoDbClient.create());
+
+        final String workbookLoggingBucketName = Optional.ofNullable(System.getenv("WORKBOOK_LOGGER_BUCKET_NAME"))
+                .orElseThrow(() -> new RuntimeException("Could not find WORKBOOK_LOGGER_BUCKET_NAME env variable"));
+        workbookLoggerDao = new S3WorkbookLoggerDaoImpl(workbookDao, workbookLoggingBucketName);
     }
 
     @Override
@@ -80,7 +88,7 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
             flowExecutionDao.save(flowExecution);
 
             log.info("Running flow " + lambdaFunctionFlowId + " and execution " + executionTimeStamp.toEpochSecond());
-            WorkbookCalculationEngine engine = new WorkbookCalculationEngine();
+            WorkbookCalculationEngine engine = new WorkbookCalculationEngine(workbookLoggerDao);
 
             sqsEvent.getRecords()
                     .forEach(record -> {
@@ -118,7 +126,7 @@ public class S3PutObjectHandler implements RequestHandler<SQSEvent, String> {
 
             // Write workbook to S3 for debugging.
             log.info("Saving workbook");
-            workbookDao.save(engine.getWorkbookProxy(), flowExecutionBucketName, key);
+            workbookDao.save(engine.getWorkbookProxy().getWorkbook(), flowExecutionBucketName, key);
 
             // Write execution metadata and location of workbook to dynamo DB.
             log.info("Saving flow execution metadata");

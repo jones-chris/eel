@@ -47,10 +47,8 @@ public class AwsS3WorkbookDaoImpl implements WorkbookDao {
     }
 
     @Override
-    public void save(WorkbookProxy workbookProxy, String bucket, String key) {
+    public void save(Workbook workbook, String bucket, String key) {
         log.info("Saving workbook to bucket " + bucket + " and key " + key);
-
-        Workbook workbook = workbookProxy.getWorkbook();
 
         File tempFile = null;
         try {
@@ -60,8 +58,8 @@ public class AwsS3WorkbookDaoImpl implements WorkbookDao {
             }
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket("your-bucket-name")
-                    .key("your-object-key")
+                    .bucket(bucket)
+                    .key(key)
                     .build();
 
             this.s3Client.putObject(putObjectRequest, RequestBody.fromFile(tempFile));

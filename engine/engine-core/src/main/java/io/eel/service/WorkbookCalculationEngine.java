@@ -16,8 +16,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -29,11 +27,6 @@ public class WorkbookCalculationEngine {
     private static final String EXCEL_TL_XLSX_RESOURCE_FILE_PATH = "/eel.xlsx";
 
     private static final String MANIFEST_RESOURCE_FILE_PATH = "/manifest.json";
-
-//    private static boolean DEBUG_MODE_ENABLED = Boolean.parseBoolean(
-//            Optional.ofNullable(System.getenv("DEBUG_MODE_ENABLED"))
-//                    .orElse("false")
-//    );
 
     private static final WorkbookValidator.Manifest manifest;
 

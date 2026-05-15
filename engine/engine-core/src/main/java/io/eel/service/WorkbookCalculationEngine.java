@@ -3,8 +3,11 @@ package io.eel.service;
 import com.google.gson.Gson;
 import com.opencsv.CSVReader;
 import io.eel.common.WorkbookValidator;
+import io.eel.common.model.StorageLocation;
 import io.eel.common.model.WorkbookOutput;
 import io.eel.common.model.WorkbookProxy;
+import io.eel.dao.TempFileWorkbookLoggerDaoImpl;
+import io.eel.dao.WorkbookLoggerDao;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -13,8 +16,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -29,9 +30,9 @@ public class WorkbookCalculationEngine {
 
     private static final WorkbookValidator.Manifest manifest;
 
-    private final Map<String, Object[][]> workbookInputs = new HashMap<>();
+    private WorkbookProxy workbookProxy;
 
-    private final WorkbookProxy workbookProxy;
+    private final WorkbookLoggerDao workbookLoggerDao;
 
     static {
         try (InputStream manifestInputStream = WorkbookCalculationEngine.class.getResourceAsStream(MANIFEST_RESOURCE_FILE_PATH)) {
@@ -48,13 +49,15 @@ public class WorkbookCalculationEngine {
     }
 
     public WorkbookCalculationEngine() {
-        try (InputStream inputStream = this.getClass().getResourceAsStream(EXCEL_TL_XLSX_RESOURCE_FILE_PATH)) {
-            this.workbookProxy = new WorkbookProxy(new XSSFWorkbook(inputStream));
-        } catch (IOException e) {
-            e.printStackTrace();
+        this.workbookLoggerDao = new TempFileWorkbookLoggerDaoImpl();
 
-            throw new RuntimeException(e);
-        }
+        this.loadXlsxFile();
+    }
+
+    public WorkbookCalculationEngine(WorkbookLoggerDao workbookLoggerDao) {
+        this.workbookLoggerDao = workbookLoggerDao;
+
+        this.loadXlsxFile();
     }
 
     public WorkbookCalculationEngine withInput(String worksheetName, CSVReader csvReader) {
@@ -124,6 +127,8 @@ public class WorkbookCalculationEngine {
     }
 
     public WorkbookOutput runWorkbook() throws Exception {
+        WorkbookOutput workbookOutput = null;
+
         try {
             // Calculate all formulas.
             this.workbookProxy.getWorkbook().getCreationHelper().createFormulaEvaluator().evaluateAll();
@@ -132,11 +137,30 @@ public class WorkbookCalculationEngine {
             // todo:  Throw a checked exception here so we can handle it.
             this.workbookProxy.assertIsSuccessful();
 
-            return workbookProxy.getOutputs();
+            workbookOutput = workbookProxy.getOutputs();
         } catch (Throwable t) {
             throw new RuntimeException(t);  // todo:  change this exception.
         } finally {
+            // Write workbook to disk so that the user can open it for debugging, if needed.
+            Optional<StorageLocation> logStorageLocation = this.workbookLoggerDao.log(workbookProxy.getWorkbook(), manifest.name());
+            if (workbookOutput != null && logStorageLocation.isPresent()) {
+                workbookOutput.setStorageLocation(logStorageLocation.get());
+            }
+
             this.workbookProxy.close();
+        }
+
+        System.err.println("Workbook output storage location is " + workbookOutput.getStorageLocation().get());
+        return workbookOutput;
+    }
+
+    private void loadXlsxFile() {
+        try (InputStream inputStream = WorkbookCalculationEngine.class.getResourceAsStream(EXCEL_TL_XLSX_RESOURCE_FILE_PATH)) {
+            this.workbookProxy = new WorkbookProxy(new XSSFWorkbook(inputStream));
+        } catch (IOException e) {
+            e.printStackTrace();
+
+            throw new RuntimeException(e);
         }
     }
 

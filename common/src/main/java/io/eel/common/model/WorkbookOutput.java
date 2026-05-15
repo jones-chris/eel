@@ -1,13 +1,28 @@
 package io.eel.common.model;
 
 import java.util.Map;
+import java.util.Optional;
 
 public class WorkbookOutput {
+
+    private Optional<StorageLocation> storageLocation = Optional.empty();
 
     private final Map<String, Object[][]> output;
 
     public WorkbookOutput(Map<String, Object[][]> output) {
         this.output = output;
+    }
+
+    public Optional<StorageLocation> getStorageLocation() {
+        return this.storageLocation;
+    }
+
+    public void setStorageLocation(StorageLocation storageLocation) {
+        if (storageLocation == null) {
+            this.storageLocation = Optional.empty();
+        } else {
+            this.storageLocation = Optional.of(storageLocation);
+        }
     }
 
     public Map<String, Object[][]> getAllOutputs() {

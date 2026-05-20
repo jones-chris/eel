@@ -12,23 +12,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
 
+    <link rel="stylesheet" href="constants.css">
+    <link rel="stylesheet" href="create-flow.css">
 
-    <link rel="stylesheet" href="../../constants/constants.css">
-    <link rel="stylesheet" href="./create-flow.css">
-
-    <script src="../../utils/utils.js"></script>
-    <script src="../../shared/input-source.js"></script>
-<!--    <script src="../../shared/sql-transformation.js"></script>-->
-    <script type="module" src="../../shared/output-destination.js"></script>
-    <script type="module" src="../../shared/services/DestinationService.js"></script>
-    <script src="../../shared/email-destination.js"></script>
-    <script src="../../shared/sms-destination.js"></script>
-<!--    <script src="../../shared/file-storage-destination.js"></script>-->
-<!--    <script src="../../shared/database-write-destination.js"></script>-->
-<!--    <script src="../../shared/queue-write-destination.js"></script>-->
-    <script src="../../shared/trigger-flow-destination.js"></script>
-    <script type="module" src="../../constants/constants.js"></script>
-    <title>AnyEasel</title>
+    <script src="utils.js"></script>
+    <script type="module" src="constants.js"></script>
+    <title>AI Wedlr</title>
 </head>
 <body>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
@@ -39,45 +28,30 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="logo" href="#">AnyEasel</a>
+        <a class="logo" href="#">AI Weldr</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <div class="ml-auto">
-                <!-- Flow type drop down -->
+                <!-- File type drop down -->
                 <div class="dropdown d-inline-block mr-2">
                     <button class="btn border flowTypeButton" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        ☰ Flow Type
+                        ☰ File Type
                     </button>
                     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                         <a id="xlsxFile" class="dropdown-item" href="#">XLSX File</a>
-<!--                        <a id="sqlScript" class="dropdown-item" href="#">SQL Script</a>-->
-<!--                        <a id="pythonScript" class="dropdown-item" href="#">Python Script</a>-->
-<!--                        <a id="pythonZipFile" class="dropdown-item" href="#">Python Zip File</a>-->
                     </div>
                 </div>
-                <!-- Save Button -->
-                <button id="saveFlow" class="btn border mr-2 saveButton" type="button">💾 Save</button>
-                <!-- Deploy Button -->
-                <button id="deployFlow" class="btn border deployButton" type="button">🚀 Deploy</button>
             </div>
         </div>
     </nav>
 
     <table class="table table-striped-columns">
         <tr>
-            <th class="tableHeader rawPaintsHeader">Raw Paints (The Inputs) </th>
-            <th class="tableHeader yourPaintBrushHeader">Your Paint Brush (The Transformation)</th>
-            <th class="tableHeader shareYourMasterpieceHeader">Share Your Masterpiece (The Outputs)
-                <br>
-                <button id="addOutputDestination" class="btn border addOutputDestination" type="button">➕</button>
-            </th>
+            <th class="tableHeader yourPaintBrushHeader">What will you weld to AI?</th>
         </tr>
         <tr>
-            <!-- Input sources -->
-            <td id="inputSources"></td>
-
             <!-- xlsx transformation upload -->
             <td id="xlsxTransformationUpload" hidden>
                 <div class="left-screen">
@@ -95,9 +69,6 @@
                     </form>
                 </div>
             </td>
-
-            <!-- Output destinations -->
-            <td id="outputDestinations"></td>
         </tr>
     </table>
 </body>

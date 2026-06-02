@@ -41,7 +41,6 @@ public class StreamLambdaHandler implements RequestHandler<SQSEvent, String> {
 
                             FlowInfrastructureActionRequestDto flowInfraActionRequest = gson.fromJson(record.getBody(), FlowInfrastructureActionRequestDto.class);
 
-//                            String flowCanonicalId = Flow.Utils.getCanonicalId(flowInfraActionRequest.flowId(), flowInfraActionRequest.version());
                             Flow flow = flowDao.getFlowByIdAndVersion(flowInfraActionRequest.flowId().toString(), flowInfraActionRequest.version())
                                     .orElseThrow();
 

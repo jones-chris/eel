@@ -2,9 +2,15 @@ package io.eel.common;
 
 import io.eel.common.exception.WorkbookValidationException;
 import io.eel.common.model.Flow;
+import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.AreaReference;
+import org.apache.poi.ss.util.CellReference;
 
 import java.util.*;
+
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import java.util.logging.Logger;
 
 public class WorkbookValidator {
@@ -14,6 +20,11 @@ public class WorkbookValidator {
     private final List<Sheet> inputSheets = new ArrayList<>();
 
     private final List<Sheet> outputSheets = new ArrayList<>();
+
+    // Named range metadata collected during validation
+    private final List<NamedRangeMetadata> inputNamedRanges = new ArrayList<>();
+
+    private final List<NamedRangeMetadata> outputNamedRanges = new ArrayList<>();
 
     private final Workbook workbook;
 
@@ -34,11 +45,16 @@ public class WorkbookValidator {
     }
 
     public WorkbookValidator assertIsValid() {
+        // Only XSSF (XSSFWorkbook) is supported.
+        if (! (workbook instanceof XSSFWorkbook)) {
+            throw new WorkbookValidationException("Only XSSF (XSSFWorkbook) workbooks are supported for named ranges");
+        }
+
         // Check that there is a metadata worksheet
-        assertMetadataWorksheetIsValid(workbook);
+        assertMetadataWorksheetIsValid(this.workbook);
 
         // Check that there is at least one input worksheet
-        for (Sheet sheet : workbook) {
+        for (Sheet sheet : this.workbook) {
             String sheetName = sheet.getSheetName().toLowerCase();
             if (sheetName.startsWith(Constants.INPUT_SHEET_PREFIX.toLowerCase())) {
                 this.inputSheets.add(sheet);
@@ -49,22 +65,30 @@ public class WorkbookValidator {
 
                 assertOutputSheetIsValid(sheet);
             }
-            else {
-                // todo:  transformer/calculation sheet validation.
+        }
+
+        // Collect input and output named ranges.
+        for (Name name : this.workbook.getAllNames()) {
+            String nameName = name.getNameName().toLowerCase();
+
+            if (nameName.startsWith(Constants.INPUT_SHEET_PREFIX.toLowerCase())) {
+                this.inputNamedRanges.add(buildNamedRangeMetadata(name, workbook));
+            } else if (nameName.startsWith(Constants.OUTPUT_SHEET_PREFIX.toLowerCase())) {
+                this.outputNamedRanges.add(buildNamedRangeMetadata(name, workbook));
             }
         }
 
-        // If no input sheets exist, then throw an exception.
-        if (this.inputSheets.isEmpty()) {
+        // If no input sheets or named ranges exist, then throw an exception.
+        if (this.inputSheets.isEmpty() && this.inputNamedRanges.isEmpty()) {
             throw new WorkbookValidationException(
-                    String.format("There should be at least one input sheet.  An input sheet's name starts with '%s'", Constants.INPUT_SHEET_PREFIX)
+                    String.format("There should be at least one input sheet or named range.  An input sheet's or named range's name starts with '%s'", Constants.INPUT_SHEET_PREFIX)
             );
         }
 
-        // Check that there is at least one output worksheet
-        if (this.outputSheets.isEmpty()) {
+        // Check that there is at least one output worksheet or named range.
+        if (this.outputSheets.isEmpty() && this.outputNamedRanges.isEmpty()) {
             throw new WorkbookValidationException(
-                    String.format("There should be at least one output sheet.  An output sheet's name starts with '%s'", Constants.OUTPUT_SHEET_PREFIX)
+                    String.format("There should be at least one output sheet or named range.  An output sheet's or named range's name starts with '%s'", Constants.OUTPUT_SHEET_PREFIX)
             );
         }
 
@@ -82,6 +106,12 @@ public class WorkbookValidator {
                 .toList();
         log.info("outputSheetMetadata: " + outputSheetMetadata);
 
+        List<NamedRangeMetadata> inputNamedRangeMetadata = new ArrayList<>(this.inputNamedRanges);
+        log.info("inputNamedRangeMetadata: " + inputNamedRangeMetadata);
+
+        List<NamedRangeMetadata> outputNamedRangeMetadata = new ArrayList<>(this.outputNamedRanges);
+        log.info("outputNamedRangeMetadata: " + outputNamedRangeMetadata);
+
         return new Manifest(
                 this.id,
                 this.author,
@@ -89,7 +119,9 @@ public class WorkbookValidator {
                 this.version,
                 Flow.Utils.getCanonicalId(this.id, this.version),
                 inputSheetMetadata,
-                outputSheetMetadata
+                outputSheetMetadata,
+                inputNamedRangeMetadata,
+                outputNamedRangeMetadata
         );
     }
 
@@ -206,6 +238,48 @@ public class WorkbookValidator {
         );
     }
 
+    private static NamedRangeMetadata buildNamedRangeMetadata(Name name, Workbook workbook) {
+        // Strip the "input_" or "output_" prefix from the named range name to get the canonical named range name.
+        String nameName = name.getNameName();
+        if (nameName.toLowerCase().startsWith(Constants.INPUT_SHEET_PREFIX)) {
+            nameName = nameName.replace(Constants.INPUT_SHEET_PREFIX, "");
+        } else if (nameName.toLowerCase().startsWith(Constants.OUTPUT_SHEET_PREFIX)) {
+            nameName = nameName.replace(Constants.OUTPUT_SHEET_PREFIX, "");
+        } else {
+            throw new WorkbookValidationException(
+                    String.format("Named range '%s' must start with either '%s' or '%s'", name.getNameName(), Constants.INPUT_SHEET_PREFIX, Constants.OUTPUT_SHEET_PREFIX)
+            );
+        }
+
+        String nameComment = name.getComment();
+        String refersTo = name.getRefersToFormula();
+
+        // The named range must refer to a single cell, not a range of cells.
+        AreaReference namedRangeAreaReference = new AreaReference(refersTo, SpreadsheetVersion.EXCEL2007);
+        if (! namedRangeAreaReference.isSingleCell()) {
+            throw new WorkbookValidationException(
+                    String.format("Named range '%s' refers to a range of cells, but must refer to a single cell", nameName)
+            );
+        }
+
+        // Get data type and comment (if it exists) for the single celled named range.
+        CellReference cellReference = namedRangeAreaReference.getFirstCell();
+        Cell cell = workbook.getSheet(cellReference.getSheetName())
+                .getRow(cellReference.getRow())
+                .getCell(cellReference.getCol());
+        String dataType = Constants.BUILT_IN_FORMAT_TO_SQL_TYPE_MAP.get(cell.getCellStyle().getDataFormatString());
+        String cellComment = cell.getCellComment().getString().toString();
+
+        return new NamedRangeMetadata(
+                nameName,
+                cellComment == null ? nameComment : cellComment,
+                1, // Only single cell named ranges are allowed, so number of rows and columns is 1.
+                1,
+                refersTo,
+                dataType
+        );
+    }
+
     public record Manifest(
             UUID flowId,
             String author,
@@ -213,7 +287,9 @@ public class WorkbookValidator {
             int flowVersion,
             String flowCanonicalId,
             List<SheetMetadata> inputSheetsMetadata,
-            List<SheetMetadata> outputSheetsMetadata
+            List<SheetMetadata> outputSheetsMetadata,
+            List<NamedRangeMetadata> inputNamedRanges,
+            List<NamedRangeMetadata> outputNamedRanges
     ) {}
 
     public record SheetMetadata(
@@ -221,6 +297,15 @@ public class WorkbookValidator {
             int numberOfColumns,
             List<String> columnNames,
             Map<String, Object> columnDataTypes
+    ) {}
+
+    public record NamedRangeMetadata(
+            String name,
+            String comment,
+            int numberOfRows,
+            int numberOfColumns,
+            String address,
+            String dataType
     ) {}
 
 }

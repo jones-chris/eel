@@ -1,0 +1,128 @@
+#fileInput {
+    display: block;
+    margin: 0 auto;
+}
+
+#xlsxTransformationUpload {
+    display: flex;
+    justify-content: center;  /* horizontal centering */
+    align-items: center;      /* vertical centering */
+}
+
+.tableHeader {
+    text-align: center;
+}
+
+/* Dark Steel Base */
+.flowTypeButton {
+    background-color: #2a2a2a;
+    color: #FFD700;
+    border: 2px solid #FFD700 !important;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.flowTypeButton:hover {
+    background-color: #FFD700;
+    color: #2a2a2a;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+/* Welding Orange */
+.saveButton {
+    background-color: #FF6B35;
+    color: #fff;
+    border: 2px solid #FF6B35;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.saveButton:hover {
+    background-color: #E55A2B;
+    box-shadow: 0 0 12px rgba(255, 107, 53, 0.6);
+}
+
+/* Arc Blue (plasma arc color) */
+.deployButton {
+    background-color: #004E89;
+    color: #fff;
+    border: 2px solid #00A8E8;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.deployButton:hover {
+    background-color: #00A8E8;
+    color: #004E89;
+    box-shadow: 0 0 12px rgba(0, 168, 232, 0.6);
+}
+
+/* Molten Metal Yellow */
+.addOutputDestination {
+    background-color: #FFC300;
+    color: #1a1a1a;
+    border: 2px solid #FFB700;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.addOutputDestination:hover {
+    background-color: #FFB700;
+    box-shadow: 0 0 12px rgba(255, 195, 0, 0.6);
+}
+
+.logo {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 2.5rem;
+    color: #FFD700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    font-weight: 900;
+    letter-spacing: 2px;
+}
+
+table {
+    border-collapse: separate;
+    border-spacing: 12px;
+}
+
+.rawPaintsHeader {
+    background-color: #2a2a2a;
+    color: #FFD700;
+    font-family: 'Arial Black', sans-serif;
+    font-size: 1.25rem;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    border-radius: 4px;
+    border: 2px solid #FFD700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.yourPaintBrushHeader {
+    background-color: #004E89;
+    color: #00A8E8;
+    font-family: 'Arial Black', sans-serif;
+    font-size: 1.25rem;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    border-radius: 4px;
+    border: 2px solid #00A8E8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.shareYourMasterpieceHeader {
+    background-color: #2a2a2a;
+    color: #FF6B35;
+    font-family: 'Arial Black', sans-serif;
+    font-size: 1.25rem;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    border-radius: 4px;
+    border: 2px solid #FF6B35;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}

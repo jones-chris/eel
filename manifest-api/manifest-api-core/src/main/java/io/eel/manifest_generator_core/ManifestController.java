@@ -29,49 +29,50 @@ public class ManifestController extends BaseController {
         this.manifestService = manifestService;
         this.artifactService = artifactService;
 
+//        this.addRouteHandler(
+//                GET, "/manifest",
+//                (request, response) -> {
+//                    Optional<UUID> manifestUuid = Optional.ofNullable(request.getQueryParameters().get("uuid").getFirst())
+//                            .map(UUID::fromString);
+//
+//                    Optional<Integer> manifestVersion = Optional.ofNullable(request.getQueryParameters().get("version").getFirst())
+//                            .map(Integer::parseInt);
+//
+//                    if (manifestUuid.isEmpty() || manifestVersion.isEmpty()) {
+//                        clientError(response);
+//                        return;
+//                    }
+//
+//                    this.manifestService.getManifest(manifestUuid.get(), manifestVersion.get())
+//                        .ifPresentOrElse(
+//                                manifest -> ok(response).setBody(gson.toJson(manifest)),
+//                                () -> notFound(response)
+//                        );
+//                }
+//        ).addRouteHandler(
+//                POST, "/manifest",
+//                (request, response) -> {
+//                    if (request.getBody().isEmpty()) {
+//                        log.severe("Request body is empty");
+//
+//                        notFound(response);
+//                        return;
+//                    }
+//
+//                    // Get the workbook's bucket and key.
+//                    final String bucket = request.getBody().get("bucket").getAsString();
+//                    final String key = request.getBody().get("key").getAsString();
+//
+//                    // Get workbook metadata like author, name, and version from request body.
+//                    final WorkbookMetadata workbookMetadata = gson.fromJson(request.getBody(), WorkbookMetadata.class);
+//
+//                    Manifest manifest = this.manifestService.createManifest(bucket, key, workbookMetadata);
+//
+//                    // Craft the HTTP response.
+//                    created(response).setBody(gson.toJson(manifest));
+//                }
+//        )
         this.addRouteHandler(
-                GET, "/manifest",
-                (request, response) -> {
-                    Optional<UUID> manifestUuid = Optional.ofNullable(request.getQueryParameters().get("uuid").getFirst())
-                            .map(UUID::fromString);
-
-                    Optional<Integer> manifestVersion = Optional.ofNullable(request.getQueryParameters().get("version").getFirst())
-                            .map(Integer::parseInt);
-
-                    if (manifestUuid.isEmpty() || manifestVersion.isEmpty()) {
-                        clientError(response);
-                        return;
-                    }
-
-                    this.manifestService.getManifest(manifestUuid.get(), manifestVersion.get())
-                        .ifPresentOrElse(
-                                manifest -> ok(response).setBody(gson.toJson(manifest)),
-                                () -> notFound(response)
-                        );
-                }
-        ).addRouteHandler(
-                POST, "/manifest",
-                (request, response) -> {
-                    if (request.getBody().isEmpty()) {
-                        log.severe("Request body is empty");
-
-                        notFound(response);
-                        return;
-                    }
-
-                    // Get the workbook's bucket and key.
-                    final String bucket = request.getBody().get("bucket").getAsString();
-                    final String key = request.getBody().get("key").getAsString();
-
-                    // Get workbook metadata like author, name, and version from request body.
-                    final WorkbookMetadata workbookMetadata = gson.fromJson(request.getBody(), WorkbookMetadata.class);
-
-                    Manifest manifest = this.manifestService.createManifest(bucket, key, workbookMetadata);
-
-                    // Craft the HTTP response.
-                    created(response).setBody(gson.toJson(manifest));
-                }
-        ).addRouteHandler(
                 // todo: Fix this route later.  For some reason API GW only works with the `/manifest` path.
                 PUT, "/manifest",
                 (request, response) -> {

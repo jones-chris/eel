@@ -144,13 +144,13 @@ public class WorkbookCalculationEngine {
             // Write workbook to disk so that the user can open it for debugging, if needed.
             Optional<StorageLocation> logStorageLocation = this.workbookLoggerDao.log(workbookProxy.getWorkbook(), manifest.name());
             if (workbookOutput != null && logStorageLocation.isPresent()) {
+                log.info("Adding storage location to response");
                 workbookOutput.setStorageLocation(logStorageLocation.get());
             }
 
             this.workbookProxy.close();
         }
 
-        System.err.println("Workbook output storage location is " + workbookOutput.getStorageLocation().get());
         return workbookOutput;
     }
 

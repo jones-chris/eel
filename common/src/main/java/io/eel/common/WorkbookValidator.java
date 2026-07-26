@@ -268,11 +268,14 @@ public class WorkbookValidator {
                 .getRow(cellReference.getRow())
                 .getCell(cellReference.getCol());
         String dataType = Constants.BUILT_IN_FORMAT_TO_SQL_TYPE_MAP.get(cell.getCellStyle().getDataFormatString());
-        String cellComment = cell.getCellComment().getString().toString();
+        String cellComment = Optional.ofNullable(cell.getCellComment())
+                .map(Comment::getString)
+                .map(RichTextString::getString)
+                .orElse(nameComment);
 
         return new NamedRangeMetadata(
                 nameName,
-                cellComment == null ? nameComment : cellComment,
+                cellComment,
                 1, // Only single cell named ranges are allowed, so number of rows and columns is 1.
                 1,
                 refersTo,

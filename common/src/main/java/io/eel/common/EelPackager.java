@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -34,7 +33,6 @@ public class EelPackager {
         // Get Excel file name.
         final String excelFileName = args[0];
 
-
         final String author = System.getProperty("user.name");
         final String name = "test";
         final int version = 0;
@@ -45,8 +43,10 @@ public class EelPackager {
 
         String manifestJson = gson.toJson(manifest);
 
-        Path tmpFilePath = File.createTempFile("eel_manifest", ".json").toPath();
+//        Path tmpFilePath = File.createTempFile("eel_manifest", ".json").toPath();
+        Path tmpFilePath = new File("manifest.json").toPath();
         Files.write(tmpFilePath, manifestJson.getBytes());
+        System.out.println("Manifest written to: " + tmpFilePath.toAbsolutePath().toString());
     }
 
     /**

@@ -43,10 +43,9 @@ public class EelPackager {
 
         String manifestJson = gson.toJson(manifest);
 
-//        Path tmpFilePath = File.createTempFile("eel_manifest", ".json").toPath();
         Path tmpFilePath = new File("manifest.json").toPath();
         Files.write(tmpFilePath, manifestJson.getBytes());
-        System.out.println("Manifest written to: " + tmpFilePath.toAbsolutePath().toString());
+        System.out.println("Manifest written to: " + tmpFilePath.toAbsolutePath());
     }
 
     /**

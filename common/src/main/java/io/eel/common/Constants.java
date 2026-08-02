@@ -7,6 +7,7 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -18,14 +19,35 @@ public class Constants {
 
     public final static String OUTPUT_SHEET_PREFIX = "output_";
 
-    public static final Map<String, String> BUILT_IN_FORMAT_TO_SQL_TYPE_MAP = Map.of(
-            "General", "String",
-            "0", "Integer",
-            "0.00", "Decimal",
-            "m/d/yyyy;@", "Date",
-            "mm/dd/yyyy", "Date",
-            "boolean", "Boolean"
-    );
+    public final static Map<String ,String> BUILT_IN_FORMAT_TO_SQL_TYPE_MAP = new HashMap<>() {{
+        put("General", "String"); // ex: General
+        put("@", "String"); // ex: @
+        put("0", "Integer"); // ex: -1235
+        put("0.00", "Decimal"); // ex: -1234.57
+        put("#,##0", "Integer"); // ex: 1,235
+        put("#,##0.00", "Decimal"); // ex: 1,234.57 (one leading zero
+        put("#,###.00", "Decimal"); // ex: 1,234.57 (no leading zero)
+        put("#,##0_);(#,##0)", "Integer"); // ex: (1,235) (one leading zero)
+        put("#,##0.00_);(#,##0.00)", "Decimal"); // ex: (1,234.57) (no leading zero)
+        put("[NatNum12 cardinal]0", "String"); // ex: one hundred
+        put("[NatNum12 capitalize cardinal]0", "String"); // ex: One hundred
+        put("[NatNum12 title cardinal]0", "String"); // ex: One Hundred
+        put("[NatNum12 upper cardinal]0", "String"); // ex: ONE HUNDRED
+        put("#,##0_);[RED](#,##0)", "Integer"); // ex: (1,235) (one leading zero) (red)
+        put("#,##0.00_);[RED](#,##0.00)", "Decimal"); // ex: (1,234.57) (no leading zero) (red)
+        put("_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)", "Decimal"); // ex: (1234.57) (black)
+//        put("m/d/yyyy;@", "Date");
+        put("M/D/YYYY H:MM", "DateTime"); // ex: 12/1/1999 13:37
+        put("MM/DD/YYYY HH:MM AM/PM", "DateTime"); // ex: 12/01/1999 1:37 PM
+        put("MM/DD/YY HH:MM AM/PM", "DateTime"); // ex: 12/01/99 1:37 PM
+        put("MM/DD/YYYY HH:MM:SS", "DateTime"); // ex: 12/01/1999 13:37:46
+        put("YYYY-MM-DD HH:MM:SS", "DateTime"); // ex: 1999-12-01 13:37:46
+        put("YYYY-MM-DD HH:MM:SS.000", "DateTime"); // ex: 1999-12-01 13:37:46.000
+        put("YYYY-MM-DD\"T\"HH:MM:SS", "DateTime"); // ex: 1999-12-01T13:37:46 (ISO 8601)
+        put("YYYY-MM-DD\"T\"HH:MM:SS.000", "DateTime"); // ex: 1999-12-01T13:37:46.000
+        put("MM/DD/YYYY", "Date"); // ex: 12/01/1999
+        put("boolean", "Boolean"); // ex: TRUE/FALSE
+    }};
 
     private static final Map<String, Function<Cell, Object>> BUILT_IN_TYPE_TRANSFORMERS = Map.of(
             // https://poi.apache.org/apidocs/dev/org/apache/poi/ss/usermodel/BuiltinFormats.html

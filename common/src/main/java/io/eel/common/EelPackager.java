@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -34,32 +33,19 @@ public class EelPackager {
         // Get Excel file name.
         final String excelFileName = args[0];
 
-        // Get author.
-        String author;
-        try {
-            author = args[1];
-        } catch (IndexOutOfBoundsException e) {
-            author = System.getProperty("user.name");
-        }
-
-        // Get name.
-        final String name = args[2];
-
-        // Get version.
-        final int version = Integer.parseInt(args[3]);
-
-        // Get id.
-        final UUID id = Optional.ofNullable(args[4])
-                .map(UUID::fromString)
-                .orElse(UUID.randomUUID());
+        final String author = System.getProperty("user.name");
+        final String name = "test";
+        final int version = 0;
+        final UUID id = UUID.randomUUID();
 
         // Generate the manifest, serialize it to JSON, and write it to a file.
         WorkbookValidator.Manifest manifest = createManifest(excelFileName, author, name, version, id);
 
         String manifestJson = gson.toJson(manifest);
 
-        Path tmpFilePath = File.createTempFile("eel_manifest", ".json").toPath();
+        Path tmpFilePath = new File("manifest.json").toPath();
         Files.write(tmpFilePath, manifestJson.getBytes());
+        System.out.println("Manifest written to: " + tmpFilePath.toAbsolutePath());
     }
 
     /**

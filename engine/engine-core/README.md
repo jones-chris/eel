@@ -15,3 +15,10 @@ To test the MCP server/API, you can use MCP Inspector.  Do the following:
 6. Click on any tool to see its details, including its name, description, and parameters.
 7. Choose a tool, fill out the parameters, and click the `Run Tool` button.  There should be a new item in the `History` 
 panel that shows a successful response.
+
+Note that if you want to use a custom-made XLSX file in the JAR instead of the default example in the /engine-core/src/main/resources
+directory, then you can run the following:
+
+```shell
+./eel_packager.sh /path/to/my.xlsx chris customerStuff 0
+```

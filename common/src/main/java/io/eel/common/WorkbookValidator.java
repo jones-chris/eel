@@ -72,17 +72,10 @@ public class WorkbookValidator {
             String nameName = name.getNameName().toLowerCase();
 
             if (nameName.startsWith(Constants.INPUT_SHEET_PREFIX.toLowerCase())) {
-                this.inputNamedRanges.add(buildNamedRangeMetadata(name, workbook));
+                this.inputNamedRanges.add(buildNamedRangeMetadata(name));
             } else if (nameName.startsWith(Constants.OUTPUT_SHEET_PREFIX.toLowerCase())) {
-                this.outputNamedRanges.add(buildNamedRangeMetadata(name, workbook));
+                this.outputNamedRanges.add(buildNamedRangeMetadata(name));
             }
-        }
-
-        // If no input sheets or named ranges exist, then throw an exception.
-        if (this.inputSheets.isEmpty() && this.inputNamedRanges.isEmpty()) {
-            throw new WorkbookValidationException(
-                    String.format("There should be at least one input sheet or named range.  An input sheet's or named range's name starts with '%s'", Constants.INPUT_SHEET_PREFIX)
-            );
         }
 
         // Check that there is at least one output worksheet or named range.
@@ -218,27 +211,57 @@ public class WorkbookValidator {
     }
 
     private static SheetMetadata getSheetMetadata(Sheet sheet) {
-        Map<String, Object> columnDataTypes = new LinkedHashMap<>(); // Using a LinkedHashMap to maintain insertion order.
+        List<ColumnMetadata> columnMetadata = new ArrayList<>();
         Row headerRow = sheet.getRow(0);
         short lastCellNumber = headerRow.getLastCellNum();
         for (int i = 0; i < lastCellNumber; i++) {
             Cell cell = headerRow.getCell(i);
             String cellValue = cell.getStringCellValue();
             String type = Constants.BUILT_IN_FORMAT_TO_SQL_TYPE_MAP.get(cell.getCellStyle().getDataFormatString());
+            String comment = cell.getCellComment() != null ? cell.getCellComment().getString().getString() : null;
 
-            columnDataTypes.put(cellValue, type);
+            columnMetadata.add(
+                    new ColumnMetadata(cellValue, type, comment)
+            );
         }
 
+        List<String> columnNames = columnMetadata.stream()
+                .map(ColumnMetadata::name)
+                .toList();
 
         return new SheetMetadata(
                 sheet.getSheetName(),
                 sheet.getRow(0).getLastCellNum(),
-                new ArrayList<>(columnDataTypes.keySet()),
-                columnDataTypes
+                columnNames,
+                columnMetadata
         );
     }
 
-    private static NamedRangeMetadata buildNamedRangeMetadata(Name name, Workbook workbook) {
+    private String getNameComment(Name name) {
+        String nameComment = name.getComment();
+        String refersTo = name.getRefersToFormula();
+
+        // The named range must refer to a single cell, not a range of cells.
+        AreaReference namedRangeAreaReference = new AreaReference(refersTo, SpreadsheetVersion.EXCEL2007);
+        if (! namedRangeAreaReference.isSingleCell()) {
+            throw new WorkbookValidationException(
+                    String.format("Named range '%s' refers to a range of cells, but must refer to a single cell", name.getNameName())
+            );
+        }
+
+        // Get data type and comment (if it exists) for the single celled named range.
+        CellReference cellReference = namedRangeAreaReference.getFirstCell();
+        Cell cell = this.workbook.getSheet(cellReference.getSheetName())
+                .getRow(cellReference.getRow())
+                .getCell(cellReference.getCol());
+
+        return Optional.ofNullable(cell.getCellComment())
+                .map(Comment::getString)
+                .map(RichTextString::getString)
+                .orElse(nameComment);
+    }
+
+    private NamedRangeMetadata buildNamedRangeMetadata(Name name) {
         // Strip the "input_" or "output_" prefix from the named range name to get the canonical named range name.
         String nameName = name.getNameName();
         if (nameName.toLowerCase().startsWith(Constants.INPUT_SHEET_PREFIX)) {
@@ -251,7 +274,6 @@ public class WorkbookValidator {
             );
         }
 
-        String nameComment = name.getComment();
         String refersTo = name.getRefersToFormula();
 
         // The named range must refer to a single cell, not a range of cells.
@@ -264,14 +286,11 @@ public class WorkbookValidator {
 
         // Get data type and comment (if it exists) for the single celled named range.
         CellReference cellReference = namedRangeAreaReference.getFirstCell();
-        Cell cell = workbook.getSheet(cellReference.getSheetName())
+        Cell cell = this.workbook.getSheet(cellReference.getSheetName())
                 .getRow(cellReference.getRow())
                 .getCell(cellReference.getCol());
         String dataType = Constants.BUILT_IN_FORMAT_TO_SQL_TYPE_MAP.get(cell.getCellStyle().getDataFormatString());
-        String cellComment = Optional.ofNullable(cell.getCellComment())
-                .map(Comment::getString)
-                .map(RichTextString::getString)
-                .orElse(nameComment);
+        String cellComment = this.getNameComment(name);
 
         return new NamedRangeMetadata(
                 nameName,
@@ -299,7 +318,7 @@ public class WorkbookValidator {
             String name,
             int numberOfColumns,
             List<String> columnNames,
-            Map<String, Object> columnDataTypes
+            List<ColumnMetadata> columnsMetadata
     ) {}
 
     public record NamedRangeMetadata(
@@ -309,6 +328,12 @@ public class WorkbookValidator {
             int numberOfColumns,
             String address,
             String dataType
+    ) {}
+
+    public record ColumnMetadata(
+            String name,
+            String dataType,
+            String comment
     ) {}
 
 }

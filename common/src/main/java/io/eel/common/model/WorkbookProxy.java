@@ -49,8 +49,8 @@ public class WorkbookProxy implements AutoCloseable {
         for (int sheetIdx = 0; sheetIdx < workbook.getNumberOfSheets(); sheetIdx++) {
             Sheet sheet = workbook.getSheetAt(sheetIdx);
             if (sheet.getSheetName().toLowerCase().startsWith("output")) {
-                // Get data from sheet.  It MUST be a continuous block of text.  The first blank row that is encountered
-                // signals the end of the output data block.
+                // Get data from the output sheet.  It MUST be a continuous block of text.  The first blank row that is
+                // encountered signals the end of the output data block.
                 List<Object[]> sheetDataBlock = new ArrayList<>();
                 for (int rowIdx = 1; rowIdx < 50; rowIdx++) { // todo:  check why 50 is used here.
                     // Get row

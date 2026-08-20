@@ -196,6 +196,8 @@ public class WorkbookValidator {
         short lastCellNum = headerRow.getLastCellNum();
         for (int i = 0; i < lastCellNum; i++) {
             Cell cell = headerRow.getCell(i);
+
+            // The following 2 checks apply to all header rows.
             if (cell == null) {
                 throw new WorkbookValidationException(
                         String.format("[%s] Each cell in the header row must not be blank or null, but cell at index %d is null", sheetName, i)
@@ -206,6 +208,18 @@ public class WorkbookValidator {
                 throw new WorkbookValidationException(
                         String.format("[%s] Each cell in the header row must not be blank, but cell %s is blank", sheetName, cell.getAddress().formatAsString())
                 );
+            }
+
+            // The next check applies only to the first header column in an output sheet.  It must be called "include_in_output"
+            // (case-insensitive) and be a boolean.  This acts as a "short circuit" for knowing whether to include/exclude
+            // the row from the extracted output after calculations are run.
+            if (i == 0 && sheetName.toLowerCase().startsWith(Constants.OUTPUT_SHEET_PREFIX.toLowerCase())) {
+                String firstHeaderCellValue = cell.getStringCellValue();
+                if (! firstHeaderCellValue.equalsIgnoreCase(Constants.INCLUDE_IN_OUTPUT_COLUMN_NAME)) {
+                    throw new WorkbookValidationException(
+                            String.format("[%s] The first header column in an output sheet must be called '%s' (case-insensitive), but is called '%s'", sheetName, Constants.INCLUDE_IN_OUTPUT_COLUMN_NAME, firstHeaderCellValue)
+                    );
+                }
             }
         }
     }

@@ -270,7 +270,7 @@ public class McpMain {
                                 .build();
                     } catch (Exception e) {
                         return new McpSchema.CallToolResult(
-                                List.of(new McpSchema.TextContent("Error: There was an error running the workbook engine: " + e.getMessage())),
+                                List.of(new McpSchema.TextContent("Error: There was an error running the workbook engine: " + stringifyExceptionStackTrace(e))),
                                 true,
                                 new Object(),
                                 Map.of()
@@ -278,6 +278,17 @@ public class McpMain {
                     }
                 }
         );
+    }
+
+    private static String stringifyExceptionStackTrace(Throwable t) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(t.toString()).append("\n");
+
+        for (StackTraceElement element : t.getStackTrace()) {
+            sb.append("\tat ").append(element.toString()).append("\n");
+        }
+
+        return sb.toString();
     }
 
 }

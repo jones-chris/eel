@@ -21,7 +21,7 @@ fi
 
 # validate excel file and create manifest.json file.
 echo "Validating excel file and creating manifest.json file..."
-java -cp ./engine/engine-core/target/engine-core-1.0-SNAPSHOT.jar io.eel.common.EelPackager "$EXCEL_FILE_NAME" "$USER_NAME" "$TRANSFORMER_NAME" "$VERSION"
+java -cp ./engine/engine-core/target/engine-core-1.0-SNAPSHOT.jar io.eel.common.EelPackager "$EXCEL_FILE_NAME" "$USER_NAME" "$TRANSFORMER_NAME" "$VERSION" || exit 1
 
 echo "Creating a new jar file..."
 NEW_JAR_FILE_PATH="./$TRANSFORMER_NAME-v$VERSION.jar"

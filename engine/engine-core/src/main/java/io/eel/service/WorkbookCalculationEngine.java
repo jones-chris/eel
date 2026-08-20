@@ -93,9 +93,14 @@ public class WorkbookCalculationEngine {
                     }
 
                     // todo:  Make this a debug logging statement.
-//                    log.info("Attempting to set cell {}:{} to {}", worksheetName, cell.getAddress().formatAsString(), value);
+                    log.info(
+                            String.format("Attempting to set cell %s:%s to %s", worksheetName, cell.getAddress().formatAsString(), value)
+                    );
 
-                    final CellType cellType = cell.getCellType();
+                    // Get the expected cell type from the template (header row), not from the newly created blank cell
+                    Cell templateCell = headerRow.getCell(cellIdx);
+                    final CellType cellType = (templateCell != null) ? templateCell.getCellType() : CellType.STRING;
+                    
                     if (cellType.equals(CellType.STRING)) {
                         cell.setCellValue(value);
                     } else if (cellType.equals(CellType.NUMERIC)) {
@@ -103,7 +108,7 @@ public class WorkbookCalculationEngine {
                     } else if (cellType.equals(CellType.BOOLEAN)) {
                         cell.setCellValue(Boolean.parseBoolean(value));
                     } else {
-                        throw new IllegalArgumentException("Unsupported input data type: " + value.getClass().getName());
+                        throw new IllegalArgumentException("Unsupported input data type: " + cellType + " for cell " + cell.getAddress().formatAsString() + " with value " + value);
                     }
                 }
 
@@ -132,12 +137,15 @@ public class WorkbookCalculationEngine {
         try {
             // Calculate all formulas.
             this.workbookProxy.getWorkbook().getCreationHelper().createFormulaEvaluator().evaluateAll();
+            log.info("Workbook calculation completed successfully.");
 
             // Check exit code.
             // todo:  Throw a checked exception here so we can handle it.
             this.workbookProxy.assertIsSuccessful();
+            log.info("Workbook calculation completed successfully.");
 
             workbookOutput = workbookProxy.getOutputs();
+            log.info("Workbook output retrieved successfully.");
         } catch (Throwable t) {
             throw new RuntimeException(t);  // todo:  change this exception.
         } finally {

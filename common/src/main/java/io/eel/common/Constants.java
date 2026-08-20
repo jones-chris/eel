@@ -19,6 +19,8 @@ public class Constants {
 
     public final static String OUTPUT_SHEET_PREFIX = "output_";
 
+    public final static String INCLUDE_IN_OUTPUT_COLUMN_NAME = "include_in_output";
+
     public final static Map<String ,String> BUILT_IN_FORMAT_TO_SQL_TYPE_MAP = new HashMap<>() {{
         put("General", "String"); // ex: General
         put("@", "String"); // ex: @
@@ -88,14 +90,6 @@ public class Constants {
         } catch (Throwable t) {
             System.out.println("Error encountered when transforming cell at " + Constants.getCellAddress(cell));
             throw t;
-        }
-    }
-
-    public static boolean isCellBlank(Cell cell) {
-        try {
-            return cell.getStringCellValue().isEmpty();
-        } catch (IllegalStateException e) {
-            return false;
         }
     }
 

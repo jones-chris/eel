@@ -231,6 +231,15 @@ public class WorkbookValidator {
         for (int i = 0; i < lastCellNumber; i++) {
             Cell cell = headerRow.getCell(i);
             String cellValue = cell.getStringCellValue();
+
+            if (Constants.IGNORED_COLUMN_NAMES.contains(cellValue.toLowerCase())) {
+                continue;
+            }
+
+            if (Constants.IGNORED_COLUMN_NAME_PREFIXES.stream().anyMatch(prefix -> cellValue.toLowerCase().startsWith(prefix.toLowerCase()))) {
+                continue;
+            }
+
             String type = Constants.BUILT_IN_FORMAT_TO_SQL_TYPE_MAP.get(cell.getCellStyle().getDataFormatString());
             String comment = cell.getCellComment() != null ? cell.getCellComment().getString().getString() : null;
 

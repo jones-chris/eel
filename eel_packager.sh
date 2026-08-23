@@ -1,15 +1,15 @@
 #!/bin/bash
 
 EXCEL_FILE_NAME=$1
-USER_NAME=$2
-TRANSFORMER_NAME=$3
-VERSION=$4
+#USER_NAME=$2
+#TRANSFORMER_NAME=$3
+VERSION=$2
 
 EXCEL_BASENAME=$(basename "$EXCEL_FILE_NAME")
 EXCEL_DIR=$(dirname "$EXCEL_FILE_NAME")
 
-if [ -z "$EXCEL_FILE_NAME" ] || [ -z "$USER_NAME" ] || [ -z "$TRANSFORMER_NAME" ] || [ -z "$VERSION" ]; then
-    echo "Incorrect usage!  Correct usage: $0 <excel_file_path> <user_name> <transformer_name> <version>"
+if [ -z "$EXCEL_FILE_NAME" ] || [ -z "$VERSION" ]; then
+    echo "Incorrect usage!  Correct usage: $0 <excel_file_path> <version>"
     exit 1
 fi
 
@@ -21,7 +21,7 @@ fi
 
 # validate excel file and create manifest.json file.
 echo "Validating excel file and creating manifest.json file..."
-java -cp ./engine/engine-core/target/engine-core-1.0-SNAPSHOT.jar io.eel.common.EelPackager "$EXCEL_FILE_NAME" "$USER_NAME" "$TRANSFORMER_NAME" "$VERSION" || exit 1
+java -cp ./engine/engine-core/target/engine-core-1.0-SNAPSHOT.jar io.eel.common.EelPackager "$EXCEL_FILE_NAME" "$VERSION" || exit 1
 
 echo "Creating a new jar file..."
 NEW_JAR_FILE_PATH="./$TRANSFORMER_NAME-v$VERSION.jar"

@@ -36,7 +36,7 @@ public class WorkbookValidator {
 
     private final UUID id;
 
-    public WorkbookValidator(Workbook workbook, String author, String name, int version, UUID id) {
+    public WorkbookValidator(Workbook workbook, String author, String name, int version, UUID id, String description) {
         this.workbook = workbook;
         this.author = (author == null) ? System.getProperty("user.name") : author;
         this.name = name;

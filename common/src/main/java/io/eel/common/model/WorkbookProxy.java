@@ -53,9 +53,10 @@ public class WorkbookProxy implements AutoCloseable {
 
     /**
      * Extracts the output data from the workbook.  The output data is expected to be in sheets that start with "output_"
-     * in their name. The first row of the output sheet is expected to contain the column names and the first column of
+     * in their name. The first row of the output sheet is expected to contain the column names, and the first column of
      * each row is expected to contain a boolean value indicating whether the row should be included in the output or not.
-     * @return
+     *
+     * @return {@link WorkbookOutput}
      */
     // todo:  Try reducing the cognitive complexity of this method.
     public WorkbookOutput getOutputs() {
@@ -82,7 +83,7 @@ public class WorkbookProxy implements AutoCloseable {
                 // Get data from the output sheet.  It MUST be a continuous block of text.  The first blank row that is
                 // encountered signals the end of the output data block.
                 List<Object[]> sheetDataBlock = new ArrayList<>();
-                for (int rowIdx = 1; rowIdx < 500; rowIdx++) { // todo:  check why 500 is used here.
+                for (int rowIdx = 1; rowIdx < sheet.getLastRowNum() + 1; rowIdx++) {
                     // Get row
                     Row row = sheet.getRow(rowIdx);
                     List<Object> rowDataBlock = new ArrayList<>();
@@ -110,10 +111,9 @@ public class WorkbookProxy implements AutoCloseable {
                         rowDataBlock.add(cellValue);
                     }
 
-                    // If the row is empty, then we have reached the end of the output data block, and we can break out of
-                    // the loop.
+                    // We don't add empty rows to the output.
                     if (hasAllEmptyElements(rowDataBlock)) {
-                        break;
+                        continue;
                     }
 
                     sheetDataBlock.add(rowDataBlock.toArray());

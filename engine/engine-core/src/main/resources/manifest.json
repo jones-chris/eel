@@ -1,0 +1,100 @@
+{
+  "flowId": "d03155b8-bd80-4c2a-92f3-2769e54714d2",
+  "author": "pc",
+  "name": "Validate Transaction Categories",
+  "flowVersion": 0,
+  "flowCanonicalId": "d03155b8-bd80-4c2a-92f3-2769e54714d2#0",
+  "inputSheetsMetadata": [
+    {
+      "name": "input_categories",
+      "numberOfColumns": 1,
+      "columnNames": [
+        "category"
+      ],
+      "columnsMetadata": [
+        {
+          "name": "category",
+          "dataType": "String"
+        }
+      ]
+    },
+    {
+      "name": "input_transactions",
+      "numberOfColumns": 7,
+      "columnNames": [
+        "Date",
+        "Account",
+        "Reviewed",
+        "Payee",
+        "Category",
+        "Exclusion",
+        "Amount"
+      ],
+      "columnsMetadata": [
+        {
+          "name": "Date"
+        },
+        {
+          "name": "Account",
+          "dataType": "String"
+        },
+        {
+          "name": "Reviewed",
+          "dataType": "String"
+        },
+        {
+          "name": "Payee",
+          "dataType": "String"
+        },
+        {
+          "name": "Category",
+          "dataType": "String"
+        },
+        {
+          "name": "Exclusion",
+          "dataType": "String"
+        },
+        {
+          "name": "Amount",
+          "dataType": "Decimal"
+        }
+      ]
+    }
+  ],
+  "outputSheetsMetadata": [
+    {
+      "name": "output_invalid_categories",
+      "numberOfColumns": 7,
+      "columnNames": [
+        "Date",
+        "Account",
+        "Payee",
+        "Category",
+        "Amount"
+      ],
+      "columnsMetadata": [
+        {
+          "name": "Date"
+        },
+        {
+          "name": "Account",
+          "dataType": "String"
+        },
+        {
+          "name": "Payee",
+          "dataType": "String"
+        },
+        {
+          "name": "Category",
+          "dataType": "String"
+        },
+        {
+          "name": "Amount",
+          "dataType": "Decimal"
+        }
+      ]
+    }
+  ],
+  "inputNamedRanges": [],
+  "outputNamedRanges": []
+}

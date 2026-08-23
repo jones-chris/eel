@@ -47,7 +47,8 @@ public class ManifestServiceImpl implements ManifestService {
                     workbookMetadata.author(), // todo:  make this constructor take a WorkbookMetadata parameter instead of unpacking the object into separate parameters.
                     workbookMetadata.name(),
                     workbookMetadata.version(),
-                    UUID.fromString(key)
+                    UUID.fromString(key),
+                    ""
             ).assertIsValid()
             .createManifest();
 

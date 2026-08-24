@@ -38,7 +38,7 @@ public class Constants {
         put("0", "Integer"); // ex: -1235
         put("0.00", "Decimal"); // ex: -1234.57
         put("#,##0", "Integer"); // ex: 1,235
-        put("#,##0.00", "Decimal"); // ex: 1,234.57 (one leading zero
+        put("#,##0.00", "Decimal"); // ex: 1,234.57 (one leading zero)
         put("#,###.00", "Decimal"); // ex: 1,234.57 (no leading zero)
         put("#,##0_);(#,##0)", "Integer"); // ex: (1,235) (one leading zero)
         put("#,##0.00_);(#,##0.00)", "Decimal"); // ex: (1,234.57) (no leading zero)
@@ -49,16 +49,16 @@ public class Constants {
         put("#,##0_);[RED](#,##0)", "Integer"); // ex: (1,235) (one leading zero) (red)
         put("#,##0.00_);[RED](#,##0.00)", "Decimal"); // ex: (1,234.57) (no leading zero) (red)
         put("_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)", "Decimal"); // ex: (1234.57) (black)
-//        put("m/d/yyyy;@", "Date");
-        put("M/D/YYYY H:MM", "DateTime"); // ex: 12/1/1999 13:37
-        put("MM/DD/YYYY HH:MM AM/PM", "DateTime"); // ex: 12/01/1999 1:37 PM
-        put("MM/DD/YY HH:MM AM/PM", "DateTime"); // ex: 12/01/99 1:37 PM
-        put("MM/DD/YYYY HH:MM:SS", "DateTime"); // ex: 12/01/1999 13:37:46
-        put("YYYY-MM-DD HH:MM:SS", "DateTime"); // ex: 1999-12-01 13:37:46
-        put("YYYY-MM-DD HH:MM:SS.000", "DateTime"); // ex: 1999-12-01 13:37:46.000
-        put("YYYY-MM-DD\"T\"HH:MM:SS", "DateTime"); // ex: 1999-12-01T13:37:46 (ISO 8601)
-        put("YYYY-MM-DD\"T\"HH:MM:SS.000", "DateTime"); // ex: 1999-12-01T13:37:46.000
-        put("MM/DD/YYYY", "Date"); // ex: 12/01/1999
+        put("M/D/YYYY H:MM", "DateTime(\"M/D/YYYY H:MM\")"); // ex: 12/1/1999 13:37
+        put("MM/DD/YYYY HH:MM AM/PM", "DateTime(\"MM/DD/YYYY HH:MM AM/PM\")"); // ex: 12/01/1999 1:37 PM
+        put("MM/DD/YY HH:MM AM/PM", "DateTime(\"MM/DD/YY HH:MM AM/PM\")"); // ex: 12/01/99 1:37 PM
+        put("MM/DD/YYYY HH:MM:SS", "DateTime(\"MM/DD/YYYY HH:MM:SS\")"); // ex: 12/01/1999 13:37:46
+        put("YYYY-MM-DD HH:MM:SS", "DateTime(\"YYYY-MM-DD HH:MM:SS\")"); // ex: 1999-12-01 13:37:46
+        put("YYYY-MM-DD HH:MM:SS.000", "DateTime(\"YYYY-MM-DD HH:MM:SS.000\")"); // ex: 1999-12-01 13:37:46.000
+        put("YYYY-MM-DD\"T\"HH:MM:SS", "DateTime(\"YYYY-MM-DD\\\"T\\\"HH:MM:SS\")"); // ex: 1999-12-01T13:37:46 (ISO 8601)
+        put("YYYY-MM-DD\"T\"HH:MM:SS.000", "DateTime(\"YYYY-MM-DD\\\"T\\\"HH:MM:SS.000\")"); // ex: 1999-12-01T13:37:46.000
+        put("MM/DD/YYYY", "Date(\"MM/DD/YYYY\")"); // ex: 12/01/1999
+        put("mmm\\ d\", \"yyyy", "Date(\"mmm\\\\ d\\\", \\\"yyyy\")"); // ex: Dec 1, 1999
         put("boolean", "Boolean"); // ex: TRUE/FALSE
     }};
 

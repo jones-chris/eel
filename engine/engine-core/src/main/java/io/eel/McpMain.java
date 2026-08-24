@@ -85,15 +85,7 @@ public class McpMain {
         McpSchema.Tool manifestTool = McpSchema.Tool.builder()
                 .name("get_manifest_of_" + engine.getManifest().name())
                 .title("Get the manifest of " + engine.getManifest().name())
-                .description(
-                        String.format(
-                                """
-                                Gets the manifest of the ArcWedlr app %s, which includes metadata about the inputs and
-                                outputs.
-                                """,
-                                engine.getManifest().name()
-                        )
-                )
+                .description(engine.getManifest().description())
                 .inputSchema(
                         new McpSchema.JsonSchema(
                                 "object",
@@ -166,12 +158,15 @@ public class McpMain {
                 .description(
                         String.format(
                                 """
-                                Runs/executes the ArcWeldr XLSX workbook engine for %s given the input CSV absolute file paths.
-                                The response will contain the unique UUID of the workbook run/execution.  The client can
-                                then subsequently call the "Get Workbook Run/Execution Result" tool with the UUID to
-                                retrieve output data.
+                                Runs/executes the XLSX workbook engine for %s given the input CSV absolute file paths.
+                                Refer to the get_manifest tool in this MCP server for the input and output fields and data 
+                                types.
+                                
+                                The description of the workbook is as follows:
+                                %s
                                 """,
-                                engine.getManifest().name()
+                                engine.getManifest().name(),
+                                engine.getManifest().description()
                         )
                 )
                 .inputSchema(

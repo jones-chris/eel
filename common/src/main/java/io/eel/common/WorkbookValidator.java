@@ -36,12 +36,15 @@ public class WorkbookValidator {
 
     private final UUID id;
 
+    private final String description;
+
     public WorkbookValidator(Workbook workbook, String author, String name, int version, UUID id, String description) {
         this.workbook = workbook;
         this.author = (author == null) ? System.getProperty("user.name") : author;
         this.name = name;
         this.version = version;
         this.id = id;
+        this.description = description;
     }
 
     public WorkbookValidator assertIsValid() {
@@ -109,6 +112,7 @@ public class WorkbookValidator {
                 this.id,
                 this.author,
                 this.name,
+                this.description,
                 this.version,
                 Flow.Utils.getCanonicalId(this.id, this.version),
                 inputSheetMetadata,
@@ -329,6 +333,7 @@ public class WorkbookValidator {
             UUID flowId,
             String author,
             String name,
+            String description,
             int flowVersion,
             String flowCanonicalId,
             List<SheetMetadata> inputSheetsMetadata,

@@ -11,7 +11,7 @@
       "command": "java",
       "args": [
         "-jar",
-        "/home/pc/repos/eel/validate_transaction_categories-v0.jar"
+        "/home/pc/repos/eel/validate_transaction_categories.jar"
       ]
     }
   }

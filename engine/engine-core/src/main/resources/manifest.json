@@ -1,9 +1,10 @@
 {
-  "flowId": "d03155b8-bd80-4c2a-92f3-2769e54714d2",
-  "author": "pc",
+  "flowId": "ea00e82d-250f-4b13-a70f-12a86d207f9c",
+  "author": "chris.jones",
   "name": "Validate Transaction Categories",
-  "flowVersion": 0,
-  "flowCanonicalId": "d03155b8-bd80-4c2a-92f3-2769e54714d2#0",
+  "description": "Given a list of categories and transactions, this workbook will return a list of transactions with invalid categories that should be corrected.  If the list is empty, all given transactions have valid categories.",
+  "flowVersion": 11,
+  "flowCanonicalId": "ea00e82d-250f-4b13-a70f-12a86d207f9c#11",
   "inputSheetsMetadata": [
     {
       "name": "input_categories",
@@ -32,7 +33,8 @@
       ],
       "columnsMetadata": [
         {
-          "name": "Date"
+          "name": "Date",
+          "dataType": "Date(\"mmm\\\\ d\\\", \\\"yyyy\")"
         },
         {
           "name": "Account",
@@ -74,7 +76,8 @@
       ],
       "columnsMetadata": [
         {
-          "name": "Date"
+          "name": "Date",
+          "dataType": "Date(\"mmm\\\\ d\\\", \\\"yyyy\")"
         },
         {
           "name": "Account",

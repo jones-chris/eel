@@ -1,15 +1,13 @@
 #!/bin/bash
 
 EXCEL_FILE_NAME=$1
-#USER_NAME=$2
-#TRANSFORMER_NAME=$3
-VERSION=$2
+TRANSFORMER_NAME=$2
 
 EXCEL_BASENAME=$(basename "$EXCEL_FILE_NAME")
 EXCEL_DIR=$(dirname "$EXCEL_FILE_NAME")
 
-if [ -z "$EXCEL_FILE_NAME" ] || [ -z "$VERSION" ]; then
-    echo "Incorrect usage!  Correct usage: $0 <excel_file_path> <version>"
+if [ -z "$EXCEL_FILE_NAME" ] || [ -z "$TRANSFORMER_NAME" ]; then
+    echo "Incorrect usage!  Correct usage: $0 <excel_file_path> <transformer_name> <version>"
     exit 1
 fi
 
@@ -21,10 +19,10 @@ fi
 
 # validate excel file and create manifest.json file.
 echo "Validating excel file and creating manifest.json file..."
-java -cp ./engine/engine-core/target/engine-core-1.0-SNAPSHOT.jar io.eel.common.EelPackager "$EXCEL_FILE_NAME" "$VERSION" || exit 1
+java -cp ./engine/engine-core/target/engine-core-1.0-SNAPSHOT.jar io.eel.common.EelPackager "$EXCEL_FILE_NAME" || exit 1
 
 echo "Creating a new jar file..."
-NEW_JAR_FILE_PATH="./$TRANSFORMER_NAME-v$VERSION.jar"
+NEW_JAR_FILE_PATH="./$TRANSFORMER_NAME.jar"
 cp ./engine/engine-core/target/engine-core-1.0-SNAPSHOT.jar "$NEW_JAR_FILE_PATH"
 
 # copy excel file and manifest into jar resources directory.

@@ -371,6 +371,51 @@ public class WorkbookValidator {
             List<NamedRangeMetadata> outputNamedRanges
     ) {}
 
+    public record McpbManifest(
+            String manifest_version,
+            String name,
+            String version,
+            Author author,
+            String description,
+            McpbServer server
+    ) {
+        public static McpbManifest fromAppManifest(Manifest appManifest) {
+            String aiFriendlyName = appManifest.name.toLowerCase().replace(" ", "-");
+
+            return new McpbManifest(
+                    "0.1",
+                    aiFriendlyName,
+                    String.valueOf(appManifest.flowVersion),
+                    new Author(appManifest.author()),
+                    appManifest.description,
+                    new McpbServer(
+                            "binary",
+                            String.format("%s.jar", aiFriendlyName),
+                            new McpConfig(
+                                    "java",
+                                    new String[] { "-jar", String.format("${__dirname}/%s.jar", aiFriendlyName) }
+                            )
+                    )
+            );
+        }
+
+    }
+
+    public record Author(
+            String name
+    ) {}
+
+    public record McpbServer(
+            String type,
+            String entry_point,
+            McpConfig mcp_config
+    ) {}
+
+    public record McpConfig(
+            String command,
+            String[] args
+    ) {}
+
     public record SheetMetadata(
             String name,
             int numberOfColumns,

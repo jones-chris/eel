@@ -83,10 +83,14 @@ public class McpMain {
     }
 
     private static McpServerFeatures.SyncToolSpecification buildManifestTool() {
+        String mcpFriendlyName = engine.getManifest().name().toLowerCase().replace(" ", "_");
+
         McpSchema.Tool manifestTool = McpSchema.Tool.builder()
-                .name("get_manifest_of_" + engine.getManifest().name())
+                .name("get_manifest_of_" + mcpFriendlyName)
                 .title("Get the manifest of " + engine.getManifest().name())
-                .description(engine.getManifest().description())
+                .description(
+                        "Returns the input/output schema (sheet names, field names, types) for the Validate Transaction Categories workbook, without running it."
+                )
                 .inputSchema(
                         new McpSchema.JsonSchema(
                                 "object",
@@ -153,8 +157,11 @@ public class McpMain {
                 .toList();
 
         // Build the tool.
+        // todo:  consolidate this duplicated logic in a method/class.
+        String mcpFriendlyName = engine.getManifest().name().toLowerCase().replace(" ", "_");
+
         McpSchema.Tool runWorkbookTool = McpSchema.Tool.builder()
-                .name("run_workbook_engine_for_" + engine.getManifest().name())
+                .name("run_workbook_engine_for_" + mcpFriendlyName)
                 .title("Run the XLSX workbook engine for " + engine.getManifest().name())
                 .description(
                         String.format(
@@ -222,40 +229,12 @@ public class McpMain {
                                 );
                     } catch (Throwable t) {
                         return new McpSchema.CallToolResult(
-                          List.of(new McpSchema.TextContent(t.getMessage())),
-                          true,
-                          null,
-                          Map.of()
+                                List.of(new McpSchema.TextContent(t.getMessage())),
+                                true,
+                                null,
+                                Map.of()
                         );
                     }
-//                    for (WorkbookValidator.SheetMetadata inputSheetMetadata : manifest.inputSheetsMetadata()) {
-//
-//                        Object filePath = callToRequest.arguments().get(inputSheetMetadata.name());
-//                        if (filePath == null) {
-//                            return new McpSchema.CallToolResult(
-//                                    List.of(new McpSchema.TextContent("Error: Missing required input sheet " + inputSheetMetadata.name())),
-//                                    true,
-//                                    new Object(),
-//                                    Map.of()
-//                            );
-//                        }
-//
-//                        try {
-//                            InputStream inputStream = new FileInputStream(filePath.toString());
-//                            engine.withInput(inputSheetMetadata.name(), new CSVReader(new InputStreamReader(inputStream)));
-//                        } catch (FileNotFoundException e) {
-//                            return new McpSchema.CallToolResult(
-//                                    List.of(new McpSchema.TextContent("Error: File " + filePath + " not found for required input sheet " + inputSheetMetadata.name())),
-//                                    true,
-//                                    new Object(),
-//                                    Map.of()
-//                            );
-//                        }
-//                    }
-
-//                    boolean debugModeEnabledOverride = Boolean.parseBoolean(
-//                            callToRequest.arguments().getOrDefault("debug_mode_enabled", "false").toString()
-//                    );
 
                     try {
                         WorkbookOutput workbookOutput = engine.runWorkbook();

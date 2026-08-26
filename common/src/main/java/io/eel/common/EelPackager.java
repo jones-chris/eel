@@ -37,14 +37,21 @@ public class EelPackager {
 
         final UUID id = UUID.randomUUID();
 
-        // Generate the manifest, serialize it to JSON, and write it to a file.
+        // Generate the app's manifest, serialize it to JSON, and write it to a file.
         WorkbookValidator.Manifest manifest = createManifest(excelFileName, id);
-
         String manifestJson = gson.toJson(manifest);
 
         Path tmpFilePath = new File("manifest.json").toPath();
         Files.write(tmpFilePath, manifestJson.getBytes());
         System.out.println("Manifest written to: " + tmpFilePath.toAbsolutePath());
+
+        // Generate the MCPB manifest, serialize it to JSON, and write it to a file.
+        WorkbookValidator.McpbManifest mcpbManifest = WorkbookValidator.McpbManifest.fromAppManifest(manifest);
+        String mcpbManifestJson = gson.toJson(mcpbManifest);
+
+        Path mcpbTmpFilePath = new File("mcpb_manifest.json").toPath();
+        Files.write(mcpbTmpFilePath, mcpbManifestJson.getBytes());
+        System.out.println("MCPB Manifest written to: " + mcpbTmpFilePath.toAbsolutePath());
     }
 
     /**

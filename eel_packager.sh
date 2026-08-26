@@ -31,7 +31,16 @@ echo "Copying excel file and manifest into jar resources directory..."
 jar uf "$NEW_JAR_FILE_PATH" -C "$EXCEL_DIR" "$EXCEL_BASENAME"
 jar uf "$NEW_JAR_FILE_PATH" ./manifest.json
 
-echo "Deleting manifest.json file..."
-rm ./manifest.json
+echo "Create MCPB file for easy user installation into AI clients..."
+MCPB_FILE_NAME="$TRANSFORMER_NAME.mcpb"
 
-echo "Done!"
+mkdir mcpb || exit 1
+cp "$NEW_JAR_FILE_PATH" ./mcpb
+cp ./mcpb_manifest.json ./mcpb/manifest.json # Notice that we rename the file here so it's what the MCPB format expects.
+(cd mcpb && zip -r "../$MCPB_FILE_NAME" .)
+
+echo "Deleting temporary files..."
+rm ./manifest.json ./mcpb_manifest.json "$TRANSFORMER_NAME".jar
+rm -rf ./mcpb
+
+echo "Done!  Your MCPB file is ready at $MCPB_FILE_NAME.  Use this file to install your MCP server in the AI client of your choice, such as Claude Desktop."

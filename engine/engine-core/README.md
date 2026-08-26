@@ -8,7 +8,7 @@ Engine Core also contains a MCP server/API that allows AI MCP clients to interac
 To test the MCP server/API, you can use MCP Inspector.  Do the following:
 
 1. Build the engine-core project by running `mvn clean install` in the engine-core directory.
-2. Start the MCP Inspector by running `npx @modelcontextprotocol/inspector --config ./engine-core/src/test/resources/mcp_server_config.json eel`
+2. Start the MCP Inspector by running `npx @modelcontextprotocol/inspector --config ./engine-core/src/test/resources/mcp_server_config.json`
 3. Copy the link in the output of the previous command and open it in your browser.  You should see the MCP Inspector interface.
 4. In the MCP Inspector interface, click on the "Connect" button to connect to the MCP server.
 5. Once connected, click `List Tools` to see the MCP server's available tools.
@@ -20,5 +20,5 @@ Note that if you want to use a custom-made XLSX file in the JAR instead of the d
 directory, then you can run the following:
 
 ```shell
-./eel_packager.sh /path/to/my.xlsx chris customerStuff 0
+./eel_packager.sh /path/to/eel.xlsx chris customerStuff 0
 ```

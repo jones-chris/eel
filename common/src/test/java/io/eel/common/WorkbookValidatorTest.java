@@ -16,7 +16,7 @@ public class WorkbookValidatorTest {
     public void createManifestIsSuccessful() throws IOException {
         Workbook workbook = new XSSFWorkbook(new FileInputStream("/home/pc/repos/eel/engine/engine-core/src/main/resources/eel.xlsx"));
 
-        WorkbookValidator.Manifest manifest = new WorkbookValidator(workbook, "author", "name", 0, UUID.randomUUID())
+        WorkbookValidator.Manifest manifest = new WorkbookValidator(workbook, "author", "name", 0, UUID.randomUUID(), "")
                 .assertIsValid()
                 .createManifest();
 

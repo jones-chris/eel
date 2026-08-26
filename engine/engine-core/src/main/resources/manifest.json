@@ -1,0 +1,103 @@
+{
+  "flowId": "ea00e82d-250f-4b13-a70f-12a86d207f9c",
+  "author": "chris.jones",
+  "name": "Validate Transaction Categories",
+  "description": "Given a list of categories and transactions, this workbook will return a list of transactions with invalid categories that should be corrected.  If the list is empty, all given transactions have valid categories.",
+  "flowVersion": 11,
+  "flowCanonicalId": "ea00e82d-250f-4b13-a70f-12a86d207f9c#11",
+  "inputSheetsMetadata": [
+    {
+      "name": "input_categories",
+      "numberOfColumns": 1,
+      "columnNames": [
+        "category"
+      ],
+      "columnsMetadata": [
+        {
+          "name": "category",
+          "dataType": "String"
+        }
+      ]
+    },
+    {
+      "name": "input_transactions",
+      "numberOfColumns": 7,
+      "columnNames": [
+        "Date",
+        "Account",
+        "Reviewed",
+        "Payee",
+        "Category",
+        "Exclusion",
+        "Amount"
+      ],
+      "columnsMetadata": [
+        {
+          "name": "Date",
+          "dataType": "Date(\"mmm\\\\ d\\\", \\\"yyyy\")"
+        },
+        {
+          "name": "Account",
+          "dataType": "String"
+        },
+        {
+          "name": "Reviewed",
+          "dataType": "String"
+        },
+        {
+          "name": "Payee",
+          "dataType": "String"
+        },
+        {
+          "name": "Category",
+          "dataType": "String"
+        },
+        {
+          "name": "Exclusion",
+          "dataType": "String"
+        },
+        {
+          "name": "Amount",
+          "dataType": "Decimal"
+        }
+      ]
+    }
+  ],
+  "outputSheetsMetadata": [
+    {
+      "name": "output_invalid_categories",
+      "numberOfColumns": 7,
+      "columnNames": [
+        "Date",
+        "Account",
+        "Payee",
+        "Category",
+        "Amount"
+      ],
+      "columnsMetadata": [
+        {
+          "name": "Date",
+          "dataType": "Date(\"mmm\\\\ d\\\", \\\"yyyy\")"
+        },
+        {
+          "name": "Account",
+          "dataType": "String"
+        },
+        {
+          "name": "Payee",
+          "dataType": "String"
+        },
+        {
+          "name": "Category",
+          "dataType": "String"
+        },
+        {
+          "name": "Amount",
+          "dataType": "Decimal"
+        }
+      ]
+    }
+  ],
+  "inputNamedRanges": [],
+  "outputNamedRanges": []
+}

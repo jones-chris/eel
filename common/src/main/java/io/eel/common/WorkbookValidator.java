@@ -2,6 +2,7 @@ package io.eel.common;
 
 import io.eel.common.exception.WorkbookValidationException;
 import io.eel.common.model.Flow;
+import org.apache.poi.ooxml.POIXMLProperties;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.AreaReference;
@@ -10,6 +11,7 @@ import org.apache.poi.ss.util.CellReference;
 import java.util.*;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openxmlformats.schemas.officeDocument.x2006.customProperties.CTProperty;
 
 import java.util.logging.Logger;
 
@@ -36,12 +38,15 @@ public class WorkbookValidator {
 
     private final UUID id;
 
-    public WorkbookValidator(Workbook workbook, String author, String name, int version, UUID id) {
+    private final String description;
+
+    public WorkbookValidator(Workbook workbook, String author, String name, int version, UUID id, String description) {
         this.workbook = workbook;
         this.author = (author == null) ? System.getProperty("user.name") : author;
         this.name = name;
         this.version = version;
         this.id = id;
+        this.description = description;
     }
 
     public WorkbookValidator assertIsValid() {
@@ -72,17 +77,10 @@ public class WorkbookValidator {
             String nameName = name.getNameName().toLowerCase();
 
             if (nameName.startsWith(Constants.INPUT_SHEET_PREFIX.toLowerCase())) {
-                this.inputNamedRanges.add(buildNamedRangeMetadata(name, workbook));
+                this.inputNamedRanges.add(buildNamedRangeMetadata(name));
             } else if (nameName.startsWith(Constants.OUTPUT_SHEET_PREFIX.toLowerCase())) {
-                this.outputNamedRanges.add(buildNamedRangeMetadata(name, workbook));
+                this.outputNamedRanges.add(buildNamedRangeMetadata(name));
             }
-        }
-
-        // If no input sheets or named ranges exist, then throw an exception.
-        if (this.inputSheets.isEmpty() && this.inputNamedRanges.isEmpty()) {
-            throw new WorkbookValidationException(
-                    String.format("There should be at least one input sheet or named range.  An input sheet's or named range's name starts with '%s'", Constants.INPUT_SHEET_PREFIX)
-            );
         }
 
         // Check that there is at least one output worksheet or named range.
@@ -116,6 +114,7 @@ public class WorkbookValidator {
                 this.id,
                 this.author,
                 this.name,
+                this.description,
                 this.version,
                 Flow.Utils.getCanonicalId(this.id, this.version),
                 inputSheetMetadata,
@@ -203,6 +202,8 @@ public class WorkbookValidator {
         short lastCellNum = headerRow.getLastCellNum();
         for (int i = 0; i < lastCellNum; i++) {
             Cell cell = headerRow.getCell(i);
+
+            // The following 2 checks apply to all header rows.
             if (cell == null) {
                 throw new WorkbookValidationException(
                         String.format("[%s] Each cell in the header row must not be blank or null, but cell at index %d is null", sheetName, i)
@@ -214,31 +215,89 @@ public class WorkbookValidator {
                         String.format("[%s] Each cell in the header row must not be blank, but cell %s is blank", sheetName, cell.getAddress().formatAsString())
                 );
             }
+
+            // The next check applies only to the first header column in an output sheet.  It must be called "include_in_output"
+            // (case-insensitive) and be a boolean.  This acts as a "short circuit" for knowing whether to include/exclude
+            // the row from the extracted output after calculations are run.
+            if (i == 0 && sheetName.toLowerCase().startsWith(Constants.OUTPUT_SHEET_PREFIX.toLowerCase())) {
+                String firstHeaderCellValue = cell.getStringCellValue();
+                if (! firstHeaderCellValue.equalsIgnoreCase(Constants.INCLUDE_IN_OUTPUT_COLUMN_NAME)) {
+                    throw new WorkbookValidationException(
+                            String.format("[%s] The first header column in an output sheet must be called '%s' (case-insensitive), but is called '%s'", sheetName, Constants.INCLUDE_IN_OUTPUT_COLUMN_NAME, firstHeaderCellValue)
+                    );
+                }
+            }
         }
     }
 
     private static SheetMetadata getSheetMetadata(Sheet sheet) {
-        Map<String, Object> columnDataTypes = new LinkedHashMap<>(); // Using a LinkedHashMap to maintain insertion order.
+        List<ColumnMetadata> columnMetadata = new ArrayList<>();
         Row headerRow = sheet.getRow(0);
         short lastCellNumber = headerRow.getLastCellNum();
         for (int i = 0; i < lastCellNumber; i++) {
             Cell cell = headerRow.getCell(i);
             String cellValue = cell.getStringCellValue();
-            String type = Constants.BUILT_IN_FORMAT_TO_SQL_TYPE_MAP.get(cell.getCellStyle().getDataFormatString());
 
-            columnDataTypes.put(cellValue, type);
+            if (Constants.IGNORED_COLUMN_NAMES.contains(cellValue.toLowerCase())) {
+                continue;
+            }
+
+            if (Constants.IGNORED_COLUMN_NAME_PREFIXES.stream().anyMatch(prefix -> cellValue.toLowerCase().startsWith(prefix.toLowerCase()))) {
+                continue;
+            }
+
+            String type = Constants.BUILT_IN_FORMAT_TO_SQL_TYPE_MAP.get(cell.getCellStyle().getDataFormatString());
+            String comment = cell.getCellComment() != null ? cell.getCellComment().getString().getString() : null;
+
+            columnMetadata.add(
+                    new ColumnMetadata(cellValue, type, comment)
+            );
         }
 
+        List<String> columnNames = columnMetadata.stream()
+                .map(ColumnMetadata::name)
+                .toList();
+
+        final String sheetRowLimitPropertyName = resolveSheetRowLimitProperty(sheet.getSheetName());
+        int rowLimit = Optional.ofNullable(getCustomProperties(sheet.getWorkbook()).getProperty(sheetRowLimitPropertyName))
+                .map(CTProperty::getLpwstr)
+                .map(Integer::parseInt)
+                .orElse(SpreadsheetVersion.EXCEL2007.getMaxRows() - 1); // Default to the maximum number of rows in Excel 2007+ minus 1 for the header row.
 
         return new SheetMetadata(
                 sheet.getSheetName(),
                 sheet.getRow(0).getLastCellNum(),
-                new ArrayList<>(columnDataTypes.keySet()),
-                columnDataTypes
+                columnNames,
+                columnMetadata,
+                rowLimit
         );
     }
 
-    private static NamedRangeMetadata buildNamedRangeMetadata(Name name, Workbook workbook) {
+    private String getNameComment(Name name) {
+        String nameComment = name.getComment();
+        String refersTo = name.getRefersToFormula();
+
+        // The named range must refer to a single cell, not a range of cells.
+        AreaReference namedRangeAreaReference = new AreaReference(refersTo, SpreadsheetVersion.EXCEL2007);
+        if (! namedRangeAreaReference.isSingleCell()) {
+            throw new WorkbookValidationException(
+                    String.format("Named range '%s' refers to a range of cells, but must refer to a single cell", name.getNameName())
+            );
+        }
+
+        // Get data type and comment (if it exists) for the single celled named range.
+        CellReference cellReference = namedRangeAreaReference.getFirstCell();
+        Cell cell = this.workbook.getSheet(cellReference.getSheetName())
+                .getRow(cellReference.getRow())
+                .getCell(cellReference.getCol());
+
+        return Optional.ofNullable(cell.getCellComment())
+                .map(Comment::getString)
+                .map(RichTextString::getString)
+                .orElse(nameComment);
+    }
+
+    private NamedRangeMetadata buildNamedRangeMetadata(Name name) {
         // Strip the "input_" or "output_" prefix from the named range name to get the canonical named range name.
         String nameName = name.getNameName();
         if (nameName.toLowerCase().startsWith(Constants.INPUT_SHEET_PREFIX)) {
@@ -251,7 +310,6 @@ public class WorkbookValidator {
             );
         }
 
-        String nameComment = name.getComment();
         String refersTo = name.getRefersToFormula();
 
         // The named range must refer to a single cell, not a range of cells.
@@ -264,14 +322,11 @@ public class WorkbookValidator {
 
         // Get data type and comment (if it exists) for the single celled named range.
         CellReference cellReference = namedRangeAreaReference.getFirstCell();
-        Cell cell = workbook.getSheet(cellReference.getSheetName())
+        Cell cell = this.workbook.getSheet(cellReference.getSheetName())
                 .getRow(cellReference.getRow())
                 .getCell(cellReference.getCol());
         String dataType = Constants.BUILT_IN_FORMAT_TO_SQL_TYPE_MAP.get(cell.getCellStyle().getDataFormatString());
-        String cellComment = Optional.ofNullable(cell.getCellComment())
-                .map(Comment::getString)
-                .map(RichTextString::getString)
-                .orElse(nameComment);
+        String cellComment = this.getNameComment(name);
 
         return new NamedRangeMetadata(
                 nameName,
@@ -283,10 +338,31 @@ public class WorkbookValidator {
         );
     }
 
+    private static POIXMLProperties.CoreProperties getCoreProperties(Workbook workbook) {
+        if (workbook instanceof XSSFWorkbook xssfWorkbook) {
+            return xssfWorkbook.getProperties().getCoreProperties();
+        } else {
+            throw new IllegalArgumentException("Only XSSF workbooks are supported");
+        }
+    }
+
+    private static POIXMLProperties.CustomProperties getCustomProperties(Workbook workbook) {
+        if (workbook instanceof XSSFWorkbook xssfWorkbook) {
+            return xssfWorkbook.getProperties().getCustomProperties();
+        } else {
+            throw new IllegalArgumentException("Only XSSF workbooks are supported");
+        }
+    }
+
+    private static String resolveSheetRowLimitProperty(String sheetName) {
+        return sheetName + ":limit";
+    }
+
     public record Manifest(
             UUID flowId,
             String author,
             String name,
+            String description,
             int flowVersion,
             String flowCanonicalId,
             List<SheetMetadata> inputSheetsMetadata,
@@ -295,11 +371,57 @@ public class WorkbookValidator {
             List<NamedRangeMetadata> outputNamedRanges
     ) {}
 
+    public record McpbManifest(
+            String manifest_version,
+            String name,
+            String version,
+            Author author,
+            String description,
+            McpbServer server
+    ) {
+        public static McpbManifest fromAppManifest(Manifest appManifest) {
+            String aiFriendlyName = appManifest.name.toLowerCase().replace(" ", "-");
+
+            return new McpbManifest(
+                    "0.1",
+                    aiFriendlyName,
+                    String.valueOf(appManifest.flowVersion),
+                    new Author(appManifest.author()),
+                    appManifest.description,
+                    new McpbServer(
+                            "binary",
+                            String.format("%s.jar", aiFriendlyName),
+                            new McpConfig(
+                                    "java",
+                                    new String[] { "-jar", String.format("${__dirname}/%s.jar", aiFriendlyName) }
+                            )
+                    )
+            );
+        }
+
+    }
+
+    public record Author(
+            String name
+    ) {}
+
+    public record McpbServer(
+            String type,
+            String entry_point,
+            McpConfig mcp_config
+    ) {}
+
+    public record McpConfig(
+            String command,
+            String[] args
+    ) {}
+
     public record SheetMetadata(
             String name,
             int numberOfColumns,
             List<String> columnNames,
-            Map<String, Object> columnDataTypes
+            List<ColumnMetadata> columnsMetadata,
+            int rowLimit
     ) {}
 
     public record NamedRangeMetadata(
@@ -309,6 +431,12 @@ public class WorkbookValidator {
             int numberOfColumns,
             String address,
             String dataType
+    ) {}
+
+    public record ColumnMetadata(
+            String name,
+            String dataType,
+            String comment
     ) {}
 
 }

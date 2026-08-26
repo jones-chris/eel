@@ -1,6 +1,7 @@
 package io.eel;
 
 import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import io.eel.common.WorkbookValidator;
 import io.eel.common.model.WorkbookOutput;
 import io.eel.service.WorkbookCalculationEngine;
@@ -82,17 +83,13 @@ public class McpMain {
     }
 
     private static McpServerFeatures.SyncToolSpecification buildManifestTool() {
+        String mcpFriendlyName = engine.getManifest().name().toLowerCase().replace(" ", "_");
+
         McpSchema.Tool manifestTool = McpSchema.Tool.builder()
-                .name("get_manifest_of_" + engine.getManifest().name())
+                .name("get_manifest_of_" + mcpFriendlyName)
                 .title("Get the manifest of " + engine.getManifest().name())
                 .description(
-                        String.format(
-                                """
-                                Gets the manifest of the ArcWedlr app %s, which includes metadata about the inputs and
-                                outputs.
-                                """,
-                                engine.getManifest().name()
-                        )
+                        "Returns the input/output schema (sheet names, field names, types) for the Validate Transaction Categories workbook, without running it."
                 )
                 .inputSchema(
                         new McpSchema.JsonSchema(
@@ -160,18 +157,24 @@ public class McpMain {
                 .toList();
 
         // Build the tool.
+        // todo:  consolidate this duplicated logic in a method/class.
+        String mcpFriendlyName = engine.getManifest().name().toLowerCase().replace(" ", "_");
+
         McpSchema.Tool runWorkbookTool = McpSchema.Tool.builder()
-                .name("run_workbook_engine_for_" + engine.getManifest().name())
+                .name("run_workbook_engine_for_" + mcpFriendlyName)
                 .title("Run the XLSX workbook engine for " + engine.getManifest().name())
                 .description(
                         String.format(
                                 """
-                                Runs/executes the ArcWeldr XLSX workbook engine for %s given the input CSV absolute file paths.
-                                The response will contain the unique UUID of the workbook run/execution.  The client can
-                                then subsequently call the "Get Workbook Run/Execution Result" tool with the UUID to
-                                retrieve output data.
+                                Runs/executes the XLSX workbook engine for %s given the input CSV absolute file paths.
+                                Refer to the get_manifest tool in this MCP server for the input and output fields and data 
+                                types.
+                                
+                                The description of the workbook is as follows:
+                                %s
                                 """,
-                                engine.getManifest().name()
+                                engine.getManifest().name(),
+                                engine.getManifest().description()
                         )
                 )
                 .inputSchema(
@@ -213,7 +216,12 @@ public class McpMain {
 
                                             try {
                                                 InputStream inputStream = new FileInputStream(filePath.toString());
-                                                engine.withInput(inputSheetMetadata.name(), new CSVReader(new InputStreamReader(inputStream)));
+
+                                                CSVReader csvReader = new CSVReaderBuilder(new InputStreamReader(inputStream))
+                                                        .withSkipLines(1) // Skip the required header row.
+                                                        .build();
+
+                                                engine.withInput(inputSheetMetadata.name(), csvReader);
                                             } catch (FileNotFoundException e) {
                                                 throw new RuntimeException("Error: File " + filePath + " not found for required input sheet " + inputSheetMetadata.name());
                                             }
@@ -221,40 +229,12 @@ public class McpMain {
                                 );
                     } catch (Throwable t) {
                         return new McpSchema.CallToolResult(
-                          List.of(new McpSchema.TextContent(t.getMessage())),
-                          true,
-                          null,
-                          Map.of()
+                                List.of(new McpSchema.TextContent(t.getMessage())),
+                                true,
+                                null,
+                                Map.of()
                         );
                     }
-//                    for (WorkbookValidator.SheetMetadata inputSheetMetadata : manifest.inputSheetsMetadata()) {
-//
-//                        Object filePath = callToRequest.arguments().get(inputSheetMetadata.name());
-//                        if (filePath == null) {
-//                            return new McpSchema.CallToolResult(
-//                                    List.of(new McpSchema.TextContent("Error: Missing required input sheet " + inputSheetMetadata.name())),
-//                                    true,
-//                                    new Object(),
-//                                    Map.of()
-//                            );
-//                        }
-//
-//                        try {
-//                            InputStream inputStream = new FileInputStream(filePath.toString());
-//                            engine.withInput(inputSheetMetadata.name(), new CSVReader(new InputStreamReader(inputStream)));
-//                        } catch (FileNotFoundException e) {
-//                            return new McpSchema.CallToolResult(
-//                                    List.of(new McpSchema.TextContent("Error: File " + filePath + " not found for required input sheet " + inputSheetMetadata.name())),
-//                                    true,
-//                                    new Object(),
-//                                    Map.of()
-//                            );
-//                        }
-//                    }
-
-//                    boolean debugModeEnabledOverride = Boolean.parseBoolean(
-//                            callToRequest.arguments().getOrDefault("debug_mode_enabled", "false").toString()
-//                    );
 
                     try {
                         WorkbookOutput workbookOutput = engine.runWorkbook();
@@ -270,7 +250,7 @@ public class McpMain {
                                 .build();
                     } catch (Exception e) {
                         return new McpSchema.CallToolResult(
-                                List.of(new McpSchema.TextContent("Error: There was an error running the workbook engine: " + e.getMessage())),
+                                List.of(new McpSchema.TextContent("Error: There was an error running the workbook engine: " + stringifyExceptionStackTrace(e))),
                                 true,
                                 new Object(),
                                 Map.of()
@@ -278,6 +258,17 @@ public class McpMain {
                     }
                 }
         );
+    }
+
+    private static String stringifyExceptionStackTrace(Throwable t) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(t.toString()).append("\n");
+
+        for (StackTraceElement element : t.getStackTrace()) {
+            sb.append("\tat ").append(element.toString()).append("\n");
+        }
+
+        return sb.toString();
     }
 
 }

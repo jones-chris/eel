@@ -2,6 +2,7 @@ package io.eel.service;
 
 import com.google.gson.Gson;
 import com.opencsv.CSVReader;
+import io.eel.common.Constants;
 import io.eel.common.WorkbookValidator;
 import io.eel.common.model.StorageLocation;
 import io.eel.common.model.WorkbookOutput;
@@ -61,6 +62,13 @@ public class WorkbookCalculationEngine {
     }
 
     public WorkbookCalculationEngine withInput(String worksheetName, CSVReader csvReader) {
+        final int inputSheetRowLimit = this.getManifest().inputSheetsMetadata()
+                .stream()
+                .filter(sheetMetadata -> sheetMetadata.name().equals(worksheetName))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Could not find input sheet metadata for " + worksheetName))
+                .rowLimit();
+
         try {
             String[] nextLine;
 
@@ -73,6 +81,10 @@ public class WorkbookCalculationEngine {
             int numOfColumns = new Object[headerRow.getLastCellNum()].length;
 
             while ((nextLine = csvReader.readNext()) != null) {
+                if (rowIdx >= inputSheetRowLimit) {
+                    throw new RuntimeException("CSV contains more rows than the row limit of " + inputSheetRowLimit + " for sheet " + worksheetName);
+                }
+
                 // Check that num of columns match.
                 if (numOfColumns != nextLine.length) {
                     throw new RuntimeException("CSV contains a row at index " + rowIdx + " that is not " + numOfColumns + " items");
@@ -85,17 +97,49 @@ public class WorkbookCalculationEngine {
                 }
 
                 for (int cellIdx = 0; cellIdx < numOfColumns; cellIdx++) {
-                    Cell cell = row.getCell(cellIdx, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                    // Check that the csv value is of the expected type for the cell in the template (header row).
+                    String expectedType = this.getManifest().inputSheetsMetadata()
+                            .stream()
+                            .filter(sheetMetadata -> sheetMetadata.name().equals(worksheetName))
+                            .findFirst()
+                            .orElseThrow(() -> new RuntimeException("Could not find input sheet metadata for " + worksheetName))
+                            .columnsMetadata()
+                            .get(cellIdx)
+                            .dataType();
+
                     String value = nextLine[cellIdx];
+
+                    // Check that the value is of the expected type.  If not, throw an exception.
+                    final int finalRowIdx = rowIdx;
+                    final int finalCellIdx = cellIdx;
+                    Optional.ofNullable(Constants.BUILT_IN_TYPE_VALIDATORS.get(expectedType))
+                            .map(validator -> validator.apply(value))
+                            .ifPresentOrElse(
+                                    isValid -> {
+                                        if (!isValid) {
+                                            throw new RuntimeException("Value " + value + " at row index " + finalRowIdx + " cell index " + finalCellIdx + " in sheet " + worksheetName + " is not of expected type " + expectedType);
+                                        }
+                                    },
+                                    () -> {
+                                        throw new RuntimeException("Could not find validator for expected type "+ expectedType + " for row index " + finalRowIdx + " cell index " + finalCellIdx + " in sheet " + worksheetName);
+                                    }
+                            );
+
+                    Cell cell = row.getCell(cellIdx, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
 
                     if (value == null || value.isBlank()) {
                         continue;
                     }
 
                     // todo:  Make this a debug logging statement.
-//                    log.info("Attempting to set cell {}:{} to {}", worksheetName, cell.getAddress().formatAsString(), value);
+                    log.info(
+                            String.format("Attempting to set cell %s:%s to %s", worksheetName, cell.getAddress().formatAsString(), value)
+                    );
 
-                    final CellType cellType = cell.getCellType();
+                    // Get the expected cell type from the template (header row), not from the newly created blank cell
+                    Cell templateCell = headerRow.getCell(cellIdx);
+                    final CellType cellType = (templateCell != null) ? templateCell.getCellType() : CellType.STRING;
+                    
                     if (cellType.equals(CellType.STRING)) {
                         cell.setCellValue(value);
                     } else if (cellType.equals(CellType.NUMERIC)) {
@@ -103,7 +147,7 @@ public class WorkbookCalculationEngine {
                     } else if (cellType.equals(CellType.BOOLEAN)) {
                         cell.setCellValue(Boolean.parseBoolean(value));
                     } else {
-                        throw new IllegalArgumentException("Unsupported input data type: " + value.getClass().getName());
+                        throw new IllegalArgumentException("Unsupported input data type: " + cellType + " for cell " + cell.getAddress().formatAsString() + " with value " + value);
                     }
                 }
 
@@ -123,7 +167,7 @@ public class WorkbookCalculationEngine {
     }
 
     public WorkbookValidator.Manifest getManifest() {
-        return manifest;
+        return this.manifest;
     }
 
     public WorkbookOutput runWorkbook() throws Exception {
@@ -132,12 +176,15 @@ public class WorkbookCalculationEngine {
         try {
             // Calculate all formulas.
             this.workbookProxy.getWorkbook().getCreationHelper().createFormulaEvaluator().evaluateAll();
+            log.info("Workbook calculation completed successfully.");
 
             // Check exit code.
             // todo:  Throw a checked exception here so we can handle it.
             this.workbookProxy.assertIsSuccessful();
+            log.info("Workbook calculation completed successfully.");
 
             workbookOutput = workbookProxy.getOutputs();
+            log.info("Workbook output retrieved successfully.");
         } catch (Throwable t) {
             throw new RuntimeException(t);  // todo:  change this exception.
         } finally {

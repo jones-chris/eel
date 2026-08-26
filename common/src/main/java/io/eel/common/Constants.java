@@ -1,17 +1,22 @@
 package io.eel.common;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.ss.usermodel.DataFormatter;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
 public class Constants {
+
+    private static final Logger log = LogManager.getLogger(Constants.class.getName());
 
     public final static String METADATA = "metadata";
 
@@ -19,13 +24,21 @@ public class Constants {
 
     public final static String OUTPUT_SHEET_PREFIX = "output_";
 
+    public final static String INCLUDE_IN_OUTPUT_COLUMN_NAME = "include_in_output";
+
+    public final static List<String> IGNORED_COLUMN_NAMES = List.of(Constants.INCLUDE_IN_OUTPUT_COLUMN_NAME);
+
+    public final static List<String> IGNORED_COLUMN_NAME_PREFIXES = List.of("ignore_");
+
+    private static final DataFormatter dataFormatter = new DataFormatter();
+
     public final static Map<String ,String> BUILT_IN_FORMAT_TO_SQL_TYPE_MAP = new HashMap<>() {{
         put("General", "String"); // ex: General
         put("@", "String"); // ex: @
         put("0", "Integer"); // ex: -1235
         put("0.00", "Decimal"); // ex: -1234.57
         put("#,##0", "Integer"); // ex: 1,235
-        put("#,##0.00", "Decimal"); // ex: 1,234.57 (one leading zero
+        put("#,##0.00", "Decimal"); // ex: 1,234.57 (one leading zero)
         put("#,###.00", "Decimal"); // ex: 1,234.57 (no leading zero)
         put("#,##0_);(#,##0)", "Integer"); // ex: (1,235) (one leading zero)
         put("#,##0.00_);(#,##0.00)", "Decimal"); // ex: (1,234.57) (no leading zero)
@@ -36,22 +49,88 @@ public class Constants {
         put("#,##0_);[RED](#,##0)", "Integer"); // ex: (1,235) (one leading zero) (red)
         put("#,##0.00_);[RED](#,##0.00)", "Decimal"); // ex: (1,234.57) (no leading zero) (red)
         put("_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)", "Decimal"); // ex: (1234.57) (black)
-//        put("m/d/yyyy;@", "Date");
-        put("M/D/YYYY H:MM", "DateTime"); // ex: 12/1/1999 13:37
-        put("MM/DD/YYYY HH:MM AM/PM", "DateTime"); // ex: 12/01/1999 1:37 PM
-        put("MM/DD/YY HH:MM AM/PM", "DateTime"); // ex: 12/01/99 1:37 PM
-        put("MM/DD/YYYY HH:MM:SS", "DateTime"); // ex: 12/01/1999 13:37:46
-        put("YYYY-MM-DD HH:MM:SS", "DateTime"); // ex: 1999-12-01 13:37:46
-        put("YYYY-MM-DD HH:MM:SS.000", "DateTime"); // ex: 1999-12-01 13:37:46.000
-        put("YYYY-MM-DD\"T\"HH:MM:SS", "DateTime"); // ex: 1999-12-01T13:37:46 (ISO 8601)
-        put("YYYY-MM-DD\"T\"HH:MM:SS.000", "DateTime"); // ex: 1999-12-01T13:37:46.000
-        put("MM/DD/YYYY", "Date"); // ex: 12/01/1999
+        put("M/D/YYYY H:MM", "DateTime(\"M/D/YYYY H:MM\")"); // ex: 12/1/1999 13:37
+        put("MM/DD/YYYY HH:MM AM/PM", "DateTime(\"MM/DD/YYYY HH:MM AM/PM\")"); // ex: 12/01/1999 1:37 PM
+        put("MM/DD/YY HH:MM AM/PM", "DateTime(\"MM/DD/YY HH:MM AM/PM\")"); // ex: 12/01/99 1:37 PM
+        put("MM/DD/YYYY HH:MM:SS", "DateTime(\"MM/DD/YYYY HH:MM:SS\")"); // ex: 12/01/1999 13:37:46
+        put("YYYY-MM-DD HH:MM:SS", "DateTime(\"YYYY-MM-DD HH:MM:SS\")"); // ex: 1999-12-01 13:37:46
+        put("YYYY-MM-DD HH:MM:SS.000", "DateTime(\"YYYY-MM-DD HH:MM:SS.000\")"); // ex: 1999-12-01 13:37:46.000
+        put("YYYY-MM-DD\"T\"HH:MM:SS", "DateTime(\"YYYY-MM-DD\\\"T\\\"HH:MM:SS\")"); // ex: 1999-12-01T13:37:46 (ISO 8601)
+        put("YYYY-MM-DD\"T\"HH:MM:SS.000", "DateTime(\"YYYY-MM-DD\\\"T\\\"HH:MM:SS.000\")"); // ex: 1999-12-01T13:37:46.000
+        put("m/d/yyyy;@", "Date(\"M/d/yyyy\")"); // ex: 12/1/1999
+        put("MM/DD/YYYY", "Date(\"MM/DD/YYYY\")"); // ex: 12/01/1999
+        put("mmm\\ d\", \"yyyy", "Date(\"mmm\\\\ d\\\", \\\"yyyy\")"); // ex: Dec 1, 1999
         put("boolean", "Boolean"); // ex: TRUE/FALSE
     }};
 
+    /**
+     * A map of built-in Excel formats to their corresponding validation functions. Each function takes a {@link String}
+     * value and returns a {@link Boolean} indicating whether the value is valid for the given format.
+     */
+    public static final Map<String, Function<String, Boolean>> BUILT_IN_TYPE_VALIDATORS = Map.of(
+            "String", value -> true,
+            "Integer", value -> {
+                try {
+                    Integer.parseInt(value);
+                    return true;
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            },
+            "Decimal", value -> {
+                try {
+                    Double.parseDouble(value);
+                    return true;
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            },
+            "Date(\"M/d/yyyy\")", value -> {
+                try {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
+                    LocalDate.parse(value, formatter);
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
+            },
+            "Date(\"MM/DD/YYYY\")", value -> {
+                try {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
+                    LocalDate.parse(value, formatter);
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
+            },
+            "Date(\"mmm\\\\ d\\\", \\\"yyyy\")", value -> {
+                try {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d, yyyy");
+                    LocalDate.parse(value, formatter);
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
+            },
+            "Boolean", value -> Boolean.parseBoolean(value)
+    );
+
     private static final Map<String, Function<Cell, Object>> BUILT_IN_TYPE_TRANSFORMERS = Map.of(
             // https://poi.apache.org/apidocs/dev/org/apache/poi/ss/usermodel/BuiltinFormats.html
-            "General", Cell::getStringCellValue,
+            "General", cell -> {
+                CellType type = cell.getCellType();
+                if (type == CellType.FORMULA) {
+                    type = cell.getCachedFormulaResultType();
+                }
+                return switch (type) {
+                    case STRING -> cell.getStringCellValue();
+                    case NUMERIC -> cell.getNumericCellValue();
+                    case BOOLEAN -> cell.getBooleanCellValue();
+                    case BLANK -> "";
+                    case ERROR -> cell.getErrorCellValue();
+                    default -> dataFormatter.formatCellValue(cell);
+                };
+            },
             "0", cell -> (int) cell.getNumericCellValue(),
             "0.00", Cell::getNumericCellValue,
             "m/d/yyyy;@", (cell) -> {
@@ -67,39 +146,44 @@ public class Constants {
     );
 
     public static Object getCellValue(Cell cell) {
-        // Check if the cell value is blank or an empty string
-        String rawValue = ((XSSFCell) cell).getRawValue();
-        if (CellType.BLANK.equals(cell.getCellType()) || rawValue.isEmpty()) {
+        if (cell == null) {
             return "";
         }
 
-        // Get the relevant cell value transformer and apply it to the cell value.
-        var transformer = BUILT_IN_TYPE_TRANSFORMERS.get(cell.getCellStyle().getDataFormatString());
-        if (transformer == null) {
-            throw new IllegalArgumentException(
-                    "Could not find transformer for cell " + cell.getSheet().getSheetName() +
-                            ":" + cell.getAddress().formatAsR1C1String() + " with cell style of " +
-                            cell.getCellStyle().getDataFormatString()
-            );
+        CellType cellType = cell.getCellType();
+        if (cellType == CellType.FORMULA) {
+            cellType = cell.getCachedFormulaResultType();
         }
 
-        try {
-            return transformer.apply(cell);
-        } catch (Throwable t) {
-            System.out.println("Error encountered when transforming cell at " + Constants.getCellAddress(cell));
-            throw t;
+        switch (cellType) {
+            case BLANK:
+                return "";
+            case BOOLEAN:
+                return cell.getBooleanCellValue();
+            case NUMERIC:
+                String format = cell.getCellStyle().getDataFormatString();
+                Function<Cell, Object> transformer = BUILT_IN_TYPE_TRANSFORMERS.get(format);
+
+                if (transformer != null) {
+                    try {
+                        return transformer.apply(cell);
+                    } catch (Throwable t) {
+                        log.error("Error encountered when transforming cell at " + Constants.getCellAddress(cell));
+                        throw t;
+                    }
+                }
+
+                return cell.getNumericCellValue();
+            case STRING:
+                return cell.getStringCellValue();
+            case ERROR:
+                return cell.getErrorCellValue();
+            default:
+                return dataFormatter.formatCellValue(cell);
         }
     }
 
-    public static boolean isCellBlank(Cell cell) {
-        try {
-            return cell.getStringCellValue().isEmpty();
-        } catch (IllegalStateException e) {
-            return false;
-        }
-    }
-
-    private static String getCellAddress(Cell cell) {
+    public static String getCellAddress(Cell cell) {
         return cell.getSheet().getSheetName() + ":" + cell.getAddress().formatAsR1C1String();
     }
 

@@ -6,12 +6,12 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.logging.Logger;
 
 public class WorkbookProxy implements AutoCloseable {
+
+    private static final Logger log = Logger.getLogger(WorkbookProxy.class.getName());
 
     private final Workbook workbook;
 
@@ -30,10 +30,18 @@ public class WorkbookProxy implements AutoCloseable {
         }
     }
 
+    /**
+     * Returns the underlying workbook instance.
+     *
+     * @return {@link Workbook}
+     */
     public Workbook getWorkbook() {
         return this.workbook;
     }
 
+    /**
+     * Asserts that the workbook calculation was successful by checking the value of the first cell in the metadata sheet.
+     */
     public void assertIsSuccessful() {
         Cell cell = this.workbook.getSheet(Constants.METADATA).getRow(0).getCell(0);
 
@@ -43,38 +51,71 @@ public class WorkbookProxy implements AutoCloseable {
         }
     }
 
+    /**
+     * Extracts the output data from the workbook.  The output data is expected to be in sheets that start with "output_"
+     * in their name. The first row of the output sheet is expected to contain the column names, and the first column of
+     * each row is expected to contain a boolean value indicating whether the row should be included in the output or not.
+     *
+     * @return {@link WorkbookOutput}
+     */
+    // todo:  Try reducing the cognitive complexity of this method.
     public WorkbookOutput getOutputs() {
         Map<String, Object[][]> outputData = new HashMap<>();
 
         for (int sheetIdx = 0; sheetIdx < workbook.getNumberOfSheets(); sheetIdx++) {
             Sheet sheet = workbook.getSheetAt(sheetIdx);
             if (sheet.getSheetName().toLowerCase().startsWith("output")) {
-                // Get data from sheet.  It MUST be a continuous block of text.  The first blank row that is encountered
-                // signals the end of the output data block.
+                Set<Integer> columnIndicesToSkip = new HashSet<>();
+                for (int cellIdx = 0; cellIdx < sheet.getRow(0).getLastCellNum(); cellIdx++) {
+                    Cell cell = sheet.getRow(0).getCell(cellIdx);
+                    String cellValue = dataFormatter.formatCellValue(cell);
+
+                    if (Constants.IGNORED_COLUMN_NAMES.contains(cellValue.toLowerCase())) {
+                        columnIndicesToSkip.add(cellIdx);
+                        continue;
+                    }
+
+                    if (Constants.IGNORED_COLUMN_NAME_PREFIXES.stream().anyMatch(prefix -> cellValue.toLowerCase().startsWith(prefix.toLowerCase()))) {
+                        columnIndicesToSkip.add(cellIdx);
+                    }
+                }
+
+                // Get data from the output sheet.  It MUST be a continuous block of text.  The first blank row that is
+                // encountered signals the end of the output data block.
                 List<Object[]> sheetDataBlock = new ArrayList<>();
-                for (int rowIdx = 1; rowIdx < 50; rowIdx++) { // todo:  check why 50 is used here.
+                for (int rowIdx = 1; rowIdx < sheet.getLastRowNum() + 1; rowIdx++) {
                     // Get row
                     Row row = sheet.getRow(rowIdx);
                     List<Object> rowDataBlock = new ArrayList<>();
-                    for (int cellIdx = 0; cellIdx < row.getLastCellNum(); cellIdx++) {
-                        // Get cell
-                        Cell cell = row.getCell(cellIdx);
 
-                        // Get value
-                        Object cellValue = Constants.getCellValue(cell);
+                    // Short circuit logic based on the include_in_output column.  If the value is false, then we skip the
+                    // row entirely...
+                    boolean includeRowInOutput = (Boolean) Constants.getCellValue(row.getCell(0));
+                    if (!includeRowInOutput) {
+                        continue;
+                    }
 
-                        if (cellValue == null || cellValue.toString().trim().isEmpty()) {
-                            break;
+                    // ...otherwise extract the data from the row and add it to the output data block.
+                    for (int cellIdx = 1; cellIdx < row.getLastCellNum(); cellIdx++) {
+                        if (columnIndicesToSkip.contains(cellIdx)) {
+                            log.info("Skipping cell at address " + Constants.getCellAddress(row.getCell(cellIdx)) + " because it is in the ignored column names list.");
+                            continue;
                         }
 
-                        // Add to output data block.
+                        Object cellValue = Constants.getCellValue(row.getCell(cellIdx));
+
+                        if (cellValue != null && cellValue.toString().trim().isEmpty()) {
+                            cellValue = null;
+                        }
+
                         rowDataBlock.add(cellValue);
                     }
 
-                    // Add row data block to sheet data block.
-                    if (rowDataBlock.isEmpty() || hasAllEmptyStrings(rowDataBlock)) {
-                        break;
+                    // We don't add empty rows to the output.
+                    if (hasAllEmptyElements(rowDataBlock)) {
+                        continue;
                     }
+
                     sheetDataBlock.add(rowDataBlock.toArray());
                 }
 
@@ -85,13 +126,30 @@ public class WorkbookProxy implements AutoCloseable {
         return new WorkbookOutput(outputData);
     }
 
+    /**
+     * Close the underlying workbook resource.  This method is called automatically when using a try-with-resources.
+     *
+     * @throws IOException if an I/O error occurs while closing the workbook.
+     */
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
         this.workbook.close();
     }
 
-    private static boolean hasAllEmptyStrings(List<Object> list) {
+    /**
+     * Check if all elements in the list are empty based on different data types.  For example, data type values that
+     * are considered empty are 1) null for all data types, empty string for the string data type, and zero for the numeric
+     * data type).
+     *
+     * @param list The {@link List<Object>} to check for empty elements.
+     * @return true if all elements in the list are empty, false otherwise.
+     */
+    private static boolean hasAllEmptyElements(List<Object> list) {
         return list.stream()
-                .allMatch(obj -> obj.toString().isEmpty());
+                .allMatch(
+                        obj -> obj == null
+                                || (obj instanceof String && ((String) obj).trim().isEmpty())
+                                || (obj instanceof Number && ((Number) obj).doubleValue() == 0)
+                );
     }
 }

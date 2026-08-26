@@ -2,15 +2,18 @@ package io.eel.common;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.poi.ooxml.POIXMLProperties;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openxmlformats.schemas.officeDocument.x2006.customProperties.CTProperty;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -22,8 +25,7 @@ public class EelPackager {
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     /**
-     * An alternative entry point that exposes the {@link EelPackager#createManifest(String, String, String, Integer)} method
-     * to scripts.
+     * An alternative entry point that exposes the {@link EelPackager#createManifest)} method to scripts.
      *
      * @param args {@link String[]}
      */
@@ -33,58 +35,82 @@ public class EelPackager {
         // Get Excel file name.
         final String excelFileName = args[0];
 
-        final String author = System.getProperty("user.name");
-        final String name = "test";
-        final int version = 0;
         final UUID id = UUID.randomUUID();
 
-        // Generate the manifest, serialize it to JSON, and write it to a file.
-        WorkbookValidator.Manifest manifest = createManifest(excelFileName, author, name, version, id);
-
+        // Generate the app's manifest, serialize it to JSON, and write it to a file.
+        WorkbookValidator.Manifest manifest = createManifest(excelFileName, id);
         String manifestJson = gson.toJson(manifest);
 
         Path tmpFilePath = new File("manifest.json").toPath();
         Files.write(tmpFilePath, manifestJson.getBytes());
         System.out.println("Manifest written to: " + tmpFilePath.toAbsolutePath());
+
+        // Generate the MCPB manifest, serialize it to JSON, and write it to a file.
+        WorkbookValidator.McpbManifest mcpbManifest = WorkbookValidator.McpbManifest.fromAppManifest(manifest);
+        String mcpbManifestJson = gson.toJson(mcpbManifest);
+
+        Path mcpbTmpFilePath = new File("mcpb_manifest.json").toPath();
+        Files.write(mcpbTmpFilePath, mcpbManifestJson.getBytes());
+        System.out.println("MCPB Manifest written to: " + mcpbTmpFilePath.toAbsolutePath());
     }
 
     /**
-     * Validates an Excel workbook and creates the manifest from an Excel file's {@link String} path.
+     * Validates a XLSX workbook and creates the manifest from a XLSX file's {@link String} path.
      *
      * @param excelFileName The file path {@link String} of the Excel workbook.
-     * @param author The author of the workbook.
-     * @param name The name of the transformation.
-     * @param version The version of the transformation.
      */
     public static WorkbookValidator.Manifest createManifest(
             final String excelFileName,
-            final String author,
-            final String name,
-            final Integer version,
             final UUID id
     ) throws IOException {
         Workbook workbook = WorkbookFactory.create(new File(excelFileName));
-        return createManifest(workbook, author, name, version, id);
+
+        POIXMLProperties.CoreProperties coreProperties = ((XSSFWorkbook) workbook).getProperties().getCoreProperties();
+        POIXMLProperties.CustomProperties customProperties = ((XSSFWorkbook) workbook).getProperties().getCustomProperties();
+
+        // Fetch the specific metadata fields.  The following 3 fields are required...
+        final String title = Optional.ofNullable(coreProperties.getTitle())
+                .orElseThrow(() -> new IllegalArgumentException("XLSX file is missing the 'Title' property in its core properties"));
+
+        final String description = Optional.ofNullable(coreProperties.getDescription())
+                .orElseThrow(() -> new IllegalArgumentException("XLSX file is missing the 'Description' property in its core properties"));
+
+        final String creator = Optional.ofNullable(customProperties.getProperty("Author"))
+                .map(CTProperty::getLpwstr)
+                .orElseThrow(() -> new IllegalArgumentException("XLSX file is missing the 'Author' property in its custom properties"));
+
+        // ...and this property is optional - although some spreadsheet applications will increment it automatically, such
+        // as LibreOffice.
+        final int version = Optional.ofNullable(coreProperties.getRevision())
+                        .map(Integer::parseInt)
+                        .orElse(0);
+
+        return createManifest(workbook, creator, title, version, id, description);
     }
 
     /**
      * Validates an Excel workbook and creates the manifest from an Excel file's {@link InputStream}.
      *
      * @param excelInputStream The {@link InputStream} of the Excel workbook.
-     * @param author The author of the workbook.
-     * @param name The name of the transformation.
-     * @param version The version of the transformation.
      * @return {@link io.eel.common.WorkbookValidator.Manifest}
      */
     public static WorkbookValidator.Manifest createManifest(
         final InputStream excelInputStream,
-        final String author,
-        final String name,
-        final Integer version,
         final UUID id
     ) throws IOException {
         Workbook workbook = WorkbookFactory.create(excelInputStream);
-        return createManifest(workbook, author, name, version, id);
+
+        // todo:  put this duplicated code in a helper method.
+        POIXMLProperties.CoreProperties coreProperties = ((XSSFWorkbook) workbook).getProperties().getCoreProperties();
+        POIXMLProperties.CustomProperties customProperties = ((XSSFWorkbook) workbook).getProperties().getCustomProperties();
+
+        // Fetch the specific metadata fields
+        final String title = coreProperties.getTitle();
+        final String description = coreProperties.getDescription();
+        final String creator = customProperties.getProperty("Author").getLpwstr();
+        final int version = coreProperties.getRevision() != null ? Integer.parseInt(coreProperties.getRevision()) : 0;
+
+        return createManifest(workbook, creator, title, version, id, description);
     }
 
     private static WorkbookValidator.Manifest createManifest(
@@ -92,9 +118,10 @@ public class EelPackager {
         final String author,
         final String name,
         final Integer version,
-        final UUID id
+        final UUID id,
+        final String description
     ) {
-        return new WorkbookValidator(workbook, author, name, version, id)
+        return new WorkbookValidator(workbook, author, name, version, id, description)
                 .assertIsValid()
                 .createManifest();
     }
@@ -107,58 +134,59 @@ public class EelPackager {
     private static final String TMP_PATH = System.getProperty("java.io.tmpdir");
 
     public static File build(InputStream originalJarInputStream, InputStream excelInputStream) {
-        try {
-            // Write the original EEL JAR from to a tmp file.
-            File jarTmpFile = new File(TMP_PATH + "/NEW_EEL.jar");
-            Files.copy(originalJarInputStream, jarTmpFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            originalJarInputStream.close();
-
-            log.info("Wrote EEL.jar to " + jarTmpFile.toPath());
-
-            // Write the xlsx file to a tmp file.
-            File tmpFile = new File(TMP_PATH + "/" + EEL_XLSX_FILE_NAME);
-            Files.copy(excelInputStream, tmpFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            excelInputStream.close();
-
-            // Write the manifest to a tmp file.
-            final WorkbookValidator.Manifest manifest = createManifest(new FileInputStream(tmpFile), "me", "myEel", 0, UUID.randomUUID());
-            final String manifestJson = gson.toJson(manifest);
-            log.info(manifestJson);
-
-            File tmpManifestFile = new File(TMP_PATH + "/manifest.json");
-            Files.write(tmpManifestFile.toPath(), manifestJson.getBytes());
-            log.info("Wrote manifest JSON to " + tmpManifestFile.getAbsolutePath());
-
-            // Add manifest to the JAR.
-            final String jarTmpFilePath = jarTmpFile.toPath().toAbsolutePath().toString();
-            Process manifestCopyProcess = Runtime.getRuntime()
-                    .exec(
-                            new String[] {
-                                    // Add manifest to JAR's resources.
-                                    "jar", "uf", jarTmpFilePath, "-C", TMP_PATH, tmpManifestFile.getName()
-                            }
-                    );
-            await(manifestCopyProcess);
-
-            // Add xlsx file to the JAR.
-            await(
-                    Runtime.getRuntime().exec(
-                            new String[] {
-                                    "jar", "uf", jarTmpFilePath, "-C", TMP_PATH, tmpFile.getName()
-                            }
-                    )
-            );
-
-            // Save JAR to S3.
-            log.info("EEL JAR is located at: " + jarTmpFilePath);
-
-            return jarTmpFile;
-        } catch (Throwable t) {
-            // todo:  Add logic here.
-            t.printStackTrace();
-
-            throw new RuntimeException(t);
-        }
+        return new File("/tmp/NEW_EEL.jar");
+//        try {
+//            // Write the original EEL JAR from to a tmp file.
+//            File jarTmpFile = new File(TMP_PATH + "/NEW_EEL.jar");
+//            Files.copy(originalJarInputStream, jarTmpFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+//            originalJarInputStream.close();
+//
+//            log.info("Wrote EEL.jar to " + jarTmpFile.toPath());
+//
+//            // Write the xlsx file to a tmp file.
+//            File tmpFile = new File(TMP_PATH + "/" + EEL_XLSX_FILE_NAME);
+//            Files.copy(excelInputStream, tmpFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+//            excelInputStream.close();
+//
+//            // Write the manifest to a tmp file.
+//            final WorkbookValidator.Manifest manifest = createManifest(new FileInputStream(tmpFile), "me", "myEel", 0, UUID.randomUUID(), "");
+//            final String manifestJson = gson.toJson(manifest);
+//            log.info(manifestJson);
+//
+//            File tmpManifestFile = new File(TMP_PATH + "/manifest.json");
+//            Files.write(tmpManifestFile.toPath(), manifestJson.getBytes());
+//            log.info("Wrote manifest JSON to " + tmpManifestFile.getAbsolutePath());
+//
+//            // Add manifest to the JAR.
+//            final String jarTmpFilePath = jarTmpFile.toPath().toAbsolutePath().toString();
+//            Process manifestCopyProcess = Runtime.getRuntime()
+//                    .exec(
+//                            new String[] {
+//                                    // Add manifest to JAR's resources.
+//                                    "jar", "uf", jarTmpFilePath, "-C", TMP_PATH, tmpManifestFile.getName()
+//                            }
+//                    );
+//            await(manifestCopyProcess);
+//
+//            // Add xlsx file to the JAR.
+//            await(
+//                    Runtime.getRuntime().exec(
+//                            new String[] {
+//                                    "jar", "uf", jarTmpFilePath, "-C", TMP_PATH, tmpFile.getName()
+//                            }
+//                    )
+//            );
+//
+//            // Save JAR to S3.
+//            log.info("EEL JAR is located at: " + jarTmpFilePath);
+//
+//            return jarTmpFile;
+//        } catch (Throwable t) {
+//            // todo:  Add logic here.
+//            t.printStackTrace();
+//
+//            throw new RuntimeException(t);
+//        }
     }
 
     private static void await(Process process) throws InterruptedException {

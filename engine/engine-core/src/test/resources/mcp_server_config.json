@@ -1,11 +1,18 @@
 {
   "mcpServers": {
-    "eel": {
+    "get_categories": {
       "command": "java",
         "args": [
             "-jar",
-            "\"/home/pc/Downloads/297ad7ad-fe93-4d35-a674-c0ce9b64654c#0\""
+            "/home/pc/Documents/budget/automation/0__get_categories/categories-v0.jar"
         ]
+    },
+    "validate_transactions": {
+      "command": "java",
+      "args": [
+        "-jar",
+        "/home/pc/repos/eel/validate_transaction_categories.jar"
+      ]
     }
   }
 }

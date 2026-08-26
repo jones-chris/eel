@@ -2,6 +2,7 @@ package io.eel.common;
 
 import io.eel.common.exception.WorkbookValidationException;
 import io.eel.common.model.Flow;
+import org.apache.poi.ooxml.POIXMLProperties;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.AreaReference;
@@ -10,6 +11,7 @@ import org.apache.poi.ss.util.CellReference;
 import java.util.*;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openxmlformats.schemas.officeDocument.x2006.customProperties.CTProperty;
 
 import java.util.logging.Logger;
 
@@ -256,11 +258,18 @@ public class WorkbookValidator {
                 .map(ColumnMetadata::name)
                 .toList();
 
+        final String sheetRowLimitPropertyName = resolveSheetRowLimitProperty(sheet.getSheetName());
+        int rowLimit = Optional.ofNullable(getCustomProperties(sheet.getWorkbook()).getProperty(sheetRowLimitPropertyName))
+                .map(CTProperty::getLpwstr)
+                .map(Integer::parseInt)
+                .orElse(SpreadsheetVersion.EXCEL2007.getMaxRows() - 1); // Default to the maximum number of rows in Excel 2007+ minus 1 for the header row.
+
         return new SheetMetadata(
                 sheet.getSheetName(),
                 sheet.getRow(0).getLastCellNum(),
                 columnNames,
-                columnMetadata
+                columnMetadata,
+                rowLimit
         );
     }
 
@@ -329,6 +338,26 @@ public class WorkbookValidator {
         );
     }
 
+    private static POIXMLProperties.CoreProperties getCoreProperties(Workbook workbook) {
+        if (workbook instanceof XSSFWorkbook xssfWorkbook) {
+            return xssfWorkbook.getProperties().getCoreProperties();
+        } else {
+            throw new IllegalArgumentException("Only XSSF workbooks are supported");
+        }
+    }
+
+    private static POIXMLProperties.CustomProperties getCustomProperties(Workbook workbook) {
+        if (workbook instanceof XSSFWorkbook xssfWorkbook) {
+            return xssfWorkbook.getProperties().getCustomProperties();
+        } else {
+            throw new IllegalArgumentException("Only XSSF workbooks are supported");
+        }
+    }
+
+    private static String resolveSheetRowLimitProperty(String sheetName) {
+        return sheetName + ":limit";
+    }
+
     public record Manifest(
             UUID flowId,
             String author,
@@ -346,7 +375,8 @@ public class WorkbookValidator {
             String name,
             int numberOfColumns,
             List<String> columnNames,
-            List<ColumnMetadata> columnsMetadata
+            List<ColumnMetadata> columnsMetadata,
+            int rowLimit
     ) {}
 
     public record NamedRangeMetadata(

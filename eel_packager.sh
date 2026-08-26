@@ -31,4 +31,7 @@ echo "Copying excel file and manifest into jar resources directory..."
 jar uf "$NEW_JAR_FILE_PATH" -C "$EXCEL_DIR" "$EXCEL_BASENAME"
 jar uf "$NEW_JAR_FILE_PATH" ./manifest.json
 
+echo "Deleting manifest.json file..."
+rm ./manifest.json
+
 echo "Done!"

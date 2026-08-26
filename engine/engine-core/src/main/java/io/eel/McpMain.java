@@ -1,6 +1,7 @@
 package io.eel;
 
 import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import io.eel.common.WorkbookValidator;
 import io.eel.common.model.WorkbookOutput;
 import io.eel.service.WorkbookCalculationEngine;
@@ -208,7 +209,12 @@ public class McpMain {
 
                                             try {
                                                 InputStream inputStream = new FileInputStream(filePath.toString());
-                                                engine.withInput(inputSheetMetadata.name(), new CSVReader(new InputStreamReader(inputStream)));
+
+                                                CSVReader csvReader = new CSVReaderBuilder(new InputStreamReader(inputStream))
+                                                        .withSkipLines(1) // Skip the required header row.
+                                                        .build();
+
+                                                engine.withInput(inputSheetMetadata.name(), csvReader);
                                             } catch (FileNotFoundException e) {
                                                 throw new RuntimeException("Error: File " + filePath + " not found for required input sheet " + inputSheetMetadata.name());
                                             }

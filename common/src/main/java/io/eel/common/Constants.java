@@ -57,10 +57,63 @@ public class Constants {
         put("YYYY-MM-DD HH:MM:SS.000", "DateTime(\"YYYY-MM-DD HH:MM:SS.000\")"); // ex: 1999-12-01 13:37:46.000
         put("YYYY-MM-DD\"T\"HH:MM:SS", "DateTime(\"YYYY-MM-DD\\\"T\\\"HH:MM:SS\")"); // ex: 1999-12-01T13:37:46 (ISO 8601)
         put("YYYY-MM-DD\"T\"HH:MM:SS.000", "DateTime(\"YYYY-MM-DD\\\"T\\\"HH:MM:SS.000\")"); // ex: 1999-12-01T13:37:46.000
+        put("m/d/yyyy;@", "Date(\"M/d/yyyy\")"); // ex: 12/1/1999
         put("MM/DD/YYYY", "Date(\"MM/DD/YYYY\")"); // ex: 12/01/1999
         put("mmm\\ d\", \"yyyy", "Date(\"mmm\\\\ d\\\", \\\"yyyy\")"); // ex: Dec 1, 1999
         put("boolean", "Boolean"); // ex: TRUE/FALSE
     }};
+
+    /**
+     * A map of built-in Excel formats to their corresponding validation functions. Each function takes a {@link String}
+     * value and returns a {@link Boolean} indicating whether the value is valid for the given format.
+     */
+    public static final Map<String, Function<String, Boolean>> BUILT_IN_TYPE_VALIDATORS = Map.of(
+            "String", value -> true,
+            "Integer", value -> {
+                try {
+                    Integer.parseInt(value);
+                    return true;
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            },
+            "Decimal", value -> {
+                try {
+                    Double.parseDouble(value);
+                    return true;
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            },
+            "Date(\"M/d/yyyy\")", value -> {
+                try {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
+                    LocalDate.parse(value, formatter);
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
+            },
+            "Date(\"MM/DD/YYYY\")", value -> {
+                try {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
+                    LocalDate.parse(value, formatter);
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
+            },
+            "Date(\"mmm\\\\ d\\\", \\\"yyyy\")", value -> {
+                try {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d, yyyy");
+                    LocalDate.parse(value, formatter);
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
+            },
+            "Boolean", value -> Boolean.parseBoolean(value)
+    );
 
     private static final Map<String, Function<Cell, Object>> BUILT_IN_TYPE_TRANSFORMERS = Map.of(
             // https://poi.apache.org/apidocs/dev/org/apache/poi/ss/usermodel/BuiltinFormats.html

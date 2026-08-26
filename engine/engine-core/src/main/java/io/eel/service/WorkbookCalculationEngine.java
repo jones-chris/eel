@@ -2,6 +2,7 @@ package io.eel.service;
 
 import com.google.gson.Gson;
 import com.opencsv.CSVReader;
+import io.eel.common.Constants;
 import io.eel.common.WorkbookValidator;
 import io.eel.common.model.StorageLocation;
 import io.eel.common.model.WorkbookOutput;
@@ -61,6 +62,13 @@ public class WorkbookCalculationEngine {
     }
 
     public WorkbookCalculationEngine withInput(String worksheetName, CSVReader csvReader) {
+        final int inputSheetRowLimit = this.getManifest().inputSheetsMetadata()
+                .stream()
+                .filter(sheetMetadata -> sheetMetadata.name().equals(worksheetName))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Could not find input sheet metadata for " + worksheetName))
+                .rowLimit();
+
         try {
             String[] nextLine;
 
@@ -73,6 +81,10 @@ public class WorkbookCalculationEngine {
             int numOfColumns = new Object[headerRow.getLastCellNum()].length;
 
             while ((nextLine = csvReader.readNext()) != null) {
+                if (rowIdx >= inputSheetRowLimit) {
+                    throw new RuntimeException("CSV contains more rows than the row limit of " + inputSheetRowLimit + " for sheet " + worksheetName);
+                }
+
                 // Check that num of columns match.
                 if (numOfColumns != nextLine.length) {
                     throw new RuntimeException("CSV contains a row at index " + rowIdx + " that is not " + numOfColumns + " items");
@@ -85,8 +97,35 @@ public class WorkbookCalculationEngine {
                 }
 
                 for (int cellIdx = 0; cellIdx < numOfColumns; cellIdx++) {
-                    Cell cell = row.getCell(cellIdx, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                    // Check that the csv value is of the expected type for the cell in the template (header row).
+                    String expectedType = this.getManifest().inputSheetsMetadata()
+                            .stream()
+                            .filter(sheetMetadata -> sheetMetadata.name().equals(worksheetName))
+                            .findFirst()
+                            .orElseThrow(() -> new RuntimeException("Could not find input sheet metadata for " + worksheetName))
+                            .columnsMetadata()
+                            .get(cellIdx)
+                            .dataType();
+
                     String value = nextLine[cellIdx];
+
+                    // Check that the value is of the expected type.  If not, throw an exception.
+                    final int finalRowIdx = rowIdx;
+                    final int finalCellIdx = cellIdx;
+                    Optional.ofNullable(Constants.BUILT_IN_TYPE_VALIDATORS.get(expectedType))
+                            .map(validator -> validator.apply(value))
+                            .ifPresentOrElse(
+                                    isValid -> {
+                                        if (!isValid) {
+                                            throw new RuntimeException("Value " + value + " at row index " + finalRowIdx + " cell index " + finalCellIdx + " in sheet " + worksheetName + " is not of expected type " + expectedType);
+                                        }
+                                    },
+                                    () -> {
+                                        throw new RuntimeException("Could not find validator for expected type "+ expectedType + " for row index " + finalRowIdx + " cell index " + finalCellIdx + " in sheet " + worksheetName);
+                                    }
+                            );
+
+                    Cell cell = row.getCell(cellIdx, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
 
                     if (value == null || value.isBlank()) {
                         continue;
@@ -128,7 +167,7 @@ public class WorkbookCalculationEngine {
     }
 
     public WorkbookValidator.Manifest getManifest() {
-        return manifest;
+        return this.manifest;
     }
 
     public WorkbookOutput runWorkbook() throws Exception {

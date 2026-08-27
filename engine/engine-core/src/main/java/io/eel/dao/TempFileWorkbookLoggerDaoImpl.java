@@ -19,7 +19,7 @@ public class TempFileWorkbookLoggerDaoImpl implements WorkbookLoggerDao {
     public Optional<StorageLocation> log(Workbook workbook, String workbookName) {
         try {
             Path tempDirectoryPath = Files.createTempDirectory(workbookName);
-            Path tempFilePath = Files.createTempFile(tempDirectoryPath, null, "xlsx");
+            Path tempFilePath = Files.createTempFile(tempDirectoryPath, null, ".xlsx");
 
             log.debug("Writing log workbook to {}", tempFilePath.toFile().getAbsolutePath());
 

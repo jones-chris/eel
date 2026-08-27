@@ -1,5 +1,6 @@
 package io.eel.common.model;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -7,10 +8,17 @@ public class WorkbookOutput {
 
     private Optional<StorageLocation> storageLocation = Optional.empty();
 
+    private final List<String> headers;
+
     private final Map<String, Object[][]> output;
 
-    public WorkbookOutput(Map<String, Object[][]> output) {
+    public WorkbookOutput(Map<String, Object[][]> output, List<String> headers) {
         this.output = output;
+
+        if (headers.isEmpty()) {
+            throw new IllegalArgumentException("headers cannot be empty");
+        }
+        this.headers = headers;
     }
 
     public Optional<StorageLocation> getStorageLocation() {
@@ -29,8 +37,8 @@ public class WorkbookOutput {
         return this.output;
     }
 
-    public Object[][] getOutput(String sheetName) {
-        return this.output.get(sheetName);
+    public List<String> getHeaders() {
+        return this.headers;
     }
 
     public void logOutput() {

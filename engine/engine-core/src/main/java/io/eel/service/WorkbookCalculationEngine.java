@@ -197,7 +197,7 @@ public class WorkbookCalculationEngine {
             this.workbookProxy.close();
         }
 
-        System.err.println("Workbook output storage location is " + workbookOutput.getStorageLocation().get());
+//        System.err.println("Workbook output storage location is " + workbookOutput.getStorageLocation().get());
         return workbookOutput;
     }
 

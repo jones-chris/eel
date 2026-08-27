@@ -39,8 +39,8 @@ cp "$NEW_JAR_FILE_PATH" ./mcpb
 cp ./mcpb_manifest.json ./mcpb/manifest.json # Notice that we rename the file here so it's what the MCPB format expects.
 (cd mcpb && zip -r "../$MCPB_FILE_NAME" .)
 
-echo "Deleting temporary files..."
-rm ./manifest.json ./mcpb_manifest.json "$TRANSFORMER_NAME".jar
+echo "Deleting temporary files but I'm leaving the $TRANSFORMER_NAME.jar so it can be tested in MCP Inspector, if necessary..."
+rm ./manifest.json ./mcpb_manifest.json
 rm -rf ./mcpb
 
 echo "Done!  Your MCPB file is ready at $MCPB_FILE_NAME.  Use this file to install your MCP server in the AI client of your choice, such as Claude Desktop."

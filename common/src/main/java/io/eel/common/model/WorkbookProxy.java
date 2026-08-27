@@ -60,6 +60,7 @@ public class WorkbookProxy implements AutoCloseable {
      */
     // todo:  Try reducing the cognitive complexity of this method.
     public WorkbookOutput getOutputs() {
+        List<String> headers = new ArrayList<>();
         Map<String, Object[][]> outputData = new HashMap<>();
 
         for (int sheetIdx = 0; sheetIdx < workbook.getNumberOfSheets(); sheetIdx++) {
@@ -80,8 +81,13 @@ public class WorkbookProxy implements AutoCloseable {
                     }
                 }
 
-                // Get data from the output sheet.  It MUST be a continuous block of text.  The first blank row that is
-                // encountered signals the end of the output data block.
+                // First, extract the headers from the first row.
+                Row headerRow = sheet.getRow(0);
+                for (int cellIdx = 0; cellIdx < headerRow.getLastCellNum(); cellIdx++) {
+                    headers.add(headerRow.getCell(cellIdx).getStringCellValue());
+                }
+
+                // Second, get the non-header data from the output sheet.
                 List<Object[]> sheetDataBlock = new ArrayList<>();
                 for (int rowIdx = 1; rowIdx < sheet.getLastRowNum() + 1; rowIdx++) {
                     // Get row
@@ -123,7 +129,7 @@ public class WorkbookProxy implements AutoCloseable {
             }
         }
 
-        return new WorkbookOutput(outputData);
+        return new WorkbookOutput(outputData, headers);
     }
 
     /**

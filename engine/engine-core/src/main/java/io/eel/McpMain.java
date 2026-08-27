@@ -1,7 +1,10 @@
 package io.eel;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import com.opencsv.CSVWriter;
 import io.eel.common.WorkbookValidator;
 import io.eel.common.model.WorkbookOutput;
 import io.eel.service.WorkbookCalculationEngine;
@@ -16,8 +19,12 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +35,10 @@ public class McpMain {
     private static McpSyncServer syncServer;
 
     private static WorkbookCalculationEngine engine;
+
+    private static final Gson gson = new GsonBuilder()
+            .setPrettyPrinting()
+            .create();
 
     static {
         // Instantiate the workbook calculation engine (which will load the workbook and manifest)
@@ -141,11 +152,22 @@ public class McpMain {
         inputJsonSchema.put(
                 "debug_mode_enabled",
                 Map.of(
-                        "type", "string",
+                        "type", "boolean",
                         "description", """
                                 true if the workbook should be written to a storage location and the file path returned
                                 in the response.  This can be useful if the user wants to open or debug the XSLX file
                                 after calculation.  Otherwise, false.
+                            """
+                )
+        );
+        inputJsonSchema.put(
+                "return_outputs",
+                Map.of(
+                        "type", "boolean",
+                        "description", """
+                                true if you want this tool's response to include the output data.  Otherwise, false.  Note
+                                that the output data's file path will always be included in the tool's response if the 
+                                tool executes successfully.    
                             """
                 )
         );
@@ -203,7 +225,6 @@ public class McpMain {
         return new McpServerFeatures.SyncToolSpecification(
                 runWorkbookTool,
                 (mcpSyncServerExchange, callToRequest) -> {
-
                     try {
                         manifest.inputSheetsMetadata()
                                 .parallelStream() // Write the data to the workbook in parallel so that it's faster.
@@ -239,9 +260,41 @@ public class McpMain {
                     try {
                         WorkbookOutput workbookOutput = engine.runWorkbook();
                         Map<String, Object> resultContent = new HashMap<>();
-                        resultContent.put("output", workbookOutput.getAllOutputs());
-                        if (workbookOutput.getStorageLocation().isPresent()) {
-                            resultContent.put("storageLocation", workbookOutput.getStorageLocation().get());
+
+                        // Write the workbook output to CSV files and return the file path to the AI client.
+                        Map<String, Object> outputFilePaths = new HashMap<>();
+                        workbookOutput.getAllOutputs()
+                                .entrySet()
+                                .stream()
+                                .parallel()
+                                .forEach(entry -> {
+                                    String sheetName = entry.getKey();
+
+                                    String filePath = writeOutputToCsvFile(sheetName, entry.getValue())
+                                            .toAbsolutePath()
+                                            .toString();
+
+                                    outputFilePaths.put(sheetName, filePath);
+                                });
+                        resultContent.put("outputFilePaths", outputFilePaths);
+
+                        // if "return_outputs" is enabled, add those to the result.
+                        boolean returnOutputs = (Boolean) callToRequest.arguments().getOrDefault("return_outputs", false);
+                        if (returnOutputs) {
+                            Map<String, Object[][]> outputs = new HashMap<>(workbookOutput.getAllOutputs());
+                            resultContent.put("outputs", outputs);
+                        }
+
+                        // if "debug_mode_enabled" is enabled, add the workbook path to the result.
+                        boolean debugModeEnabled = (Boolean) callToRequest.arguments().getOrDefault("debug_mode_enabled", false);
+                        if (debugModeEnabled && workbookOutput.getStorageLocation().isPresent()) {
+                            // todo:  pass debugModeEnabled to the engine so it doesn't always write a debug workbook.
+                            resultContent.put(
+                                    "debuggingInfo",
+                                    Map.of(
+                                            "storageLocation", workbookOutput.getStorageLocation().get()
+                                    )
+                            );
                         }
 
                         return McpSchema.CallToolResult.builder()
@@ -258,6 +311,82 @@ public class McpMain {
                     }
                 }
         );
+    }
+
+//    private static class EngineToolResponse {
+//
+//        private Outputs outputs;
+//
+//        private DebuggingInfo debuggingInfo;
+//
+//        public EngineToolResponse(Outputs outputs) {
+//            this.outputs = outputs;
+//        }
+//
+//        public EngineToolResponse(Outputs outputs, DebuggingInfo debuggingInfo) {
+//            this.outputs = outputs;
+//            this.debuggingInfo = debuggingInfo;
+//        }
+//
+//        public void setOutputs(Outputs outputs) {
+//            this.outputs = outputs;
+//        }
+//
+//        public void setDebuggingInfo(DebuggingInfo debuggingInfo) {
+//            this.debuggingInfo = debuggingInfo;
+//        }
+//    }
+
+//    private static class Outputs {
+//
+//        private final Map<String, Object[][]> rawOutput = new HashMap<>();
+//
+//        private final Map<String, String> rawOutputFilePaths = new HashMap<>();
+//
+//        public void addRawOutput(String sheetName, Object[][] rawOutput) {
+//            this.rawOutput.put(sheetName, rawOutput);
+//        }
+//
+//        public void addOutputFilePath(String sheetName, String filePath) {
+//            this.rawOutputFilePaths.put(sheetName, filePath);
+//        }
+//
+//    }
+//
+//    private record DebuggingInfo(
+//            StorageLocation storageLocation
+//    ) {}
+
+    /**
+     * Write the {@link Object[][]} sheet output to CSV.  The CSV name will include the sheet name.
+     *
+     * @param sheetName The name of the worksheet.
+     * @param output The 2D array of data for the worksheet.
+     * @return The {@link Path} to the CSV file.
+     */
+    private static Path writeOutputToCsvFile(String sheetName, Object[][] output) {
+        try {
+            Path tempDirectoryPath = Files.createTempDirectory(sheetName);
+            Path tempFilePath = Files.createTempFile(tempDirectoryPath, null, ".csv");
+            try (FileWriter fileWriter = new FileWriter(tempFilePath.toFile());
+                 CSVWriter csvWriter = new CSVWriter(fileWriter)) {
+
+                if (output != null) {
+                    for (Object[] row : output) {
+                        String[] stringRow = new String[row.length];
+                        for (int i = 0; i < row.length; i++) {
+                            stringRow[i] = row[i] != null ? row[i].toString() : "";
+                        }
+                        csvWriter.writeNext(stringRow);
+                    }
+                }
+            }
+
+            return tempFilePath;
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 
     private static String stringifyExceptionStackTrace(Throwable t) {
